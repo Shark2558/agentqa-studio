@@ -10,7 +10,10 @@ PY := $(VENV)/bin/python
 endif
 DEMO := projects/demo
 
-.PHONY: setup test lint demo-portal demo-regression demo-check dev
+COMPOSE := docker compose -f deploy/docker-compose.yml
+IMAGE ?= agentqa-studio:dev
+
+.PHONY: setup test lint demo-portal demo-regression demo-check dev image up down smoke
 
 setup:            ## create the venv outside the repo and install everything
 	py -3.13 -m venv "$(VENV)" || python3 -m venv "$(VENV)"
@@ -36,3 +39,15 @@ demo-check:       ## only the 19-seeded-bug check against an already completed d
 
 dev:              ## the v0.8 dashboard at http://127.0.0.1:8700 (until the new UI lands in M0.5)
 	cd backend && "$(PY)" -m agentqa ui --port 8700 --projects-dir projects
+
+image:            ## build the container image (dashboard + jobs)
+	docker build -f deploy/Dockerfile -t $(IMAGE) .
+
+up:               ## dashboard + demo portals in Docker: http://127.0.0.1:8700
+	$(COMPOSE) up -d portal dashboard
+
+down:             ## stop the containers (keeps the data volume)
+	$(COMPOSE) --profile demo down --remove-orphans
+
+smoke:            ## M0.2 acceptance: build, unit tests in the image, dashboard up, demo pipeline finds 19/19
+	bash deploy/smoke.sh

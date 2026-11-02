@@ -1,0 +1,79 @@
+# AgentQA Studio on a laptop. From the repo root:
+#   docker compose -f deploy/docker-compose.yml up -d            dashboard on http://127.0.0.1:8700 (+ demo portals)
+#   docker compose -f deploy/docker-compose.yml --profile demo run --rm runner     the demo pipeline as a job
+#   docker compose -f deploy/docker-compose.yml down             stop (add --volumes to delete projects and reports)
+#
+# `dashboard` and `runner` share the `portal` service's network namespace, so the engine's demo project, which
+# points at 127.0.0.1:8800 and :8810, works unchanged inside Docker. The published ports therefore sit on `portal`
+# and are bound to 127.0.0.1 only: nothing is reachable from other machines by default. Because of this, `portal`
+# must always run, even when you test your own application (it is tiny and harmless); if `portal` is ever
+# recreated on its own, run `make up` again so the dashboard rejoins its network.
+#
+# Optional `.env` next to this file (never committed): AGENTQA_VAULT_KEY=<Fernet key>  to pin the key that encrypts
+# test accounts and AI keys; without it the key file is created on the data volume.
+name: agentqa-studio
+
+x-image: &image
+  image: ${AGENTQA_IMAGE:-agentqa-studio:dev}
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile
+
+services:
+  portal:
+    <<: *image
+    # --host 0.0.0.0: Docker can only publish ports of a service that listens on all interfaces of the container
+    command: ["python", "-m", "agentqa", "demo-portal", "--host", "0.0.0.0", "--port", "8800", "--dept-port", "8810"]
+    # Host ports are configurable (e.g. when a local AgentQA already uses 8700/8800/8810); container ports stay fixed.
+    ports:
+      - "127.0.0.1:${AGENTQA_DASHBOARD_PORT:-8700}:8700"   # dashboard (lives in this network namespace)
+      - "127.0.0.1:${AGENTQA_PORTAL_PORT:-8800}:8800"      # demo Citizen Portal
+      - "127.0.0.1:${AGENTQA_DEPT_PORT:-8810}:8810"        # demo Department Portal
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8800/"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    restart: on-failure
+
+  dashboard:
+    <<: *image
+    network_mode: "service:portal"
+    depends_on:
+      portal:
+        condition: service_healthy
+    volumes:
+      - agentqa-data:/data
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8700/"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    restart: on-failure
+
+  runner:
+    <<: *image
+    profiles: ["demo"]
+    network_mode: "service:portal"
+    depends_on:
+      portal:
+        condition: service_healthy
+    volumes:
+      - agentqa-data:/data
+    env_file:
+      - path: .env
+        required: false
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        python -m agentqa demo-project /data/projects/demo
+        python -m agentqa pipeline -p /data/projects/demo --policy srs_wins --auto-approve
+        python tools/check_demo.py /data/projects/demo
+
+volumes:
+  agentqa-data: {}

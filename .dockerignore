@@ -1,0 +1,35 @@
+# Build context is the repo root (docker build -f deploy/Dockerfile .). Keep it small and secret-free.
+.git
+.github
+.claude
+docs
+frontend
+deploy/*.md
+**/.venv
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+backend/projects/*
+!backend/projects/README.txt
+backend/installer
+# State an ad-hoc run can leave inside the engine folder (saved sessions, screenshots, stores): never bake it in
+**/.agentqa
+**/auth
+**/runs
+**/reports
+**/visual
+**/live
+**/evidence
+**/shots
+**/*.db
+**/*.db-*
+**/*.session.json
+**/*.jsonl
+backend/.gitignore
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.log
+desktop.ini

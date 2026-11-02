@@ -493,7 +493,7 @@ def cmd_llm_check(args):
 def cmd_ui(args):
     import uvicorn
     os.environ["AGENTQA_PROJECTS"] = str(Path(args.projects_dir).resolve())
-    log(f"AgentQA Studio UI on http://127.0.0.1:{args.port}  (projects folder: {os.environ['AGENTQA_PROJECTS']})")
+    log(f"AgentQA Studio UI on http://{args.host}:{args.port}  (projects folder: {os.environ['AGENTQA_PROJECTS']})")
     uvicorn.run("agentqa.web.app:app", host=args.host, port=args.port, log_level="warning")
 
 
@@ -514,15 +514,16 @@ def cmd_demo_project(args):
 
 def cmd_demo_portal(args):
     root = Path(__file__).resolve().parent.parent
+    host = getattr(args, "host", "127.0.0.1")
     if getattr(args, "single", False):
-        log(f"Demo portal (one site) on http://127.0.0.1:{args.port}  (Ctrl+C to stop)")
-        subprocess.run([sys.executable, "-m", "uvicorn", "demo.portal.app:app", "--port", str(args.port),
+        log(f"Demo portal (one site) on http://{host}:{args.port}  (Ctrl+C to stop)")
+        subprocess.run([sys.executable, "-m", "uvicorn", "demo.portal.app:app", "--host", host, "--port", str(args.port),
                         "--log-level", "warning"], cwd=str(root))
         return
-    log(f"Demo Citizen Portal on http://127.0.0.1:{args.port} and Department Portal on http://127.0.0.1:{args.dept_port}"
+    log(f"Demo Citizen Portal on http://{host}:{args.port} and Department Portal on http://{host}:{args.dept_port}"
         "  (Ctrl+C to stop)")
-    subprocess.run([sys.executable, "-m", "demo.portal.serve", "--port", str(args.port), "--dept-port", str(args.dept_port)],
-                   cwd=str(root))
+    subprocess.run([sys.executable, "-m", "demo.portal.serve", "--host", host, "--port", str(args.port),
+                    "--dept-port", str(args.dept_port)], cwd=str(root))
 
 
 def main(argv=None):
@@ -660,6 +661,7 @@ def main(argv=None):
     sp.add_argument("--dept-port", type=int, default=8810)
     sp.add_argument("--single", action="store_true", help="one site with every page (versions before 0.6)")
     sp.add_argument("--port", type=int, default=8800)
+    sp.add_argument("--host", default="127.0.0.1", help="interface to listen on (0.0.0.0 inside a container)")
     sp.set_defaults(func=cmd_demo_portal)
 
     args = ap.parse_args(argv)
