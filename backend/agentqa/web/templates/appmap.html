@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}App map - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>App map</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>App map</h1><p class="sub">What the Explorer saw when logged in as each role. A dash means that role never reached the screen through links or menus.</p></div>
+  <div class="actions">
+    {% if nav_roles %}<form method="post" action="/p/{{ slug }}/appmap/teach-nav" class="row" style="gap:6px">
+      <select name="role" aria-label="Role to show around">{% for r in nav_roles %}<option value="{{ r }}">{{ r }}{% if shown.get(r) %} · {{ shown[r] }} shown{% endif %}</option>{% endfor %}</select>
+      <button class="ghost" {{ 'disabled' if running }} title="Log in as this role, then drive AgentQA's browser to any screen it missed; it maps them and remembers the way">{{ ui.icon('compass', 'sm') }} Show AgentQA around</button>
+    </form>{% endif %}
+    <form method="post" action="/p/{{ slug }}/run/explore"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('refresh', 'sm') }} Explore again</button></form>
+  </div>
+</div>
+{% if paths %}
+<div class="kpis" style="margin-bottom:18px">
+  <div class="kpi"><span class="label">{{ ui.icon('map') }} Screens</span><span class="value">{{ paths|length }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('users') }} Roles</span><span class="value">{{ roles|length }}</span><span class="foot">{{ roles|join(', ') }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('list') }} Forms</span><span class="value">{{ paths.values()|map('first')|map(attribute='forms')|map('length')|sum }}</span></div>
+</div>
+<div class="card flush"><div class="table-wrap"><table>
+<thead><tr><th>Screen</th>{% for r in roles %}<th>{{ r }}</th>{% endfor %}<th>Forms</th></tr></thead><tbody>
+{% for path, rows in paths.items() %}{% set first = rows[0] %}<tr><td><b class="mono">{{ path }}</b><div class="tiny muted">{{ first.title }}</div></td>
+{% for r in roles %}{% set sc = (rows|selectattr('role', 'equalto', r)|list) %}<td class="small">{% if sc %}{% set x = sc[0] %}
+<span class="pill {{ 'ok' if x.status < 400 and not x.server_error else 'bad' }}">{{ x.status }}</span>{% if x.final_url and not x.final_url.endswith(path) %} <span class="tiny muted">to {{ x.final_url.replace(project.base_url, '') }}</span>{% endif %}<div class="tiny muted">{{ x.load_ms }} ms</div>{% else %}<span class="muted">-</span>{% endif %}</td>{% endfor %}
+<td class="small wrap">{% for f in first.forms %}<div>{{ f.fields|length }} field(s): <span class="muted">{{ f.fields|map(attribute='label')|select|join(', ')|truncate(90) }}</span></div>{% endfor %}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% else %}<div class="card">{{ ui.empty('map', 'Run the Explorer to map every screen for every role.') }}</div>{% endif %}
+{% endblock %}

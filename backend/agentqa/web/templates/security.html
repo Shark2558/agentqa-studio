@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Security scan - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Security scan</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Security scan</h1>
+    <p class="sub">OWASP ZAP, the free open-source security scanner, runs on this computer. It follows every link as an anonymous visitor, then browses each
+      screen as every role so it also sees the logged-in pages. Alerts at {{ zcfg.min_risk or 'Medium' }} risk or above become defect drafts.</p></div>
+  <div class="actions"><form method="post" action="/p/{{ slug }}/run/security"><input type="hidden" name="watch" value="1">
+    <button class="lg" {{ 'disabled' if running or not status.available }}>{{ ui.icon('shield', 'sm') }} Run security scan</button></form></div>
+</div>
+<div class="kpis k4" style="margin-bottom:16px">
+  <div class="kpi"><span class="label">{{ ui.icon('shield') }} Scanner</span><span class="value" style="font-size:18px">{{ ('ZAP ' ~ meta.version) if meta and meta.version else ('Installed' if status.available else 'Not installed') }}</span>
+    <span class="foot">{{ status.how|truncate(70) }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('lock') }} Mode</span><span class="value" style="font-size:18px">{{ 'Passive + attack probes' if zcfg.active else 'Passive only' }}</span>
+    <span class="foot">{{ 'test environments only' if zcfg.active else 'reads responses, never attacks' }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('alert') }} Alerts</span><span class="value">{{ meta.alerts if meta and meta.alerts is defined else '-' }}</span>
+    <span class="foot">{% if meta and meta.by_risk %}{% for r in ['High', 'Medium', 'Low', 'Informational'] %}{% if meta.by_risk.get(r) %}{{ meta.by_risk[r] }} {{ r|lower }}{{ ' · ' if not loop.last }}{% endif %}{% endfor %}{% else %}no scan yet{% endif %}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('activity') }} Last scan</span><span class="value" style="font-size:18px">{{ (meta.at or '')[:16]|replace('T', ' ') if meta and meta.at else '-' }}</span>
+    <span class="foot">{% if meta and meta.seconds %}{{ meta.seconds }} s · {{ meta.screens }} screen visit(s){% elif meta and meta.skipped %}skipped{% endif %}</span></div>
+</div>
+
+{% if not status.available %}
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('download') }} Install OWASP ZAP (free, about 10 minutes)</h3></div>
+  <ol class="small" style="margin:0;padding-left:18px;display:grid;gap:4px">
+    <li>Download the Windows installer from <a href="https://www.zaproxy.org/download/" target="_blank" rel="noopener">zaproxy.org/download</a>. It includes the Java it needs.</li>
+    <li>Install it with the default options. AgentQA finds it in Program Files on its own; otherwise set <code>zap.path</code> in Settings.</li>
+    <li>Come back and press <b>Run security scan</b>. The full pipeline also runs it after the Exploratory Tester.</li>
+  </ol>
+</section>
+{% endif %}
+
+{% if alerts %}
+<div class="card flush"><div class="table-wrap"><table>
+<thead><tr><th>Risk</th><th>Alert</th><th>URLs</th><th>Example</th><th>Defect</th></tr></thead><tbody>
+{% for a in alerts %}
+<tr><td><span class="sev {{ {'High': 'High', 'Medium': 'Medium', 'Low': 'Low'}.get(a.risk, 'Low') }}">{{ a.risk }}</span></td>
+  <td class="wrap"><b>{{ a.alert }}</b>{% if a.cwe and a.cwe != '-1' and a.cwe != '0' %} <span class="tiny muted">CWE-{{ a.cwe }}</span>{% endif %}
+    <details><summary>What it means and how to fix it</summary><p class="small">{{ a.description|truncate(600) }}</p><p class="small"><b>Fix:</b> {{ a.solution|truncate(600) }}</p></details></td>
+  <td class="num">{{ a.n }}</td><td class="mono small">{{ a.path|truncate(48) }}</td>
+  <td class="small">{% if a.defect %}<a href="/p/{{ slug }}/defects">{{ a.defect.id }}</a> <span class="pill {{ a.defect.status }}">{{ a.defect.status }}</span>{% else %}<span class="muted">below threshold</span>{% endif %}</td></tr>
+{% endfor %}
+</tbody></table></div></div>
+<p class="small muted" style="margin-top:12px">Header and CSRF alerts merge with AgentQA's own security tests into one defect each. A scan is not a penetration test: ask a security tester to review High alerts and to test business-logic abuse.</p>
+{% elif status.available %}
+<div class="card">{{ ui.empty('shield', 'No scan yet. Run the security scan; on the demo portal it takes under a minute.') }}</div>
+{% endif %}
+{% endblock %}

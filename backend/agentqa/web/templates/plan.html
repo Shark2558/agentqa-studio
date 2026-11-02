@@ -1,0 +1,57 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Test plan - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Test plan</span>{% endblock %}
+{% block body %}
+{% if not plan %}
+<div class="page-head"><div><h1>Test plan</h1></div></div>
+<div class="card">{{ ui.empty('list', 'No plan yet. Run the Planner + Designer from the Dashboard.') }}</div>
+{% else %}{% set s = plan.summary %}
+<div class="page-head">
+  <div><h1>Test plan</h1>
+    <p class="sub">{{ s.cases }} cases covering {{ s.requirements_covered }} of {{ s.requirements }} requirements{% if s.open_questions %}; {{ s.open_questions }} question(s) still open{% endif %}.
+      Every expected result names its source, so nothing is guessed.</p></div>
+  <div class="actions">
+    <a class="btn ghost" href="/p/{{ slug }}/testcases.xlsx" title="Every prepared test case in the standard template, with the last result">{{ ui.icon('download', 'sm') }} Download test cases (Excel)</a>
+    {% if plan.approved %}<span class="pill ok">{{ ui.icon('check', 'sm') }} Approved {{ (plan.approved_at or '')[:16]|replace('T', ' ') }}</span>
+    <form method="post" action="/p/{{ slug }}/run/continue"><button {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Generate and run</button></form>
+    {% else %}<span class="pill warn">Awaiting approval</span>{% endif %}</div>
+</div>
+{% if gaps.untested or gaps.clarify or gaps.unread or gaps.missed or gaps.workflow or gaps.production %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-head"><h3>{{ ui.icon('alert') }} What this plan does not cover yet</h3><a class="btn quiet" href="/p/{{ slug }}/srs">Requirements</a></div>
+  <ul class="reasons" style="margin:0">
+    {% if gaps.untested %}<li>{{ gaps.untested|length }} requirement(s) without a test case: {{ gaps.untested[:12]|join(', ') }}{{ '…' if gaps.untested|length > 12 }}</li>{% endif %}
+    {% if gaps.clarify %}<li>{{ gaps.clarify|length }} requirement(s) need clarification before their expected result is known: {{ gaps.clarify[:12]|join(', ') }}</li>{% endif %}
+    {% if gaps.unread %}<li>{{ gaps.unread|length }} document(s) not fully read: {% for d in gaps.unread %}{{ d.name }} ({{ d.detail or d.status }}){{ ', ' if not loop.last }}{% endfor %}</li>{% endif %}
+    {% if gaps.missed %}<li>{{ gaps.missed }} passage(s) in the documents read like requirements but became none</li>{% endif %}
+    {% for g in gaps.workflow %}<li>Workflow{% if g.req_id and g.req_id != "-" %} {{ g.req_id }}{% endif %}: {{ g.why }}</li>{% endfor %}
+    {% if gaps.production %}<li>{{ gaps.production|length }} case(s) left out because they would change data on a production application</li>{% endif %}
+  </ul></div>{% endif %}
+<div class="grid g3" style="margin-bottom:18px">
+  <div class="card"><div class="card-head"><h3>{{ ui.icon('flag') }} Risk priorities</h3></div><ul class="reasons" style="margin:0">{% for n in s.risk_notes %}<li>{{ n }}</li>{% endfor %}</ul></div>
+  <div class="card"><div class="card-head"><h3>{{ ui.icon('layers') }} By priority and role</h3></div>
+    {% set maxp = (s.by_priority.values()|max) or 1 %}
+    {% for k, v in s.by_priority.items()|sort %}<div class="row small" style="margin-bottom:6px"><b style="width:28px">{{ k }}</b><div class="meter" style="flex:1"><span style="width:{{ (v / maxp * 100)|round }}%"></span></div><span class="num" style="width:34px;text-align:right">{{ v }}</span></div>{% endfor %}
+    <div class="row" style="margin-top:10px">{% for k, v in s.by_role.items() %}<span class="chip">{{ k }} <span class="count">{{ v }}</span></span>{% endfor %}</div></div>
+  <div class="card"><div class="card-head"><h3>{{ ui.icon('scale') }} Rules by status</h3></div>
+    <div class="row">{% for k, v in s.rules_by_status.items() %}<span class="pill {{ k }}">{{ k }} · {{ v }}</span>{% endfor %}</div>
+    <p class="tiny muted" style="margin-bottom:0">Confirmed: SRS and app agree. Decided: a person answered. Divergent or Ambiguous: waiting for an answer.</p></div>
+</div>
+<div class="row" style="margin-bottom:12px">
+  <a class="chip {{ 'on' if not ftype }}" href="/p/{{ slug }}/plan">All <span class="count">{{ types|sum(attribute='n') }}</span></a>
+  {% for t in types %}<a class="chip {{ 'on' if ftype == t.type }}" href="?type={{ t.type }}">{{ t.type|replace('_', ' ') }} <span class="count">{{ t.a|int }}/{{ t.n }}</span></a>{% endfor %}
+</div>
+<form method="post">
+<div class="row" style="margin-bottom:12px">
+  <button name="action" value="approve_all">{{ ui.icon('check', 'sm') }} Approve all proposed</button>
+  <button class="ghost" name="action" value="approve">Approve selected</button>
+  <button class="danger" name="action" value="reject">Reject selected</button>
+  <button class="quiet" name="action" value="reset">Reset selected</button>
+</div>
+<div class="card flush"><div class="table-wrap"><table>
+<thead><tr><th><input type="checkbox" aria-label="Select all" onclick="document.querySelectorAll('input[name=ids]').forEach(c => c.checked = this.checked)"></th><th>Case</th><th>Pri</th><th>Title</th><th>Role</th><th>Oracle</th><th>Traces to</th><th>Status</th></tr></thead><tbody>
+{% for c in cases %}<tr><td><input type="checkbox" name="ids" value="{{ c.id }}" aria-label="Select {{ c.id }}"></td><td class="num">{{ c.id }}</td><td><span class="pill {{ 'bad' if c.priority == 'P1' else ('warn' if c.priority == 'P2' else '') }}">{{ c.priority }}</span></td>
+<td class="wrap">{{ c.title }}<div class="tiny muted">{{ c.type|replace('_', ' ') }}{% if c.path %} · <span class="mono">{{ c.path }}</span>{% endif %}</div></td>
+<td class="small">{{ c.role }}</td><td class="small">{{ c.oracle_source }}</td><td class="small">{{ (c.req_ids or [])|join(', ') or '-' }}</td><td><span class="pill {{ c.status }}">{{ c.status }}</span></td></tr>{% endfor %}
+</tbody></table></div></div></form>
+{% endif %}
+{% endblock %}

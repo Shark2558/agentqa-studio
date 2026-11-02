@@ -1,0 +1,86 @@
+# AgentQA Studio's own CI: unit tests on Linux and Windows, static checks, and a full demo run that must find
+# every seeded bug (and nothing else). Runs on every push and pull request.
+# The engine lives in backend/ (mono-repo since M0.1); every step runs from there.
+name: AgentQA self-test
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "${{ matrix.python }}", cache: pip, cache-dependency-path: backend/requirements.txt}
+      - run: python -m pip install -r requirements.txt pyflakes
+      - name: Lint (unused names, undefined names)
+        run: python -m pyflakes agentqa demo tools tests
+      - name: Unit tests (no browser, no portal)
+        run: python -m pytest -q tests --junitxml=unit-junit.xml
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip, cache-dependency-path: backend/requirements.txt}
+      - run: python -m pip install -r requirements.txt bandit pip-audit
+      - name: Static security check (medium and above)
+        # B608: SQL built only from internal table/column names and "?" placeholders (reviewed)
+        # B310: urlopen of the mock-inbox URL from project.yaml; B104: the "0.0.0.0" setting name, not a bind
+        run: bandit -q -r agentqa -ll -s B608,B310,B104
+      - name: Known vulnerabilities in dependencies
+        run: pip-audit -r requirements.txt
+
+  demo:
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12", cache: pip, cache-dependency-path: backend/requirements.txt}
+      - run: python -m pip install -r requirements.txt && python -m playwright install --with-deps chromium
+      - name: Install OWASP ZAP (for the Security Scanner stage)
+        run: |
+          curl -sSL -o zap.tgz https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz
+          sudo mkdir -p /opt/zap && sudo tar xzf zap.tgz -C /opt/zap
+          echo "ZAP_HOME=/opt/zap/ZAP_2.16.1" >> "$GITHUB_ENV"
+      - name: Start the demo portal and mock trackers
+        run: |
+          nohup python -m agentqa demo-portal --port 8800 > portal.log 2>&1 &
+          nohup python -m agentqa demo-trackers --port 8900 > trackers.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8800/ > /dev/null && curl -sf http://127.0.0.1:8810/ > /dev/null && break; sleep 1; done
+      - name: Full demo pipeline
+        run: |
+          python -m agentqa demo-project projects/demo
+          python -m agentqa doctor -p projects/demo
+          python -m agentqa pipeline -p projects/demo --policy srs_wins --auto-approve
+      - name: Every seeded bug found, no false alarms
+        run: python tools/check_demo.py projects/demo
+      - name: Human-in-the-loop end to end (English first, take-over, remembered login, pause, Show how to log in)
+        run: python tools/e2e_assist.py
+      - name: Acceptance report (the 14 criteria against this run)
+        if: always()
+        run: |
+          python -m pytest -q tests --junitxml=unit-junit.xml || true
+          python tools/acceptance.py --project projects/demo --junit unit-junit.xml || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-report
+          path: |
+            backend/projects/demo/reports/
+            backend/projects/demo/runs/*/junit.xml
+            backend/portal.log

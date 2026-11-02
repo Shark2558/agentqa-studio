@@ -1,0 +1,200 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Test data - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Test data</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Test data</h1>
+    <p class="sub">The accounts AgentQA logs in with, and the values the tests type. Each account is <b>Active</b> when everything
+      its way of logging in needs is here. Stored encrypted on this computer, never in project.yaml.</p></div>
+  <div class="actions">
+    <a class="btn" href="?add=1#account">{{ ui.icon('plus', 'sm') }} Add an account</a>
+    <a class="btn ghost" href="/p/{{ slug }}/readiness">{{ ui.icon('clipboard', 'sm') }} Test the logins</a>
+  </div>
+</div>
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+
+{# ---------- 1. Status: what will be used for testing right now ---------- #}
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('activity') }} What AgentQA will use for testing</h3>
+    <span class="pill {{ 'ok' if ready_n == roles_n and roles_n else 'warn' }}">{{ ready_n }} of {{ roles_n }} account(s) active</span></div>
+  {% if not rows %}{{ ui.empty('users', 'No accounts yet. Add one account per kind of user (citizen, clerk, officer...).') }}
+  {% else %}
+  <div class="td-grid">
+  {% for r in rows if not r.peer %}
+    <div class="td-card {{ 'ok' if r.ready else 'warn' }}">
+      <div class="td-top">
+        <div><b>{{ r.role }}</b><div class="tiny muted">{{ apps[r.app].name if r.app in apps else r.app }}</div></div>
+        <span class="pill {{ 'ok' if r.ready else 'warn' }}">{{ 'Active' if r.ready else 'Needs attention' }}</span>
+      </div>
+      <dl class="kv small">
+        <dt>Logs in with</dt><dd>{{ methods.get(r.method, r.method) }}{% if r.login_option %} · <span class="muted">button “{{ r.login_option }}”</span>{% endif %}</dd>
+        <dt>Account</dt><dd>{% if r.username %}{{ r.username }}{% endif %}{% if r.mobile %}{{ ' · ' if r.username }}mobile {{ r.mobile }}{% endif %}{% if r.email %}{{ ' · ' if r.username or r.mobile }}{{ r.email }}{% endif %}
+          {% if r.method in ['password', 'password_otp', 'mfa', 'sso'] %} · password {% if r.has_password %}<span class="pill ok">saved</span>{% else %}<span class="pill bad">missing</span>{% endif %}{% endif %}
+          {% if not r.username and not r.mobile and not r.email %}<span class="muted">nothing entered yet</span>{% endif %}</dd>
+        {% if r.method in ['mobile_otp', 'email_otp', 'password_otp', 'mfa'] %}<dt>OTP</dt><dd>{{ otp_sources.get(r.otp_source, r.otp_source)|replace(' (live portals)', '')|replace(' (test environments)', '') }}</dd>{% endif %}
+        <dt>Way in</dt><dd>{% if r.steps %}<span class="pill ok">learnt</span> <span class="tiny muted">{{ r.steps|join(' › ')|truncate(110) }}</span>{% else %}<span class="muted">not learnt yet: found at the first login, or show it below</span>{% endif %}</dd>
+        <dt>Last login</dt><dd>{% if r.last %}<span class="pill {{ 'ok' if r.last.result == 'ok' else 'bad' }}">{{ {'ok': 'OK', 'otp_timeout': 'No OTP in time', 'otp_refused': 'OTP refused', 'refused': 'Refused', 'not_found': 'Way in not found', 'failed': 'Failed', 'error': 'Error'}.get(r.last.result, r.last.result) }}</span> <span class="tiny muted">{{ r.last.at[5:16]|replace('T', ' ') }}</span>{% if r.session %} · <span class="tiny muted">session saved</span>{% endif %}{% else %}<span class="muted">never</span>{% endif %}</dd>
+      </dl>
+      {% if not r.ready %}<div class="td-missing">{{ ui.icon('alert', 'sm') }} Add: {{ r.missing|join(', ') }}</div>{% endif %}
+      {% set peer = rows|selectattr('owner', 'equalto', r.role)|selectattr('peer')|first %}
+      {% if peer %}<div class="tiny muted" style="margin-top:6px">Second {{ r.role }} (record isolation): {{ peer.username or peer.mobile or peer.email or 'no details' }} · <span class="pill {{ 'ok' if peer.ready else 'warn' }}">{{ 'Active' if peer.ready else 'needs ' + peer.missing|join(', ') }}</span> <a class="small" href="?edit={{ peer.role }}#account">edit</a></div>{% endif %}
+      <div class="row td-actions">
+        <a class="btn quiet" href="?edit={{ r.role }}#account">{{ ui.icon('sliders', 'sm') }} Edit</a>
+        <form method="post" action="/p/{{ slug }}/testdata/account/{{ r.role }}/teach" style="display:inline"><button class="quiet" {{ 'disabled' if running }} title="You log in once in AgentQA's browser; it records the path and keeps the details you type">{{ ui.icon('eye', 'sm') }} Show how to log in</button></form>
+        {% if r.steps %}<form method="post" action="/p/{{ slug }}/testdata/account/{{ r.role }}/relearn" style="display:inline"><button class="quiet" title="Forget the recorded steps and find the login again">Re-learn</button></form>{% endif %}
+        {% if not peer %}<a class="btn quiet" href="?add=1&peer_of={{ r.role }}#account" title="A second account of the same kind, to check one user cannot read another's records">+ second account</a>{% endif %}
+        <form method="post" action="/p/{{ slug }}/testdata/account/{{ r.role }}/delete" style="display:inline;margin-left:auto" onsubmit="return confirm('Remove the {{ r.role }} account and everything learnt for it?')"><button class="quiet danger-text">Remove</button></form>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+{# ---------- 2. Add / edit one account: a guided form that shows only what the chosen login needs ---------- #}
+{% set peer_of = request.query_params.get('peer_of') %}
+{% if editing or add %}
+<form class="card" method="post" action="/p/{{ slug }}/testdata/account" id="account" style="margin-bottom:16px">
+  {% set e = editing or {} %}
+  <div class="card-head"><h3>{{ ui.icon('plus') }} {{ ('Edit ' ~ e.role|replace('__peer', ' (second account)')) if editing else ('Second ' ~ peer_of ~ ' account' if peer_of else 'Add an account') }}</h3>
+    <a class="btn quiet" href="/p/{{ slug }}/testdata">Cancel</a></div>
+  {% if editing and e.peer %}<input type="hidden" name="peer_of" value="{{ e.owner }}">{% elif peer_of %}<input type="hidden" name="peer_of" value="{{ peer_of }}">{% endif %}
+
+  <div class="td-step"><span class="td-n">1</span><div>
+    <b>Who is this user?</b>
+    <div class="formgrid" style="margin-top:8px">
+      <label>Role (what the SRS calls this kind of user)<input type="text" name="role" required value="{{ e.owner if editing else (peer_of or '') }}" placeholder="citizen, clerk, officer, admin" {{ 'readonly' if editing or peer_of }}></label>
+      <label>Which portal does this user log in to?<select name="app">{% for aid, a in apps.items() %}<option value="{{ aid }}" {{ 'selected' if e.app == aid }}>{{ a.name }}</option>{% endfor %}</select></label>
+    </div></div></div>
+
+  <div class="td-step"><span class="td-n">2</span><div>
+    <b>How does this user log in?</b>
+    <div class="formgrid" style="margin-top:8px">
+      <label>Way of logging in<select name="method" id="td-method">{% for k, t in methods.items() %}<option value="{{ k }}" {{ 'selected' if (e.method or 'password') == k }}>{{ t }}</option>{% endfor %}</select></label>
+      <label>Login button on the portal <span class="muted">(optional)</span><input type="text" name="login_option" value="{{ e.login_option }}" placeholder="Citizen Login, Department Login"></label>
+    </div>
+    <p class="tiny muted" style="margin:6px 0 0">The button is the one a tester clicks to choose this kind of login. Leave it empty and AgentQA finds it, or asks you once and remembers.</p>
+  </div></div>
+
+  <div class="td-step"><span class="td-n">3</span><div>
+    <b>The account details</b> <span class="tiny muted">(only what this way of logging in needs)</span>
+    <div class="formgrid" style="margin-top:8px">
+      <label data-for="password password_otp mfa sso custom">Username or user ID<input type="text" name="username" value="{{ e.username }}" autocomplete="off"></label>
+      <label data-for="password password_otp mfa sso">Password<input type="password" name="password" placeholder="{{ 'saved: leave empty to keep it' if e.has_password else '' }}" autocomplete="new-password"></label>
+      <label data-for="mobile_otp password_otp">Mobile number<input type="text" name="mobile" value="{{ e.mobile }}" inputmode="tel" placeholder="10-digit mobile"></label>
+      <label data-for="email_otp custom">Email<input type="text" name="email" value="{{ e.email }}"></label>
+    </div></div></div>
+
+  <div class="td-step" data-for="mobile_otp email_otp password_otp mfa"><span class="td-n">4</span><div>
+    <b>Where does the one-time password come from?</b>
+    <div class="formgrid" style="margin-top:8px">
+      <label>OTP source<select name="otp_source" id="td-otp">{% for k, t in otp_sources.items() %}<option value="{{ k }}" {{ 'selected' if (e.otp_source or 'ask') == k }}>{{ t }}</option>{% endfor %}</select></label>
+      <label data-otp="fixed">Fixed test OTP<input type="password" name="otp_fixed" placeholder="{{ 'saved: leave empty to keep it' if e.has_fixed_otp else '' }}" autocomplete="off"></label>
+      <label data-otp="totp">Authenticator secret (TOTP)<input type="password" name="totp_secret" placeholder="{{ 'saved: leave empty to keep it' if e.has_totp else '' }}" autocomplete="off"></label>
+    </div>
+    <p class="tiny muted" style="margin:6px 0 0"><b>Ask me on screen</b> is for live portals: a box opens on every dashboard page with the live screen and you type the code from your phone. <b>Mock inbox</b> is for test environments whose SMS/email gateway points at AgentQA.</p>
+  </div></div>
+
+  <details class="td-adv"><summary>More (rarely needed): other names in the SRS, extra login fields</summary>
+    <div class="formgrid" style="margin-top:8px">
+      <label>Other names the SRS uses for this role<input type="text" name="aliases" value="{{ e.aliases if e.aliases is string else (e.aliases or [])|join(', ') }}" placeholder="Applicant, Public user"></label>
+      <label>Other boxes on the login form (one per line)<textarea name="extra" rows="2" placeholder="Department = Revenue&#10;District = Central">{{ e.extra }}</textarea></label>
+    </div>
+  </details>
+
+  <div class="row" style="margin-top:14px"><button>{{ ui.icon('check', 'sm') }} Save account</button>
+    {% if editing and e.steps %}<label class="check"><input type="checkbox" name="relearn" value="1"> Forget the learnt way in and find it again</label>{% endif %}</div>
+</form>
+{% endif %}
+
+{# ---------- 3. Data sets the tests type ---------- #}
+<section class="card" id="datasets" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('list') }} Values the tests type</h3><span class="hint">Named after the field: a set called <i>Mobile Number</i> feeds every Mobile Number box</span></div>
+  {% if datasets %}<div class="grid g3" style="margin-bottom:12px">{% for name, values in datasets.items() %}
+    <form method="post" action="/p/{{ slug }}/testdata/dataset" class="ds"><input type="hidden" name="name" value="{{ name }}">
+      <b>{{ name }}</b><textarea name="values" rows="4" aria-label="{{ name }}">{{ values|join('\n') }}</textarea>
+      <div class="row"><button class="ghost">Save</button><button class="quiet" name="delete" value="1">Delete</button></div></form>{% endfor %}</div>{% endif %}
+  <form method="post" action="/p/{{ slug }}/testdata/dataset" class="row" style="align-items:flex-start">
+    <input type="text" name="name" placeholder="Field name, e.g. PIN Code" aria-label="Data set name" required style="width:240px">
+    <textarea name="values" rows="2" placeholder="One valid value per line" aria-label="Values" style="flex:1;min-width:220px"></textarea><button class="ghost">Add</button></form>
+  <p class="tiny muted" style="margin-bottom:0">Optional. Without a data set, AgentQA makes up valid-looking values from the field's type, label and limits.</p>
+</section>
+
+{# ---------- 4. Rarely changed: portals, model, keys, login log ---------- #}
+<details class="card" id="apps" style="margin-bottom:12px" {{ 'open' if edit_app }}>
+  <summary><b>{{ ui.icon('link', 'sm') }} Portals under test</b> <span class="tiny muted">· {{ apps|length }} · environment, scope and where the login starts (saved in project.yaml, no secrets)</span></summary>
+  <div class="table-wrap" style="margin-top:12px"><table class="plain">
+    <thead><tr><th>Portal</th><th>URL</th><th>Environment</th><th>Accounts</th><th>Scope</th><th></th></tr></thead><tbody>
+    {% for aid, a in apps.items() %}<tr>
+      <td><b>{{ a.name }}</b>{% if loop.first %} <span class="pill">primary</span>{% endif %}{% if not loop.first %}<div class="tiny muted mono">paths: @{{ aid }}/…</div>{% endif %}</td>
+      <td class="small mono wrap">{{ a.base_url }}</td>
+      <td class="small">{% if a.environment %}<span class="pill {{ 'bad' if a.environment == 'Production' else '' }}">{{ a.environment }}</span>{% else %}<span class="pill warn">not set</span>{% endif %}</td>
+      <td class="small">{{ rows|selectattr('app', 'equalto', aid)|rejectattr('peer')|map(attribute='role')|join(', ') or '-' }}</td>
+      <td class="tiny">{% if a.scope.include %}only {{ a.scope.include|join(', ') }}{% endif %}{% if a.scope.exclude %} not {{ a.scope.exclude|join(', ') }}{% endif %}{% if not a.scope.include and not a.scope.exclude %}<span class="muted">whole portal</span>{% endif %}</td>
+      <td class="nw"><a class="btn quiet" href="?edit_app={{ aid }}#apps">Edit</a></td></tr>{% endfor %}
+  </tbody></table></div>
+  {% set ea = apps.get(edit_app) if edit_app else {} %}
+  <form method="post" action="/p/{{ slug }}/testdata/app" id="app-form" style="padding:12px 0 4px">
+    <div class="formgrid">
+      <label>Id (short, no spaces)<input type="text" name="id" required value="{{ edit_app }}" placeholder="department" {{ 'readonly' if edit_app }}></label>
+      <label>Name<input type="text" name="name" value="{{ ea.name }}" placeholder="Department Portal"></label>
+      <label>Base URL<input type="text" name="base_url" value="{{ ea.base_url }}" placeholder="https://dept.uat.example.gov.in" required></label>
+      <label>Environment <span class="muted">(Production = read-only checks)</span><select name="environment">{% for e2 in envs %}<option {{ 'selected' if ea.environment == e2 }}>{{ e2 }}</option>{% endfor %}</select></label>
+      <label>Login starts at<input type="text" name="login_start" value="{{ (ea.login or {}).start }}" placeholder="/ (the home page)"></label>
+      <label>Visitors not logged in are sent to<input type="text" name="login_url" value="{{ (ea.login or {}).url }}" placeholder="/login"></label>
+      <label>Only test paths matching<input type="text" name="include" value="{{ (ea.scope or {}).include|default([], true)|join(', ') }}" placeholder="all"></label>
+      <label>Never test paths matching<input type="text" name="exclude" value="{{ (ea.scope or {}).exclude|default([], true)|join(', ') }}" placeholder="/payment, /admin/delete"></label>
+      <label>Description<input type="text" name="description" value="{{ ea.description }}"></label>
+      <label>SRS documents for it<input type="text" name="srs" value="{{ (ea.srs or [])|join(', ') }}"></label>
+      <input type="hidden" name="auth" value="{{ ea.auth }}"><input type="hidden" name="module" value="{{ ea.module }}"><input type="hidden" name="priority" value="{{ ea.priority or apps|length + 1 }}">
+    </div>
+    <div class="row" style="margin-top:10px"><button class="ghost">{{ ui.icon('check', 'sm') }} {{ 'Save portal' if edit_app else 'Add a portal' }}</button>
+      {% if edit_app %}<a class="btn quiet" href="/p/{{ slug }}/testdata#apps">Cancel</a>{% endif %}</div>
+  </form>
+</details>
+
+<details class="card" id="model" style="margin-bottom:12px">
+  <summary><b>{{ ui.icon('spark', 'sm') }} Project model fallback</b> <span class="tiny muted">· {{ ('Gemini' if llm.provider == 'gemini' else 'Local (Ollama)') if llm.enabled else 'Off' }} · keys for all providers live on the <a href="/p/{{ slug }}/ai">AI providers</a> page</span></summary>
+  <form method="post" action="/p/{{ slug }}/testdata/model" style="margin-top:10px">
+    <div class="row">
+      <label class="check"><input type="radio" name="provider" value="off" {{ 'checked' if not llm.enabled }}> Off (rules only)</label>
+      <label class="check"><input type="radio" name="provider" value="ollama" {{ 'checked' if llm.enabled and llm.provider != 'gemini' }}> Local model (Ollama)</label>
+      <label class="check"><input type="radio" name="provider" value="gemini" {{ 'checked' if llm.enabled and llm.provider == 'gemini' }}> Google Gemini</label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label class="check"><input type="checkbox" name="redact" value="1" {{ 'checked' if llm.redact is not defined or llm.redact }}> Mask mobile numbers, emails and 12-digit numbers before sending</label>
+      <label class="check"><input type="checkbox" name="send_screenshots" value="1" {{ 'checked' if llm.send_screenshots }}> Send screenshots</label>
+      <label class="small">Gemini model <input type="text" name="gemini_model" value="{{ llm.gemini_model or 'auto' }}" style="width:160px"></label><button class="ghost">Save</button>
+    </div>
+  </form>
+  <form method="post" action="/p/{{ slug }}/testdata/secret" id="secrets" style="margin-top:12px">
+    <div class="row small" style="margin-bottom:6px"><b>Project keys</b> {% for k, v in secrets.items() %}<span class="mono">{{ k }}</span> <span class="muted mono">{{ v }}</span>{% endfor %}</div>
+    <div class="row"><input type="text" name="name" value="GOOGLE_API_KEY" aria-label="Key name" style="width:190px">
+      <input type="password" name="value" placeholder="paste the key" aria-label="Key value" autocomplete="off" style="flex:1;min-width:160px"><button class="ghost">Save key</button></div>
+  </form>
+</details>
+
+<details class="card flush" id="logins">
+  <summary style="padding:14px 18px"><b>{{ ui.icon('activity', 'sm') }} Login attempts</b> <span class="tiny muted">· every login AgentQA made; OTP timeouts and refusals are never silent</span></summary>
+  {% if not auth %}{{ ui.empty('lock', 'No logins yet.') }}{% else %}<div class="table-wrap"><table class="plain">
+    <thead><tr><th>Time</th><th>Role</th><th>How</th><th>Result</th><th>Detail</th><th>By</th></tr></thead><tbody>
+    {% for a in auth %}<tr><td class="nw small mono">{{ a.at[5:16]|replace('T', ' ') }}</td><td class="small">{{ a.role|replace('__peer', ' (2nd)') }}</td>
+      <td class="small">{{ methods.get(a.method, a.method) }}{% if a.method != 'password' %}<div class="tiny muted">OTP: {{ a.otp_source }}</div>{% endif %}</td>
+      <td><span class="pill {{ 'ok' if a.result == 'ok' else 'bad' }}">{{ {'ok': 'Logged in', 'otp_timeout': 'No OTP given in time', 'otp_refused': 'OTP refused', 'refused': 'Refused by the portal', 'not_found': 'Way in not found', 'failed': 'Failed', 'error': 'Error'}.get(a.result, a.result) }}</span></td>
+      <td class="tiny wrap" style="max-width:420px">{{ a.detail }}</td><td class="small">{{ a.agent }}{% if a.seconds %} · {{ a.seconds|round|int }} s{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</details>
+{% endblock %}
+{% block scripts %}<script>
+(() => {
+  const form = document.getElementById('account'); if (!form) return;
+  const method = document.getElementById('td-method'), otp = document.getElementById('td-otp');
+  const show = () => {
+    const m = method.value, o = otp ? otp.value : '';
+    form.querySelectorAll('[data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(m); });
+    form.querySelectorAll('[data-otp]').forEach(el => { el.hidden = el.dataset.otp !== o; });
+  };
+  method.addEventListener('change', show); if (otp) otp.addEventListener('change', show); show();
+  if (location.hash === '#account') form.scrollIntoView({behavior: 'smooth', block: 'start'});
+})();
+</script>{% endblock %}

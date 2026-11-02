@@ -1,0 +1,122 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Execution - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Execution</span>{% endblock %}
+{% macro bar(m) %}<span class="bar" aria-hidden="true"><i class="p" style="width:{{ (m.Passed / m.n * 100)|round }}%"></i><i class="f" style="width:{{ (m.Failed / m.n * 100)|round }}%"></i><i class="b" style="width:{{ (m.Blocked / m.n * 100)|round }}%"></i></span>{% endmacro %}
+{% macro counts(m) %}<span class="tiny muted">{{ m.Passed }} passed · {{ m.Failed }} failed{% if m.Blocked %} · {{ m.Blocked }} blocked{% endif %}{% if m['Not Run'] %} · {{ m['Not Run'] }} not run{% endif %}{% if m['Pending approval'] %} · {{ m['Pending approval'] }} pending{% endif %}</span>{% endmacro %}
+{% block body %}
+{% set k = sm.kpi %}
+<div class="page-head">
+  <div><h1>Execution</h1>
+    <p class="sub">Every test case with its last result since the plan was designed{% if sm.last_run %} (last run {{ sm.last_run.id }}, {{ sm.last_run.status }}){% endif %}.
+      Passed means its expected result was checked; Blocked and Not Run are counted on their own.</p></div>
+  <div class="actions">
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="resume"><input type="hidden" name="watch" value="1">
+      <button class="ghost" {{ 'disabled' if running or not pipeline_id }}>{{ ui.icon('refresh', 'sm') }} Resume pipeline</button></form>
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="failed"><input type="hidden" name="watch" value="1">
+      <button class="ghost" {{ 'disabled' if running or not (k.failed or k.blocked) }}>{{ ui.icon('refresh', 'sm') }} Rerun failed and blocked</button></form>
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="all"><input type="hidden" name="watch" value="1">
+      <button {{ 'disabled' if running or not k.cases }}>{{ ui.icon('play', 'sm') }} Run all approved</button></form>
+  </div>
+</div>
+
+<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,112px),1fr));margin-bottom:16px">
+  <div class="kpi"><div class="label">Requirements</div><div class="value">{{ k.requirements }}</div><div class="hint">{{ k.requirements_mapped }} with a test</div></div>
+  <div class="kpi"><div class="label">Test cases</div><div class="value">{{ k.cases }}</div><div class="hint">{{ k.mapped }} traced</div></div>
+  <div class="kpi"><div class="label">Pending approval</div><div class="value">{{ k.pending }}</div></div>
+  <div class="kpi"><div class="label">Executed</div><div class="value">{{ k.executed }}</div></div>
+  <div class="kpi"><div class="label">Passed</div><div class="value" style="color:var(--ok)">{{ k.passed }}</div></div>
+  <div class="kpi"><div class="label">Failed</div><div class="value" style="color:var(--bad)">{{ k.failed }}</div></div>
+  <div class="kpi"><div class="label">Blocked</div><div class="value" style="color:var(--warn)">{{ k.blocked }}</div></div>
+  <div class="kpi"><div class="label">Not run</div><div class="value">{{ k.not_run }}</div></div>
+  <div class="kpi"><div class="label">Open defects</div><div class="value" style="color:var(--bad)">{{ k.defects }}</div></div>
+</div>
+
+<div class="grid g2" style="margin-bottom:16px">
+  <div class="card"><div class="card-head"><h3>{{ ui.icon('layers') }} By module</h3><span class="hint">select to filter, or run one module</span></div>
+    <div class="modgrid">{% for name, m in sm.by_module.items() %}
+      <a class="mod {{ 'on' if fmodule == name }}" href="?module={{ name|urlencode }}"><b>{{ name }}</b><span class="num">{{ m.n }}</span>{{ bar(m) }}{{ counts(m) }}</a>{% endfor %}</div></div>
+  <div class="stack" style="gap:16px">
+    <div class="card"><div class="card-head"><h3>{{ ui.icon('link') }} By application</h3></div>
+      {% for name, m in sm.by_app.items() %}<div class="mod" style="margin-bottom:8px"><b>{{ name }}</b><span class="num">{{ m.n }}</span>{{ bar(m) }}{{ counts(m) }}</div>{% endfor %}</div>
+    <div class="card"><div class="card-head"><h3>{{ ui.icon('users') }} By role</h3></div>
+      {% for name, m in sm.by_role.items() %}<div class="mod" style="margin-bottom:8px"><b>{{ name }}</b><span class="num">{{ m.n }}</span>{{ bar(m) }}{{ counts(m) }}</div>{% endfor %}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('play') }} Run a part</h3><span class="hint">regenerates the tests, runs the chosen approved cases, then drafts the defects</span></div>
+  <div class="row" style="gap:10px">
+    {% for scope, label, options in [('module', 'Module', sm.by_module.keys()), ('role', 'Role', sm.by_role.keys()), ('app', 'Application', sm.by_app.keys()), ('type', 'Test type', sm.by_type.keys())] %}
+    <form method="post" action="/p/{{ slug }}/execute" class="row" style="gap:6px"><input type="hidden" name="scope" value="{{ scope }}"><input type="hidden" name="watch" value="1">
+      <select name="value" aria-label="{{ label }} to run" style="width:auto">{% for o in options %}<option>{{ o }}</option>{% endfor %}</select>
+      <button class="ghost" {{ 'disabled' if running }}>Run {{ label|lower }}</button></form>{% endfor %}
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="workflows"><input type="hidden" name="watch" value="1"><button class="ghost" {{ 'disabled' if running or not sm.workflows }}>Run workflows</button></form>
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="left"><input type="hidden" name="watch" value="1"><button class="ghost" {{ 'disabled' if running or not k.not_run }}>Run what has not run</button></form>
+    <form method="post" action="/p/{{ slug }}/execute"><input type="hidden" name="scope" value="regression"><input type="hidden" name="watch" value="1"><button class="ghost" {{ 'disabled' if running }}>Full regression</button></form>
+  </div>
+</div>
+
+{% if sm.workflows %}
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('activity') }} Workflows</h3><span class="hint">multi-user journeys across roles and applications</span></div>
+  {% for w in sm.workflows %}<div class="row small" style="justify-content:space-between;border-top:1px solid var(--line-2);padding:8px 0">
+    <span class="wrap" style="flex:1"><b class="num">{{ w.id }}</b> {{ w.title }}<br><span class="tiny muted">{{ w.scenario }} · {{ w.apps|join(' → ') }}{% if w.steps %} · {{ w.steps }} step(s), {{ w.verified }} check(s) passed{% endif %}{% if w.last %} · last: {{ w.last }}{% endif %}</span></span>
+    <span class="pill {{ {'Passed': 'ok', 'Failed': 'bad', 'Blocked': 'warn'}.get(w.status, '') }}">{{ w.status }}</span></div>{% endfor %}
+</section>{% endif %}
+
+<details class="card" style="margin-bottom:16px">
+  <summary><b>{{ ui.icon('scale', 'sm') }} Coverage by requirement</b> <span class="tiny muted">{{ k.requirements_mapped }} of {{ k.requirements }} have a test</span></summary>
+  <p class="small" style="margin:10px 0 0"><a href="/p/{{ slug }}/rtm.xlsx">{{ ui.icon('download', 'sm') }} Traceability matrix (Excel)</a>: source document → requirement → use case → case → execution → result → defect.</p>
+  <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Requirement</th><th>Cases</th><th>Passed</th><th>Failed</th><th>Blocked</th><th>Not run</th><th>Verdict</th></tr></thead><tbody>
+  {% for rid, t in sm.by_req.items() %}<tr><td class="wrap"><a href="/p/{{ slug }}/srs#{{ rid }}"><b class="num">{{ rid }}</b></a> {{ t.title }}</td><td class="num">{{ t.n }}</td><td class="num">{{ t.Passed }}</td><td class="num">{{ t.Failed }}</td><td class="num">{{ t.Blocked }}</td><td class="num">{{ t['Not Run'] + t['Pending approval'] }}</td>
+    <td><span class="pill {{ {'Passing': 'ok', 'Failing': 'bad', 'Not complete': 'warn'}.get(t.verdict, '') }}">{{ t.verdict }}</span>{% if not t.n %} <span class="tiny muted">{{ t.disposition|replace('_', ' ') }}</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+</details>
+
+{% if sm.skipped.production or sm.skipped.no_case %}
+<div class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-head"><h3>{{ ui.icon('alert') }} Left out, with the reason</h3></div>
+  <ul class="reasons" style="margin:0">{% for x in sm.skipped.no_case %}<li><b>{{ x.req_id }}</b>: no test case: {{ x.why }}</li>{% endfor %}
+    {% if sm.skipped.production %}<li>{{ sm.skipped.production|length }} case(s) that would change data on a production application: {% for x in sm.skipped.production[:6] %}{{ x.title }}{{ '; ' if not loop.last }}{% endfor %}{{ '…' if sm.skipped.production|length > 6 }}</li>{% endif %}</ul></div>{% endif %}
+
+<section class="card flush" style="margin-bottom:16px">
+  <div class="card-head" style="padding:14px 16px 0"><h3>{{ ui.icon('bug') }} Defect records</h3><a class="btn quiet" href="/p/{{ slug }}/defects">Defects page</a></div>
+  {% if sm.defects %}<div class="table-wrap"><table><thead><tr><th>Defect</th><th>Requirement</th><th>Test case</th><th>Application URL</th><th>Found</th><th>Logs</th></tr></thead><tbody>
+  {% for d in sm.defects %}<tr><td class="wrap"><a href="/p/{{ slug }}/defects#{{ d.id }}"><b class="num">{{ d.id }}</b></a> {{ d.title }} <span class="pill {{ 'bad' if d.severity in ('Critical', 'High') else 'warn' }}">{{ d.severity }}</span></td>
+    <td class="small">{{ (d.req_ids or [])|join(', ') or '-' }}</td><td class="small">{{ (d.case_ids or [])|join(', ') or 'exploratory' }}</td>
+    <td class="small wrap">{{ d.url }}</td><td class="small num">{{ (d.created_at or '')[:16]|replace('T', ' ') }}</td>
+    <td class="small">{% for e in d.evidence or [] %}{% if e.kind in ('log', 'screenshot') and e.path %}{% set rel = e.path.split('/runs/')[-1] %}<a href="/p/{{ slug }}/files/runs/{{ rel }}">{{ 'log' if e.kind == 'log' else 'shot' }}</a>{{ ' ' }}{% endif %}{% endfor %}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<p class="small muted" style="padding:0 16px 14px">No open defects.</p>{% endif %}
+</section>
+
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('compass') }} Agents and checkpoints</h3><span class="hint">{{ pipeline_id or 'no pipeline run yet' }}</span></div>
+  {% if stages or singles %}<div class="table-wrap"><table><thead><tr><th>Stage</th><th>Status</th><th>Started</th><th>Finished</th><th>Hand-over check</th></tr></thead><tbody>
+  {% for st in stages + singles %}{% set c = (st.outputs or {}).contract %}<tr><td><b>{{ st.stage }}</b>{% if st.pipeline == 'single' %} <span class="tiny muted">(run alone)</span>{% endif %}</td>
+    <td><span class="pill {{ {'done': 'ok', 'failed': 'bad', 'running': 'info'}.get(st.status, 'warn') }}">{{ st.status }}</span>{% if st.error %} <span class="tiny muted">{{ st.error[:120] }}</span>{% endif %}</td>
+    <td class="small num">{{ (st.started_at or '')[11:19] }}</td><td class="small num">{{ (st.finished_at or '')[11:19] }}</td>
+    <td class="small wrap">{% if c %}{% if c.ok %}<span class="pill ok">{{ c.checked }} checked</span>{% else %}<span class="pill warn">{{ c.violation_count }} issue(s)</span> <span class="tiny muted">{{ c.violations[:2]|join('; ') }}</span>{% endif %}{% else %}-{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+  <details style="margin-top:10px"><summary class="small"><b>The {{ agents|length }} agents, what each does and what it waits for</b></summary>
+    <div class="table-wrap"><table><thead><tr><th>Agent</th><th>Stage</th><th>Does</th><th>Writes</th><th>After</th></tr></thead><tbody>
+    {% for a in agents %}<tr><td><b>{{ a.name }}</b><div class="tiny muted">{{ a.module }}</div></td><td class="small">{{ a.stage }}</td><td class="small wrap">{{ a.does }}</td><td class="small">{{ a.writes|join(', ') }}</td><td class="small">{{ a.after|join(', ') or '-' }}</td></tr>{% endfor %}
+    </tbody></table></div><p class="tiny muted">{{ may_not_change }} See the <a href="/p/{{ slug }}/changes">change log</a>.</p></details>
+</section>
+
+<form method="post" action="/p/{{ slug }}/execute" id="selform"><input type="hidden" name="scope" value="selected"><input type="hidden" name="watch" value="1">
+<div class="row" style="justify-content:space-between;margin-bottom:10px">
+  <div class="row" style="gap:6px"><a class="chip {{ 'on' if not fstatus }}" href="?{% if fmodule %}module={{ fmodule|urlencode }}{% endif %}">All <span class="count">{{ sm.rows|length }}</span></a>
+    {% for st in statuses %}<a class="chip {{ 'on' if fstatus == st }}" href="?status={{ st|urlencode }}{% if fmodule %}&module={{ fmodule|urlencode }}{% endif %}">{{ st }}</a>{% endfor %}</div>
+  <button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Run selected</button>
+</div>
+<div class="card flush"><div class="table-wrap"><table><thead><tr><th><span class="sr-only">Select</span></th><th>Case</th><th>Module</th><th>Type</th><th>Priority</th><th>Role</th><th>Requirement</th><th>Status</th></tr></thead><tbody>
+{% for r in shown %}<tr><td><input type="checkbox" name="ids" value="{{ r.id }}" aria-label="Select {{ r.id }}" {{ 'disabled' if r.approved != 'approved' }}></td>
+  <td class="wrap"><b class="num">{{ r.id }}</b> {{ r.title }}{% if r.message and r.status != 'Passed' %}<div class="tiny muted">{{ r.message[:160] }}</div>{% endif %}</td>
+  <td class="small">{{ r.module }}</td><td class="small">{{ r.test_type }}</td>
+  <td><span class="pill {{ {'Critical': 'bad', 'High': 'warn'}.get(r.priority, '') }}">{{ r.priority }}</span></td><td class="small">{{ r.role }}</td>
+  <td class="small">{{ r.req_ids|join(', ') or '-' }}</td>
+  <td><span class="pill {{ {'Passed': 'ok', 'Failed': 'bad', 'Blocked': 'warn'}.get(r.status, '') }}">{{ r.status }}</span>{% if r.defect %} <a class="tiny" href="/p/{{ slug }}/defects#{{ r.defect }}">{{ r.defect }}</a>{% endif %}</td></tr>
+{% else %}<tr><td colspan="8">{{ ui.empty('clipboard', 'No cases match this filter.') }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% if shown_n > shown|length %}<p class="tiny muted">Showing {{ shown|length }} of {{ shown_n }}; filter to see the rest.</p>{% endif %}
+</form>
+{% endblock %}

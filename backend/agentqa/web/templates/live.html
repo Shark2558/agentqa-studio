@@ -1,0 +1,78 @@
+{% extends "base.html" %}{% block title %}Live View - {{ project.name }}{% endblock %}
+{% block body %}
+<link rel="stylesheet" href="/static/live.css">
+<div class="lv-top">
+  <div>
+    <h1>Live View</h1>
+    <p class="sub" style="margin:0">Watch every agent work step by step, or replay any earlier run.</p>
+  </div>
+  <div class="lv-controls">
+    <select id="session" aria-label="Session">
+      {% for s in sessions %}<option value="{{ s.id }}" {{ 'selected' if s.id == current }}>{{ s.label }} · {{ s.when }}{{ ' · running' if s.running }}</option>{% endfor %}
+      {% if not sessions %}<option value="">No runs recorded yet</option>{% endif %}
+    </select>
+    <span id="status" class="pill">idle</span>
+  </div>
+</div>
+
+<div class="lv-newrun" id="newrun" hidden></div>
+<div class="lv-player card">
+  <button id="btn-restart" class="ghost" title="Replay from the start">&#9198;</button>
+  <button id="btn-play" title="Play / pause">&#10074;&#10074;</button>
+  <button id="btn-step" class="ghost" title="Next step">&#9197;</button>
+  <label class="small">Speed <select id="speed"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="4">4x</option><option value="10">10x</option><option value="0">instant</option></select></label>
+  <input id="scrub" type="range" min="0" max="0" value="0" aria-label="Timeline">
+  <span id="pos" class="small muted">0 / 0</span>
+  <button id="btn-live" class="ghost" title="Jump to the newest step">Go live</button>
+</div>
+
+<div class="lv-pipe" id="pipe"></div>
+<div class="lv-now" id="now"><span class="muted">Waiting for the first step...</span></div>
+
+<div class="lv-grid">
+  <section class="lv-stage card">
+    <div class="lv-tabs" id="tabs">
+      <button data-tab="doc">Document</button>
+      <button data-tab="screens">Screens</button>
+      <button data-tab="rules">Rules</button>
+      <button data-tab="tests">Tests</button>
+      <button data-tab="code">Code</button>
+      <button data-tab="findings">Findings</button>
+      <label class="small lv-auto"><input type="checkbox" id="auto" checked> follow the active agent</label>
+    </div>
+    <div class="lv-panel" id="p-doc" tabindex="0" role="region" aria-label="SRS document"><div id="doc" class="lv-doc"></div></div>
+    <div class="lv-panel" id="p-screens" tabindex="0" role="region" aria-label="Browser screens">
+      <div id="lanes" class="lv-lanes"></div>
+      <h3 class="lv-h">Site map <span class="muted small">screens discovered, by click depth; dots show which roles reached each one</span></h3>
+      <div class="lv-legend" id="legend"></div>
+      <div class="lv-mapwrap"><svg id="map" role="img" aria-label="Site map of discovered screens"></svg></div>
+    </div>
+    <div class="lv-panel" id="p-rules" tabindex="0" role="region" aria-label="Rules"><div id="rulecounts" class="lv-counts"></div><div id="rules" class="lv-rules"></div></div>
+    <div class="lv-panel" id="p-tests" tabindex="0" role="region" aria-label="Test tiles"><div id="testcounts" class="lv-counts"></div><div id="wall" class="lv-wall"></div></div>
+    <div class="lv-panel" id="p-code" tabindex="0" role="region" aria-label="Generated code"><div id="files" class="lv-files"></div><pre id="codeprev" class="lv-code" tabindex="0" role="region" aria-label="Generated test code"></pre></div>
+    <div class="lv-panel" id="p-findings" tabindex="0" role="region" aria-label="Findings"><div id="findings"></div></div>
+  </section>
+  <aside class="lv-feed card">
+    <div class="lv-feedhead">
+      <b>Activity</b>
+      <select id="ffilter" aria-label="Filter by agent"><option value="">all agents</option></select>
+      <label class="small"><input type="checkbox" id="fissues"> problems only</label>
+    </div>
+    <div id="feed" class="lv-feedlist" tabindex="0" role="region" aria-label="Activity feed"></div>
+  </aside>
+</div>
+
+<div id="lightbox" class="lv-lightbox" hidden>
+  <div class="lv-lbinner">
+    <div class="lv-lbbar"><span id="lbtitle"></span><button class="ghost" id="lbclose">Close</button></div>
+    <div class="lv-shotwrap" id="lbwrap"><img id="lbimg" alt="Screenshot of the step"><div class="lv-box" id="lbbox"></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.LIVE = {slug: {{ slug|tojson }}, session: {{ current|tojson }}, roles: {{ roles|tojson }},
+               explicit: {{ 'true' if request.query_params.get('s') else 'false' }}};
+</script>
+<script src="/static/live.js"></script>
+{% endblock %}

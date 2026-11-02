@@ -1,0 +1,70 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Imported tests - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Imported tests</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>Imported tests</h1>
+    <p class="sub">Bring your existing manual test cases from Excel or CSV. Each step is matched to a real screen, field and role from the App map;
+      steps it cannot match are flagged for review. Approved cases join the test plan the next time the Designer runs.</p>
+  </div>
+  <div class="actions">
+    {% if rows|selectattr('status', 'equalto', 'approved')|list %}<form method="post" action="/p/{{ slug }}/run/design"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('layers', 'sm') }} Re-plan with approved cases</button></form>{% endif %}
+  </div>
+</div>
+{% if msg %}<div class="flash {{ 'bad' if msg.startswith('Could not') }}">{{ msg }}</div>{% endif %}
+
+<div class="grid g2" style="margin-bottom:18px">
+  <form class="card" method="post" action="/p/{{ slug }}/imports" enctype="multipart/form-data">
+    <div class="card-head"><h3>{{ ui.icon('upload') }} Upload a test case sheet</h3><span class="hint">.xlsx or .csv</span></div>
+    <p class="small muted" style="margin-top:0">Columns are found by their headings: Test Case ID, Title, Role or Precondition, Steps, Test Data, Expected Result.
+      A case may span several rows.</p>
+    <div class="row"><input type="file" name="file" accept=".xlsx,.xlsm,.csv" required aria-label="Test case sheet"><button>{{ ui.icon('upload', 'sm') }} Import</button></div>
+  </form>
+  <div class="card">
+    <div class="card-head"><h3>{{ ui.icon('spark') }} How conversion works</h3></div>
+    <ul class="reasons" style="margin:0">
+      <li>"Login as Clerk" becomes a saved Clerk session, never a typed password.</li>
+      <li>"Open New Application" is matched to the screen with that title or link.</li>
+      <li>"Enter Mobile = 98765" fills the field labelled Mobile; "valid details" uses safe valid data.</li>
+      <li>"Error is shown" or "Status changes to Approved" become checks.</li>
+    </ul>
+    {% if sample %}<form method="post" action="/p/{{ slug }}/imports" style="margin-top:12px"><input type="hidden" name="sample" value="1"><button class="ghost">{{ ui.icon('download', 'sm') }} Import the sample sheet</button></form>{% endif %}
+  </div>
+</div>
+
+{% if rows %}
+<form method="post" action="/p/{{ slug }}/imports/action">
+<div class="row" style="margin-bottom:12px">
+  <button name="action" value="approve_ready">{{ ui.icon('check', 'sm') }} Approve all fully automated</button>
+  <button class="ghost" name="action" value="approved">Approve selected</button>
+  <button class="danger" name="action" value="rejected">Reject selected</button>
+  <span class="small muted">{{ rows|selectattr('status', 'equalto', 'approved')|list|length }} approved · {{ rows|selectattr('status', 'equalto', 'review')|list|length }} need review</span>
+</div>
+<div class="stack">
+{% for m in rows %}{% set conv = m.converted or {} %}
+  <section class="card">
+    <div class="card-head">
+      <div class="row" style="gap:10px"><input type="checkbox" name="ids" value="{{ m.id }}" aria-label="Select {{ m.id }}">
+        <div><b>{{ m.id }}</b> {{ m.title }}<div class="tiny muted">{{ m.source_file }} · runs as {{ m.role or 'anonymous' }}{% if conv.req_ids %} · traces to {{ conv.req_ids|join(', ') }}{% endif %}</div></div></div>
+      <div class="row">
+        <div class="meter {{ 'ok' if (m.coverage or 0) >= 1 else 'warn' }}" style="width:110px" title="{{ ((m.coverage or 0) * 100)|round|int }}% of steps automated"><span style="width:{{ ((m.coverage or 0) * 100)|round }}%"></span></div>
+        <span class="small num">{{ ((m.coverage or 0) * 100)|round|int }}%</span>
+        <span class="pill {{ m.status }}">{{ m.status }}</span>
+      </div>
+    </div>
+    <details {{ 'open' if m.status == 'review' }}><summary>Steps as understood ({{ (conv.steps or [])|length }})</summary>
+      <ol class="steps">{% for st in conv.steps or [] %}
+        <li class="{{ 'ok' if st.ok else 'no' }}">{{ ui.icon('check' if st.ok else 'alert') }}
+          <div>{{ st.text }}{% if st.ok %}<div class="act">{{ st.action }}{% if st.role %} {{ st.role }}{% endif %}{% if st.path %} {{ st.path }}{% endif %}{% if st.label or st.field %} [{{ st.label or st.field }}]{% endif %}{% if st.target %} "{{ st.target }}"{% endif %}{% if st.value %} = {{ st.value }}{% endif %}{% if st.action == 'skip' and st.why %} ({{ st.why }}){% endif %}</div>
+          {% else %}<div class="why">Needs a person: {{ st.why or 'no matching screen, field or check' }}</div>{% endif %}</div></li>
+      {% endfor %}</ol>
+    </details>
+  </section>
+{% endfor %}
+</div>
+</form>
+{% else %}
+<div class="card">{{ ui.empty('upload', 'No imported cases yet. Upload your manual test sheet or try the sample.') }}</div>
+{% endif %}
+{% endblock %}

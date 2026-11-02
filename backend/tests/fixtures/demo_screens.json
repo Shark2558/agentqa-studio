@@ -1,0 +1,2088 @@
+[
+ {
+  "role": "citizen",
+  "path": "/",
+  "url": "{base}/",
+  "status": 200,
+  "title": "Home - Demo Certificate Portal",
+  "headings": [
+   "Certificate Services"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/search",
+    "method": "get",
+    "submit_text": "Search",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "q",
+      "id": "",
+      "label": "",
+      "placeholder": "Search services",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Search"
+  ],
+  "a11y": {
+   "img_no_alt": [
+    "/static-logo.svg"
+   ],
+   "inputs_no_label": [
+    "q"
+   ],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 51,
+  "pattern": "/",
+  "server_error": 0,
+  "final_url": "{base}/"
+ },
+ {
+  "role": "citizen",
+  "path": "/dashboard",
+  "url": "{base}/dashboard",
+  "status": 200,
+  "title": "Dashboard",
+  "headings": [
+   "Welcome, Asha Citizen"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 38,
+  "pattern": "/dashboard",
+  "server_error": 0,
+  "final_url": "{base}/dashboard"
+ },
+ {
+  "role": "citizen",
+  "path": "/apply",
+  "url": "{base}/apply",
+  "status": 200,
+  "title": "Apply for Certificate",
+  "headings": [
+   "Apply for Certificate"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "apply-form",
+    "action": "/apply",
+    "method": "post",
+    "submit_text": "Submit Application",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "applicant_name",
+      "id": "applicant_name",
+      "label": "Applicant Name",
+      "placeholder": "",
+      "required": true,
+      "maxlength": "100",
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "tel",
+      "widget": null,
+      "ui": null,
+      "name": "mobile",
+      "id": "mobile",
+      "label": "Mobile Number",
+      "placeholder": "",
+      "required": true,
+      "maxlength": "10",
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "email",
+      "widget": null,
+      "ui": null,
+      "name": "email",
+      "id": "email",
+      "label": "Email Address",
+      "placeholder": "",
+      "required": false,
+      "maxlength": "100",
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "pincode",
+      "id": "pincode",
+      "label": "PIN Code",
+      "placeholder": "",
+      "required": true,
+      "maxlength": "6",
+      "minlength": null,
+      "pattern": "[0-9]{6}",
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "",
+      "id": "dob_display",
+      "label": "Date of Birth",
+      "placeholder": "DD/MM/YYYY",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "date",
+      "widget": "datepicker",
+      "ui": "woa63bdb",
+      "name": "dob",
+      "id": "dob",
+      "label": "Date of Birth",
+      "placeholder": "DD/MM/YYYY",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "select",
+      "type": "select",
+      "widget": null,
+      "ui": null,
+      "name": "cert_type",
+      "id": "cert_type",
+      "label": "Certificate Type",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": [
+       {
+        "value": "",
+        "text": "-- Select --"
+       },
+       {
+        "value": "income",
+        "text": "Income"
+       },
+       {
+        "value": "residence",
+        "text": "Residence"
+       },
+       {
+        "value": "nativity",
+        "text": "Nativity"
+       }
+      ]
+     },
+     {
+      "tag": "select",
+      "type": "select",
+      "widget": "listbox",
+      "ui": "wb7uxhbe",
+      "name": "docs",
+      "id": "docs",
+      "label": "Documents Attached",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": true,
+      "options": [
+       {
+        "value": "aadhaar",
+        "text": "Aadhaar"
+       },
+       {
+        "value": "ration",
+        "text": "Ration Card"
+       },
+       {
+        "value": "voter",
+        "text": "Voter ID"
+       },
+       {
+        "value": "dl",
+        "text": "Driving Licence"
+       }
+      ]
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "widget": "richtext",
+      "ui": "w66dtwd2",
+      "name": "purpose",
+      "id": "purpose",
+      "label": "Purpose of Certificate",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "textarea",
+      "type": "textarea",
+      "widget": null,
+      "ui": null,
+      "name": "address",
+      "id": "address",
+      "label": "Address",
+      "placeholder": "",
+      "required": true,
+      "maxlength": "200",
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "file",
+      "widget": null,
+      "ui": null,
+      "name": "document",
+      "id": "document",
+      "label": "Supporting Document (optional)",
+      "placeholder": "",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": ".pdf,.jpg,.jpeg,.png",
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "checkbox",
+      "widget": null,
+      "ui": null,
+      "name": "declaration",
+      "id": "",
+      "label": "I declare the information is true",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "B",
+   "I",
+   "Submit Application"
+  ],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 40,
+  "pattern": "/apply",
+  "server_error": 0,
+  "final_url": "{base}/apply"
+ },
+ {
+  "role": "citizen",
+  "path": "/my-applications",
+  "url": "{base}/my-applications",
+  "status": 200,
+  "title": "My Applications",
+  "headings": [
+   "My Applications"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/applications/1001",
+    "text": "View 1001"
+   },
+   {
+    "href": "{base}/applications/1002",
+    "text": "View 1002"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "pageerror: appCount is not defined"
+  ],
+  "load_ms": 45,
+  "pattern": "/my-applications",
+  "server_error": 0,
+  "final_url": "{base}/my-applications"
+ },
+ {
+  "role": "citizen",
+  "path": "/help",
+  "url": "{base}/help",
+  "status": 200,
+  "title": "Help",
+  "headings": [
+   "Help"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/help/faq",
+    "text": "frequently asked questions"
+   },
+   {
+    "href": "{base}/help/contact",
+    "text": "contact the helpdesk"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 36,
+  "pattern": "/help",
+  "server_error": 0,
+  "final_url": "{base}/help"
+ },
+ {
+  "role": "citizen",
+  "path": "/applications/1001",
+  "url": "{base}/applications/1001",
+  "status": 200,
+  "title": "Application 1001",
+  "headings": [
+   "Application 1001"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "Back to My Applications"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 29,
+  "pattern": "/applications/{n}",
+  "server_error": 0,
+  "final_url": "{base}/applications/1001"
+ },
+ {
+  "role": "citizen",
+  "path": "/applications/1002",
+  "url": "{base}/applications/1002",
+  "status": 200,
+  "title": "Application 1002",
+  "headings": [
+   "Application 1002"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "Back to My Applications"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 53,
+  "pattern": "/applications/{n}",
+  "server_error": 0,
+  "final_url": "{base}/applications/1002"
+ },
+ {
+  "role": "citizen",
+  "path": "/help/faq",
+  "url": "{base}/help/faq",
+  "status": 404,
+  "title": "Not found",
+  "headings": [
+   "Page not found"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "load_ms": 29,
+  "pattern": "/help/faq",
+  "server_error": 0,
+  "final_url": "{base}/help/faq"
+ },
+ {
+  "role": "citizen",
+  "path": "/help/contact",
+  "url": "{base}/help/contact",
+  "status": 200,
+  "title": "Contact Helpdesk",
+  "headings": [
+   "Contact Helpdesk"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/apply",
+    "text": "Apply for Certificate"
+   },
+   {
+    "href": "{base}/my-applications",
+    "text": "My Applications"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 26,
+  "pattern": "/help/contact",
+  "server_error": 0,
+  "final_url": "{base}/help/contact"
+ },
+ {
+  "role": "clerk",
+  "path": "/",
+  "url": "{base}/",
+  "status": 200,
+  "title": "Home - Demo Certificate Portal",
+  "headings": [
+   "Certificate Services"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/search",
+    "method": "get",
+    "submit_text": "Search",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "q",
+      "id": "",
+      "label": "",
+      "placeholder": "Search services",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Search"
+  ],
+  "a11y": {
+   "img_no_alt": [
+    "/static-logo.svg"
+   ],
+   "inputs_no_label": [
+    "q"
+   ],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 48,
+  "pattern": "/",
+  "server_error": 0,
+  "final_url": "{base}/"
+ },
+ {
+  "role": "clerk",
+  "path": "/dashboard",
+  "url": "{base}/dashboard",
+  "status": 200,
+  "title": "Dashboard",
+  "headings": [
+   "Welcome, Ravi Clerk"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 40,
+  "pattern": "/dashboard",
+  "server_error": 0,
+  "final_url": "{base}/dashboard"
+ },
+ {
+  "role": "clerk",
+  "path": "/clerk/queue",
+  "url": "{base}/clerk/queue",
+  "status": 200,
+  "title": "Verification Queue",
+  "headings": [
+   "Verification Queue"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/clerk/verify/1001",
+    "method": "post",
+    "submit_text": "Verify 1001",
+    "fields": []
+   },
+   {
+    "index": 1,
+    "id": "",
+    "action": "/clerk/verify/1003",
+    "method": "post",
+    "submit_text": "Verify 1003",
+    "fields": []
+   }
+  ],
+  "buttons": [
+   "Verify 1001",
+   "Verify 1003"
+  ],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 38,
+  "pattern": "/clerk/queue",
+  "server_error": 0,
+  "final_url": "{base}/clerk/queue"
+ },
+ {
+  "role": "clerk",
+  "path": "/help",
+  "url": "{base}/help",
+  "status": 200,
+  "title": "Help",
+  "headings": [
+   "Help"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/help/faq",
+    "text": "frequently asked questions"
+   },
+   {
+    "href": "{base}/help/contact",
+    "text": "contact the helpdesk"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 28,
+  "pattern": "/help",
+  "server_error": 0,
+  "final_url": "{base}/help"
+ },
+ {
+  "role": "clerk",
+  "path": "/help/faq",
+  "url": "{base}/help/faq",
+  "status": 404,
+  "title": "Not found",
+  "headings": [
+   "Page not found"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "load_ms": 38,
+  "pattern": "/help/faq",
+  "server_error": 0,
+  "final_url": "{base}/help/faq"
+ },
+ {
+  "role": "clerk",
+  "path": "/help/contact",
+  "url": "{base}/help/contact",
+  "status": 200,
+  "title": "Contact Helpdesk",
+  "headings": [
+   "Contact Helpdesk"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/clerk/queue",
+    "text": "Verification Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 35,
+  "pattern": "/help/contact",
+  "server_error": 0,
+  "final_url": "{base}/help/contact"
+ },
+ {
+  "role": "officer",
+  "path": "/",
+  "url": "{base}/",
+  "status": 200,
+  "title": "Home - Demo Certificate Portal",
+  "headings": [
+   "Certificate Services"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/search",
+    "method": "get",
+    "submit_text": "Search",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "q",
+      "id": "",
+      "label": "",
+      "placeholder": "Search services",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Search"
+  ],
+  "a11y": {
+   "img_no_alt": [
+    "/static-logo.svg"
+   ],
+   "inputs_no_label": [
+    "q"
+   ],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 34,
+  "pattern": "/",
+  "server_error": 0,
+  "final_url": "{base}/"
+ },
+ {
+  "role": "officer",
+  "path": "/dashboard",
+  "url": "{base}/dashboard",
+  "status": 200,
+  "title": "Dashboard",
+  "headings": [
+   "Welcome, Meera Officer"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 30,
+  "pattern": "/dashboard",
+  "server_error": 0,
+  "final_url": "{base}/dashboard"
+ },
+ {
+  "role": "officer",
+  "path": "/officer/queue",
+  "url": "{base}/officer/queue",
+  "status": 200,
+  "title": "Approval Queue",
+  "headings": [
+   "Approval Queue"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 26,
+  "pattern": "/officer/queue",
+  "server_error": 0,
+  "final_url": "{base}/officer/queue"
+ },
+ {
+  "role": "officer",
+  "path": "/help",
+  "url": "{base}/help",
+  "status": 200,
+  "title": "Help",
+  "headings": [
+   "Help"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/help/faq",
+    "text": "frequently asked questions"
+   },
+   {
+    "href": "{base}/help/contact",
+    "text": "contact the helpdesk"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 26,
+  "pattern": "/help",
+  "server_error": 0,
+  "final_url": "{base}/help"
+ },
+ {
+  "role": "officer",
+  "path": "/help/faq",
+  "url": "{base}/help/faq",
+  "status": 404,
+  "title": "Not found",
+  "headings": [
+   "Page not found"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "load_ms": 36,
+  "pattern": "/help/faq",
+  "server_error": 0,
+  "final_url": "{base}/help/faq"
+ },
+ {
+  "role": "officer",
+  "path": "/help/contact",
+  "url": "{base}/help/contact",
+  "status": 200,
+  "title": "Contact Helpdesk",
+  "headings": [
+   "Contact Helpdesk"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/officer/queue",
+    "text": "Approval Queue"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 32,
+  "pattern": "/help/contact",
+  "server_error": 0,
+  "final_url": "{base}/help/contact"
+ },
+ {
+  "role": "admin",
+  "path": "/",
+  "url": "{base}/",
+  "status": 200,
+  "title": "Home - Demo Certificate Portal",
+  "headings": [
+   "Certificate Services"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/search",
+    "method": "get",
+    "submit_text": "Search",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "q",
+      "id": "",
+      "label": "",
+      "placeholder": "Search services",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Search"
+  ],
+  "a11y": {
+   "img_no_alt": [
+    "/static-logo.svg"
+   ],
+   "inputs_no_label": [
+    "q"
+   ],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 40,
+  "pattern": "/",
+  "server_error": 0,
+  "final_url": "{base}/"
+ },
+ {
+  "role": "admin",
+  "path": "/dashboard",
+  "url": "{base}/dashboard",
+  "status": 200,
+  "title": "Dashboard",
+  "headings": [
+   "Welcome, Arun Admin"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 32,
+  "pattern": "/dashboard",
+  "server_error": 0,
+  "final_url": "{base}/dashboard"
+ },
+ {
+  "role": "admin",
+  "path": "/admin/users",
+  "url": "{base}/admin/users",
+  "status": 200,
+  "title": "User Management",
+  "headings": [
+   "User Management"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 40,
+  "pattern": "/admin/users",
+  "server_error": 0,
+  "final_url": "{base}/admin/users"
+ },
+ {
+  "role": "admin",
+  "path": "/admin/reports",
+  "url": "{base}/admin/reports",
+  "status": 500,
+  "title": "",
+  "headings": [],
+  "links": [],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "",
+   "has_h1": false
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+  ],
+  "load_ms": 36,
+  "pattern": "/admin/reports",
+  "server_error": 1,
+  "final_url": "{base}/admin/reports"
+ },
+ {
+  "role": "admin",
+  "path": "/help",
+  "url": "{base}/help",
+  "status": 200,
+  "title": "Help",
+  "headings": [
+   "Help"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   },
+   {
+    "href": "{base}/help/faq",
+    "text": "frequently asked questions"
+   },
+   {
+    "href": "{base}/help/contact",
+    "text": "contact the helpdesk"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 27,
+  "pattern": "/help",
+  "server_error": 0,
+  "final_url": "{base}/help"
+ },
+ {
+  "role": "admin",
+  "path": "/help/faq",
+  "url": "{base}/help/faq",
+  "status": 404,
+  "title": "Not found",
+  "headings": [
+   "Page not found"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "load_ms": 31,
+  "pattern": "/help/faq",
+  "server_error": 0,
+  "final_url": "{base}/help/faq"
+ },
+ {
+  "role": "admin",
+  "path": "/help/contact",
+  "url": "{base}/help/contact",
+  "status": 200,
+  "title": "Contact Helpdesk",
+  "headings": [
+   "Contact Helpdesk"
+  ],
+  "links": [
+   {
+    "href": "{base}/dashboard",
+    "text": "Dashboard"
+   },
+   {
+    "href": "{base}/admin/users",
+    "text": "User Management"
+   },
+   {
+    "href": "{base}/admin/reports",
+    "text": "Reports"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/logout",
+    "text": "Logout"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 30,
+  "pattern": "/help/contact",
+  "server_error": 0,
+  "final_url": "{base}/help/contact"
+ },
+ {
+  "role": "anonymous",
+  "path": "/",
+  "url": "{base}/",
+  "status": 200,
+  "title": "Home - Demo Certificate Portal",
+  "headings": [
+   "Certificate Services"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/search",
+    "method": "get",
+    "submit_text": "Search",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "q",
+      "id": "",
+      "label": "",
+      "placeholder": "Search services",
+      "required": false,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Search"
+  ],
+  "a11y": {
+   "img_no_alt": [
+    "/static-logo.svg"
+   ],
+   "inputs_no_label": [
+    "q"
+   ],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 46,
+  "pattern": "/",
+  "server_error": 0,
+  "final_url": "{base}/"
+ },
+ {
+  "role": "anonymous",
+  "path": "/dashboard",
+  "url": "{base}/dashboard",
+  "status": 200,
+  "title": "Login",
+  "headings": [
+   "Login"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/login",
+    "method": "post",
+    "submit_text": "Sign in",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "username",
+      "id": "username",
+      "label": "Username",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "password",
+      "widget": null,
+      "ui": null,
+      "name": "password",
+      "id": "password",
+      "label": "Password",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Sign in"
+  ],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 41,
+  "pattern": "/dashboard",
+  "server_error": 0,
+  "final_url": "{base}/login?next=/dashboard"
+ },
+ {
+  "role": "anonymous",
+  "path": "/help",
+  "url": "{base}/help",
+  "status": 200,
+  "title": "Help",
+  "headings": [
+   "Help"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   },
+   {
+    "href": "{base}/help/faq",
+    "text": "frequently asked questions"
+   },
+   {
+    "href": "{base}/help/contact",
+    "text": "contact the helpdesk"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 26,
+  "pattern": "/help",
+  "server_error": 0,
+  "final_url": "{base}/help"
+ },
+ {
+  "role": "anonymous",
+  "path": "/login",
+  "url": "{base}/login",
+  "status": 200,
+  "title": "Login",
+  "headings": [
+   "Login"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   }
+  ],
+  "forms": [
+   {
+    "index": 0,
+    "id": "",
+    "action": "/login",
+    "method": "post",
+    "submit_text": "Sign in",
+    "fields": [
+     {
+      "tag": "input",
+      "type": "text",
+      "widget": null,
+      "ui": null,
+      "name": "username",
+      "id": "username",
+      "label": "Username",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     },
+     {
+      "tag": "input",
+      "type": "password",
+      "widget": null,
+      "ui": null,
+      "name": "password",
+      "id": "password",
+      "label": "Password",
+      "placeholder": "",
+      "required": true,
+      "maxlength": null,
+      "minlength": null,
+      "pattern": null,
+      "min": null,
+      "max": null,
+      "accept": null,
+      "multiple": false,
+      "options": null
+     }
+    ]
+   }
+  ],
+  "buttons": [
+   "Sign in"
+  ],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 26,
+  "pattern": "/login",
+  "server_error": 0,
+  "final_url": "{base}/login"
+ },
+ {
+  "role": "anonymous",
+  "path": "/help/faq",
+  "url": "{base}/help/faq",
+  "status": 404,
+  "title": "Not found",
+  "headings": [
+   "Page not found"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "load_ms": 33,
+  "pattern": "/help/faq",
+  "server_error": 0,
+  "final_url": "{base}/help/faq"
+ },
+ {
+  "role": "anonymous",
+  "path": "/help/contact",
+  "url": "{base}/help/contact",
+  "status": 200,
+  "title": "Contact Helpdesk",
+  "headings": [
+   "Contact Helpdesk"
+  ],
+  "links": [
+   {
+    "href": "{base}/",
+    "text": "Home"
+   },
+   {
+    "href": "{base}/help",
+    "text": "Help"
+   },
+   {
+    "href": "{base}/login",
+    "text": "Login"
+   }
+  ],
+  "forms": [],
+  "buttons": [],
+  "a11y": {
+   "img_no_alt": [],
+   "inputs_no_label": [],
+   "buttons_no_name": 0,
+   "html_lang": "en",
+   "has_h1": true
+  },
+  "console": [],
+  "load_ms": 34,
+  "pattern": "/help/contact",
+  "server_error": 0,
+  "final_url": "{base}/help/contact"
+ }
+]

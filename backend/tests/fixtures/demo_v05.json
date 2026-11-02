@@ -1,0 +1,3288 @@
+{
+"screens": [
+{
+"role": "citizen",
+"path": "/",
+"url": "{base}/",
+"status": 200,
+"title": "Home - Demo Certificate Portal",
+"headings": [
+"Login",
+"Certificate Services"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/search",
+"method": "get",
+"submit_text": "Search",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "q",
+"id": "",
+"label": "",
+"placeholder": "Search services",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"a11y": {
+"img_no_alt": [
+"/static-logo.svg"
+],
+"inputs_no_label": [
+"q"
+],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 29,
+"pattern": "/",
+"server_error": 0,
+"final_url": "{base}/"
+},
+{
+"role": "citizen",
+"path": "/dashboard",
+"url": "{base}/dashboard",
+"status": 200,
+"title": "Dashboard",
+"headings": [
+"Login",
+"Welcome, Asha Citizen"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 49,
+"pattern": "/dashboard",
+"server_error": 0,
+"final_url": "{base}/dashboard"
+},
+{
+"role": "citizen",
+"path": "/help",
+"url": "{base}/help",
+"status": 200,
+"title": "Help",
+"headings": [
+"Login",
+"Help"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/help/faq",
+"text": "frequently asked questions"
+},
+{
+"href": "{base}/help/contact",
+"text": "contact the helpdesk"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 17,
+"pattern": "/help",
+"server_error": 0,
+"final_url": "{base}/help"
+},
+{
+"role": "citizen",
+"path": "/apply",
+"url": "{base}/apply",
+"status": 200,
+"title": "Apply for Certificate",
+"headings": [
+"Login",
+"Apply for Certificate"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "apply-form",
+"action": "/apply",
+"method": "post",
+"submit_text": "Submit Application",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "applicant_name",
+"id": "applicant_name",
+"label": "Applicant Name",
+"placeholder": "",
+"required": true,
+"maxlength": "100",
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "tel",
+"widget": null,
+"ui": null,
+"name": "mobile",
+"id": "mobile",
+"label": "Mobile Number",
+"placeholder": "",
+"required": true,
+"maxlength": "10",
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "email",
+"widget": null,
+"ui": null,
+"name": "email",
+"id": "email",
+"label": "Email Address",
+"placeholder": "",
+"required": false,
+"maxlength": "100",
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "pincode",
+"id": "pincode",
+"label": "PIN Code",
+"placeholder": "",
+"required": true,
+"maxlength": "6",
+"minlength": null,
+"pattern": "[0-9]{6}",
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "",
+"id": "dob_display",
+"label": "Date of Birth",
+"placeholder": "DD/MM/YYYY",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "date",
+"widget": "datepicker",
+"ui": "wyx1d5ok",
+"name": "dob",
+"id": "dob",
+"label": "Date of Birth",
+"placeholder": "DD/MM/YYYY",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "select",
+"type": "select",
+"widget": null,
+"ui": null,
+"name": "cert_type",
+"id": "cert_type",
+"label": "Certificate Type",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": [
+{
+"value": "",
+"text": "-- Select --"
+},
+{
+"value": "income",
+"text": "Income"
+},
+{
+"value": "residence",
+"text": "Residence"
+},
+{
+"value": "nativity",
+"text": "Nativity"
+}
+]
+},
+{
+"tag": "select",
+"type": "select",
+"widget": "listbox",
+"ui": "wb4bs1sd",
+"name": "docs",
+"id": "docs",
+"label": "Documents Attached",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": true,
+"options": [
+{
+"value": "aadhaar",
+"text": "Aadhaar"
+},
+{
+"value": "ration",
+"text": "Ration Card"
+},
+{
+"value": "voter",
+"text": "Voter ID"
+},
+{
+"value": "dl",
+"text": "Driving Licence"
+}
+]
+},
+{
+"tag": "textarea",
+"type": "textarea",
+"widget": "richtext",
+"ui": "wnsmwct7",
+"name": "purpose",
+"id": "purpose",
+"label": "Purpose of Certificate",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "textarea",
+"type": "textarea",
+"widget": null,
+"ui": null,
+"name": "address",
+"id": "address",
+"label": "Address",
+"placeholder": "",
+"required": true,
+"maxlength": "200",
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "file",
+"widget": null,
+"ui": null,
+"name": "document",
+"id": "document",
+"label": "Supporting Document",
+"placeholder": "",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": ".pdf,.jpg,.jpeg,.png",
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "checkbox",
+"widget": null,
+"ui": null,
+"name": "declaration",
+"id": "",
+"label": "I declare the information is true",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"B",
+"I",
+"Submit Application"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 28,
+"pattern": "/apply",
+"server_error": 0,
+"final_url": "{base}/apply"
+},
+{
+"role": "citizen",
+"path": "/my-applications",
+"url": "{base}/my-applications",
+"status": 200,
+"title": "My Applications",
+"headings": [
+"Login",
+"My Applications"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/applications/1001",
+"text": "View 1001"
+},
+{
+"href": "{base}/applications/1002",
+"text": "View 1002"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"pageerror: appCount is not defined"
+],
+"load_ms": 29,
+"pattern": "/my-applications",
+"server_error": 0,
+"final_url": "{base}/my-applications"
+},
+{
+"role": "citizen",
+"path": "/help/faq",
+"url": "{base}/help/faq",
+"status": 404,
+"title": "Not found",
+"headings": [
+"Login",
+"Page not found"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"Failed to load resource: the server responded with a status of 404 (Not Found)"
+],
+"load_ms": 19,
+"pattern": "/help/faq",
+"server_error": 0,
+"final_url": "{base}/help/faq"
+},
+{
+"role": "citizen",
+"path": "/help/contact",
+"url": "{base}/help/contact",
+"status": 200,
+"title": "Contact Helpdesk",
+"headings": [
+"Login",
+"Contact Helpdesk"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 15,
+"pattern": "/help/contact",
+"server_error": 0,
+"final_url": "{base}/help/contact"
+},
+{
+"role": "citizen",
+"path": "/applications/1001",
+"url": "{base}/applications/1001",
+"status": 200,
+"title": "Application 1001",
+"headings": [
+"Login",
+"Application 1001"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/my-applications",
+"text": "Back to My Applications"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 24,
+"pattern": "/applications/{n}",
+"server_error": 0,
+"final_url": "{base}/applications/1001"
+},
+{
+"role": "citizen",
+"path": "/applications/1002",
+"url": "{base}/applications/1002",
+"status": 200,
+"title": "Application 1002",
+"headings": [
+"Login",
+"Application 1002"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/my-applications",
+"text": "Back to My Applications"
+}
+],
+"forms": [],
+"buttons": [
+"Services ▾",
+"Apply for Certificate",
+"My Applications",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 23,
+"pattern": "/applications/{n}",
+"server_error": 0,
+"final_url": "{base}/applications/1002"
+},
+{
+"role": "clerk",
+"path": "/",
+"url": "{base}/",
+"status": 200,
+"title": "Home - Demo Certificate Portal",
+"headings": [
+"Login",
+"Certificate Services"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/search",
+"method": "get",
+"submit_text": "Search",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "q",
+"id": "",
+"label": "",
+"placeholder": "Search services",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"a11y": {
+"img_no_alt": [
+"/static-logo.svg"
+],
+"inputs_no_label": [
+"q"
+],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 33,
+"pattern": "/",
+"server_error": 0,
+"final_url": "{base}/"
+},
+{
+"role": "clerk",
+"path": "/dashboard",
+"url": "{base}/dashboard",
+"status": 200,
+"title": "Dashboard",
+"headings": [
+"Login",
+"Welcome, Ravi Clerk"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 17,
+"pattern": "/dashboard",
+"server_error": 0,
+"final_url": "{base}/dashboard"
+},
+{
+"role": "clerk",
+"path": "/clerk/queue",
+"url": "{base}/clerk/queue",
+"status": 200,
+"title": "Verification Queue",
+"headings": [
+"Login",
+"Verification Queue"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/clerk/verify/1001",
+"method": "post",
+"submit_text": "Verify 1001",
+"fields": []
+},
+{
+"index": 1,
+"id": "",
+"action": "/clerk/verify/1003",
+"method": "post",
+"submit_text": "Verify 1003",
+"fields": []
+}
+],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Verify 1001",
+"Verify 1003"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 27,
+"pattern": "/clerk/queue",
+"server_error": 0,
+"final_url": "{base}/clerk/queue"
+},
+{
+"role": "clerk",
+"path": "/help",
+"url": "{base}/help",
+"status": 200,
+"title": "Help",
+"headings": [
+"Login",
+"Help"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/help/faq",
+"text": "frequently asked questions"
+},
+{
+"href": "{base}/help/contact",
+"text": "contact the helpdesk"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 21,
+"pattern": "/help",
+"server_error": 0,
+"final_url": "{base}/help"
+},
+{
+"role": "clerk",
+"path": "/help/faq",
+"url": "{base}/help/faq",
+"status": 404,
+"title": "Not found",
+"headings": [
+"Login",
+"Page not found"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"Failed to load resource: the server responded with a status of 404 (Not Found)"
+],
+"load_ms": 19,
+"pattern": "/help/faq",
+"server_error": 0,
+"final_url": "{base}/help/faq"
+},
+{
+"role": "clerk",
+"path": "/help/contact",
+"url": "{base}/help/contact",
+"status": 200,
+"title": "Contact Helpdesk",
+"headings": [
+"Login",
+"Contact Helpdesk"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/clerk/queue",
+"text": "Verification Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 20,
+"pattern": "/help/contact",
+"server_error": 0,
+"final_url": "{base}/help/contact"
+},
+{
+"role": "officer",
+"path": "/",
+"url": "{base}/",
+"status": 200,
+"title": "Home - Demo Certificate Portal",
+"headings": [
+"Login",
+"Certificate Services"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/search",
+"method": "get",
+"submit_text": "Search",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "q",
+"id": "",
+"label": "",
+"placeholder": "Search services",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"a11y": {
+"img_no_alt": [
+"/static-logo.svg"
+],
+"inputs_no_label": [
+"q"
+],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 37,
+"pattern": "/",
+"server_error": 0,
+"final_url": "{base}/"
+},
+{
+"role": "officer",
+"path": "/dashboard",
+"url": "{base}/dashboard",
+"status": 200,
+"title": "Dashboard",
+"headings": [
+"Login",
+"Welcome, Meera Officer"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 34,
+"pattern": "/dashboard",
+"server_error": 0,
+"final_url": "{base}/dashboard"
+},
+{
+"role": "officer",
+"path": "/officer/queue",
+"url": "{base}/officer/queue",
+"status": 200,
+"title": "Approval Queue",
+"headings": [
+"Login",
+"Approval Queue"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 21,
+"pattern": "/officer/queue",
+"server_error": 0,
+"final_url": "{base}/officer/queue"
+},
+{
+"role": "officer",
+"path": "/help",
+"url": "{base}/help",
+"status": 200,
+"title": "Help",
+"headings": [
+"Login",
+"Help"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/help/faq",
+"text": "frequently asked questions"
+},
+{
+"href": "{base}/help/contact",
+"text": "contact the helpdesk"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 21,
+"pattern": "/help",
+"server_error": 0,
+"final_url": "{base}/help"
+},
+{
+"role": "officer",
+"path": "/help/faq",
+"url": "{base}/help/faq",
+"status": 404,
+"title": "Not found",
+"headings": [
+"Login",
+"Page not found"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"Failed to load resource: the server responded with a status of 404 (Not Found)"
+],
+"load_ms": 19,
+"pattern": "/help/faq",
+"server_error": 0,
+"final_url": "{base}/help/faq"
+},
+{
+"role": "officer",
+"path": "/help/contact",
+"url": "{base}/help/contact",
+"status": 200,
+"title": "Contact Helpdesk",
+"headings": [
+"Login",
+"Contact Helpdesk"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/officer/queue",
+"text": "Approval Queue"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 23,
+"pattern": "/help/contact",
+"server_error": 0,
+"final_url": "{base}/help/contact"
+},
+{
+"role": "admin",
+"path": "/",
+"url": "{base}/",
+"status": 200,
+"title": "Home - Demo Certificate Portal",
+"headings": [
+"Login",
+"Certificate Services"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/search",
+"method": "get",
+"submit_text": "Search",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "q",
+"id": "",
+"label": "",
+"placeholder": "Search services",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"a11y": {
+"img_no_alt": [
+"/static-logo.svg"
+],
+"inputs_no_label": [
+"q"
+],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 24,
+"pattern": "/",
+"server_error": 0,
+"final_url": "{base}/"
+},
+{
+"role": "admin",
+"path": "/dashboard",
+"url": "{base}/dashboard",
+"status": 200,
+"title": "Dashboard",
+"headings": [
+"Login",
+"Welcome, Arun Admin"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 21,
+"pattern": "/dashboard",
+"server_error": 0,
+"final_url": "{base}/dashboard"
+},
+{
+"role": "admin",
+"path": "/admin/users",
+"url": "{base}/admin/users",
+"status": 200,
+"title": "User Management",
+"headings": [
+"Login",
+"User Management"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 27,
+"pattern": "/admin/users",
+"server_error": 0,
+"final_url": "{base}/admin/users"
+},
+{
+"role": "admin",
+"path": "/admin/reports",
+"url": "{base}/admin/reports",
+"status": 500,
+"title": "",
+"headings": [],
+"links": [],
+"forms": [],
+"buttons": [],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "",
+"has_h1": false
+},
+"console": [
+"Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+],
+"load_ms": 25,
+"pattern": "/admin/reports",
+"server_error": 1,
+"final_url": "{base}/admin/reports"
+},
+{
+"role": "admin",
+"path": "/help",
+"url": "{base}/help",
+"status": 200,
+"title": "Help",
+"headings": [
+"Login",
+"Help"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+},
+{
+"href": "{base}/help/faq",
+"text": "frequently asked questions"
+},
+{
+"href": "{base}/help/contact",
+"text": "contact the helpdesk"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 18,
+"pattern": "/help",
+"server_error": 0,
+"final_url": "{base}/help"
+},
+{
+"role": "admin",
+"path": "/help/faq",
+"url": "{base}/help/faq",
+"status": 404,
+"title": "Not found",
+"headings": [
+"Login",
+"Page not found"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"Failed to load resource: the server responded with a status of 404 (Not Found)"
+],
+"load_ms": 19,
+"pattern": "/help/faq",
+"server_error": 0,
+"final_url": "{base}/help/faq"
+},
+{
+"role": "admin",
+"path": "/help/contact",
+"url": "{base}/help/contact",
+"status": 200,
+"title": "Contact Helpdesk",
+"headings": [
+"Login",
+"Contact Helpdesk"
+],
+"links": [
+{
+"href": "{base}/dashboard",
+"text": "Dashboard"
+},
+{
+"href": "{base}/admin/users",
+"text": "User Management"
+},
+{
+"href": "{base}/admin/reports",
+"text": "Reports"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/logout",
+"text": "Logout"
+}
+],
+"forms": [],
+"buttons": [
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 20,
+"pattern": "/help/contact",
+"server_error": 0,
+"final_url": "{base}/help/contact"
+},
+{
+"role": "anonymous",
+"path": "/",
+"url": "{base}/",
+"status": 200,
+"title": "Home - Demo Certificate Portal",
+"headings": [
+"Login",
+"Certificate Services"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/search",
+"method": "get",
+"submit_text": "Search",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "q",
+"id": "",
+"label": "",
+"placeholder": "Search services",
+"required": false,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"a11y": {
+"img_no_alt": [
+"/static-logo.svg"
+],
+"inputs_no_label": [
+"q"
+],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 27,
+"pattern": "/",
+"server_error": 0,
+"final_url": "{base}/"
+},
+{
+"role": "anonymous",
+"path": "/dashboard",
+"url": "{base}/dashboard",
+"status": 200,
+"title": "Login",
+"headings": [
+"Login",
+"Login"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Citizen Login",
+"Department Login"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 20,
+"pattern": "/dashboard",
+"server_error": 0,
+"final_url": "{base}/login?next=/dashboard"
+},
+{
+"role": "anonymous",
+"path": "/help",
+"url": "{base}/help",
+"status": 200,
+"title": "Help",
+"headings": [
+"Login",
+"Help"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+},
+{
+"href": "{base}/help/faq",
+"text": "frequently asked questions"
+},
+{
+"href": "{base}/help/contact",
+"text": "contact the helpdesk"
+}
+],
+"forms": [],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 19,
+"pattern": "/help",
+"server_error": 0,
+"final_url": "{base}/help"
+},
+{
+"role": "anonymous",
+"path": "/citizen/login",
+"url": "{base}/citizen/login",
+"status": 200,
+"title": "Citizen Login",
+"headings": [
+"Login",
+"Citizen Login"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/citizen/login",
+"method": "post",
+"submit_text": "Get OTP",
+"fields": [
+{
+"tag": "input",
+"type": "tel",
+"widget": null,
+"ui": null,
+"name": "mobile_no",
+"id": "mobile_no",
+"label": "Mobile Number",
+"placeholder": "10-digit mobile number",
+"required": false,
+"maxlength": "10",
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Get OTP"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 16,
+"pattern": "/citizen/login",
+"server_error": 0,
+"final_url": "{base}/citizen/login"
+},
+{
+"role": "anonymous",
+"path": "/department/login",
+"url": "{base}/department/login",
+"status": 200,
+"title": "Department Login",
+"headings": [
+"Login",
+"Department Login"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [
+{
+"index": 0,
+"id": "",
+"action": "/department/login",
+"method": "post",
+"submit_text": "Sign in",
+"fields": [
+{
+"tag": "input",
+"type": "text",
+"widget": null,
+"ui": null,
+"name": "username",
+"id": "username",
+"label": "Username",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+},
+{
+"tag": "input",
+"type": "password",
+"widget": null,
+"ui": null,
+"name": "password",
+"id": "password",
+"label": "Password",
+"placeholder": "",
+"required": true,
+"maxlength": null,
+"minlength": null,
+"pattern": null,
+"min": null,
+"max": null,
+"accept": null,
+"multiple": false,
+"options": null
+}
+]
+}
+],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Sign in"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 26,
+"pattern": "/department/login",
+"server_error": 0,
+"final_url": "{base}/department/login"
+},
+{
+"role": "anonymous",
+"path": "/help/faq",
+"url": "{base}/help/faq",
+"status": 404,
+"title": "Not found",
+"headings": [
+"Login",
+"Page not found"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [
+"Failed to load resource: the server responded with a status of 404 (Not Found)"
+],
+"load_ms": 16,
+"pattern": "/help/faq",
+"server_error": 0,
+"final_url": "{base}/help/faq"
+},
+{
+"role": "anonymous",
+"path": "/help/contact",
+"url": "{base}/help/contact",
+"status": 200,
+"title": "Contact Helpdesk",
+"headings": [
+"Login",
+"Contact Helpdesk"
+],
+"links": [
+{
+"href": "{base}/",
+"text": "Home"
+},
+{
+"href": "{base}/help",
+"text": "Help"
+}
+],
+"forms": [],
+"buttons": [
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel"
+],
+"a11y": {
+"img_no_alt": [],
+"inputs_no_label": [],
+"buttons_no_name": 0,
+"html_lang": "en",
+"has_h1": true
+},
+"console": [],
+"load_ms": 19,
+"pattern": "/help/contact",
+"server_error": 0,
+"final_url": "{base}/help/contact"
+}
+],
+"journeys": [
+{
+"role": "citizen",
+"from_path": "/",
+"action": "click",
+"target": "Services ▾",
+"kind": "reveal",
+"to_path": "/",
+"title": null,
+"detail": {
+"revealed": [
+"Apply for Certificate",
+"My Applications"
+]
+}
+},
+{
+"role": "citizen",
+"from_path": "/",
+"action": "click",
+"target": "Services ▾ > Apply for Certificate",
+"kind": "navigate",
+"to_path": "/apply",
+"title": "Apply for Certificate",
+"detail": {
+"href": null
+}
+},
+{
+"role": "citizen",
+"from_path": "/",
+"action": "click",
+"target": "Services ▾ > My Applications",
+"kind": "navigate",
+"to_path": "/my-applications",
+"title": "My Applications",
+"detail": {
+"href": null
+}
+},
+{
+"role": "anonymous",
+"from_path": "/",
+"action": "click",
+"target": "Login",
+"kind": "dialog",
+"to_path": "/",
+"title": null,
+"detail": {
+"revealed": [
+"Login\n\nHow do you want to log in?\n\nCitiz",
+"Citizen Login",
+"Department Login",
+"Cancel"
+]
+}
+},
+{
+"role": "anonymous",
+"from_path": "/",
+"action": "click",
+"target": "Login > Citizen Login",
+"kind": "navigate",
+"to_path": "/citizen/login",
+"title": "Citizen Login",
+"detail": {
+"href": null
+}
+},
+{
+"role": "anonymous",
+"from_path": "/",
+"action": "click",
+"target": "Login > Department Login",
+"kind": "navigate",
+"to_path": "/department/login",
+"title": "Department Login",
+"detail": {
+"href": null
+}
+},
+{
+"role": "anonymous",
+"from_path": "/login",
+"action": "click",
+"target": "Citizen Login",
+"kind": "navigate",
+"to_path": "/citizen/login",
+"title": "Citizen Login",
+"detail": {}
+},
+{
+"role": "anonymous",
+"from_path": "/login",
+"action": "click",
+"target": "Department Login",
+"kind": "navigate",
+"to_path": "/department/login",
+"title": "Department Login",
+"detail": {}
+}
+],
+"requirements": [
+{
+"id": "FR-01",
+"seq": 1,
+"section": "2. Functional requirements",
+"text": "Citizens shall log in with their registered 10-digit mobile number and a 6-digit OTP sent by SMS. Department users (Clerk, Officer and Administrator) shall log in with a username and password.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen",
+"clerk",
+"officer",
+"admin"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-02",
+"seq": 2,
+"section": "2. Functional requirements",
+"text": "Citizens shall be able to apply for a certificate online.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-03",
+"seq": 3,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to view the status of submitted applications in My Applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-04",
+"seq": 4,
+"section": "2. Functional requirements",
+"text": "The Applicant Name field is mandatory and shall not exceed 50 characters.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-05",
+"seq": 5,
+"section": "2. Functional requirements",
+"text": "The Mobile Number shall be a 10-digit mobile number starting with 6, 7, 8 or 9.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-06",
+"seq": 6,
+"section": "2. Functional requirements",
+"text": "Only the Clerk shall be able to access the Verification Queue and verify applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"clerk"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-07",
+"seq": 7,
+"section": "2. Functional requirements",
+"text": "When the Clerk verifies an application, its status shall change to Verified.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"clerk"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-08",
+"seq": 8,
+"section": "2. Functional requirements",
+"text": "Only the Officer shall be able to access the Approval Queue and approve applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-09",
+"seq": 9,
+"section": "2. Functional requirements",
+"text": "When the Officer approves an application, its status shall change to Approved.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-10",
+"seq": 10,
+"section": "2. Functional requirements",
+"text": "Only the Administrator shall be able to access User Management and Reports.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"admin"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-11",
+"seq": 11,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to download the approved certificate as a PDF.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-12",
+"seq": 12,
+"section": "2. Functional requirements",
+"text": "Appropriate error messages shall be displayed for invalid inputs.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [
+{
+"term": "appropriate",
+"reason": "does not say which behaviour is correct"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-13",
+"seq": 13,
+"section": "2. Functional requirements",
+"text": "The Remarks field length is TBD.",
+"kind": "functional",
+"priority": "Low",
+"roles": [],
+"ambiguity": [
+{
+"term": "tbd",
+"reason": "value not yet decided"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-14",
+"seq": 14,
+"section": "2. Functional requirements",
+"text": "Officers shall log in with their password and a one-time password (OTP) sent by SMS to their registered mobile number.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-15",
+"seq": 15,
+"section": "2. Functional requirements",
+"text": "An OTP shall be valid for 5 minutes and shall be accepted only once.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-16",
+"seq": 16,
+"section": "2. Functional requirements",
+"text": "The Citizen shall receive a confirmation email when an application is submitted.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-17",
+"seq": 17,
+"section": "2. Functional requirements",
+"text": "The home page shall offer a Login button with two options: Citizen Login and Department Login.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-18",
+"seq": 18,
+"section": "2. Functional requirements",
+"text": "The Citizen login shall show an error when the mobile number is not a valid 10-digit number starting with 6, 7, 8 or 9.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-19",
+"seq": 19,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to request a new OTP with Resend OTP on the OTP screen.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "FR-20",
+"seq": 20,
+"section": "2. Functional requirements",
+"text": "Logout shall end the session and return the user to the home page.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-021",
+"seq": 21,
+"section": "3. Application form fields",
+"text": "Applicant Name - Type: Text; Mandatory: Yes; Length: Max 50; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-022",
+"seq": 22,
+"section": "3. Application form fields",
+"text": "Mobile Number - Type: Numeric; Mandatory: Yes; Length: 10; Validation: 10-digit mobile number starting with 6-9",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-023",
+"seq": 23,
+"section": "3. Application form fields",
+"text": "Email Address - Type: Email; Mandatory: No; Length: Max 100; Validation: Valid email format",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-024",
+"seq": 24,
+"section": "3. Application form fields",
+"text": "PIN Code - Type: Numeric; Mandatory: Yes; Length: 6; Validation: 6-digit PIN code",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-025",
+"seq": 25,
+"section": "3. Application form fields",
+"text": "Date of Birth - Type: Date; Mandatory: Yes; Length: -; Validation: Cannot be a future date",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-026",
+"seq": 26,
+"section": "3. Application form fields",
+"text": "Certificate Type - Type: Dropdown; Mandatory: Yes; Length: -; Validation: Values: Income, Caste, Residence",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-027",
+"seq": 27,
+"section": "3. Application form fields",
+"text": "Documents Attached - Type: Multi-select; Mandatory: Yes; Length: -; Validation: Values: Aadhaar, Ration Card, Voter ID, Passport",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-028",
+"seq": 28,
+"section": "3. Application form fields",
+"text": "Purpose of Certificate - Type: Rich text; Mandatory: Yes; Length: Max 300; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-029",
+"seq": 29,
+"section": "3. Application form fields",
+"text": "Address - Type: Text area; Mandatory: Yes; Length: Max 200; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-030",
+"seq": 30,
+"section": "3. Application form fields",
+"text": "Supporting Document - Type: File; Mandatory: No; Length: Max 2 MB; Validation: PDF, JPG or PNG only",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "TBL-031",
+"seq": 31,
+"section": "3. Application form fields",
+"text": "Remarks - Type: Text; Mandatory: No; Length: TBD; Validation: -",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [
+{
+"term": "tbd",
+"reason": "value not yet decided"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "NFR-01",
+"seq": 32,
+"section": "4. Non-functional requirements",
+"text": "The system shall respond quickly to user actions.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [
+{
+"term": "quickly",
+"reason": "no measurable time limit"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "NFR-02",
+"seq": 33,
+"section": "4. Non-functional requirements",
+"text": "Pages shall load within 3 seconds.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "NFR-03",
+"seq": 34,
+"section": "4. Non-functional requirements",
+"text": "The session shall expire after 15 minutes of inactivity.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+},
+{
+"id": "NFR-04",
+"seq": 35,
+"section": "4. Non-functional requirements",
+"text": "The portal should support multiple languages as applicable.",
+"kind": "non-functional",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [
+{
+"term": "as applicable",
+"reason": "condition not defined"
+},
+{
+"term": "multiple languages",
+"reason": "languages not listed"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx"
+}
+],
+"login_steps": {
+"citizen": [
+{
+"goto": "/"
+},
+{
+"click": "Login"
+},
+{
+"click": "Citizen Login"
+},
+{
+"fill": {
+"kind": "mobile",
+"name": "mobile_no",
+"label": "Mobile Number"
+},
+"value": "{mobile}"
+},
+{
+"click": "Get OTP"
+},
+{
+"otp": {
+"kind": "otpbox",
+"boxes": 6
+}
+},
+{
+"click": "Verify & Login"
+}
+],
+"clerk": [
+{
+"goto": "/"
+},
+{
+"click": "Login"
+},
+{
+"click": "Department Login"
+},
+{
+"fill": {
+"kind": "username",
+"name": "username",
+"label": "Username"
+},
+"value": "{username}"
+},
+{
+"fill": {
+"kind": "password",
+"name": "password",
+"label": "Password"
+},
+"value": "{password}"
+},
+{
+"click": "Sign in"
+}
+],
+"officer": [
+{
+"goto": "/"
+},
+{
+"click": "Login"
+},
+{
+"click": "Department Login"
+},
+{
+"fill": {
+"kind": "username",
+"name": "username",
+"label": "Username"
+},
+"value": "{username}"
+},
+{
+"fill": {
+"kind": "password",
+"name": "password",
+"label": "Password"
+},
+"value": "{password}"
+},
+{
+"click": "Sign in"
+},
+{
+"otp": {
+"kind": "otp",
+"name": "otp",
+"label": "One-time password"
+}
+},
+{
+"click": "Verify OTP"
+}
+],
+"admin": [
+{
+"goto": "/"
+},
+{
+"click": "Login"
+},
+{
+"click": "Department Login"
+},
+{
+"fill": {
+"kind": "username",
+"name": "username",
+"label": "Username"
+},
+"value": "{username}"
+},
+{
+"fill": {
+"kind": "password",
+"name": "password",
+"label": "Password"
+},
+"value": "{password}"
+},
+{
+"click": "Sign in"
+}
+],
+"citizen__peer": [
+{
+"goto": "/"
+},
+{
+"click": "Login"
+},
+{
+"click": "Citizen Login"
+},
+{
+"fill": {
+"kind": "mobile",
+"name": "mobile_no",
+"label": "Mobile Number"
+},
+"value": "{mobile}"
+},
+{
+"click": "Get OTP"
+},
+{
+"otp": {
+"kind": "otpbox",
+"boxes": 6
+}
+},
+{
+"click": "Verify & Login"
+}
+]
+},
+"login_screens": {
+"citizen": {
+"choice": {
+"path": "/",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"inputs": [
+{
+"kind": "other",
+"name": "q",
+"label": "Search services",
+"maxlength": -1,
+"type": "input"
+}
+],
+"alerts": []
+},
+"credentials": {
+"path": "/citizen/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Get OTP"
+],
+"inputs": [
+{
+"kind": "mobile",
+"name": "mobile_no",
+"label": "Mobile Number",
+"maxlength": 10,
+"type": "tel"
+}
+],
+"alerts": []
+},
+"otp": {
+"path": "/citizen/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Verify & Login",
+"Resend OTP"
+],
+"inputs": [
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 1",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 2",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 3",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 4",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 5",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 6",
+"maxlength": 1,
+"type": "input"
+}
+],
+"alerts": []
+}
+},
+"clerk": {
+"choice": {
+"path": "/",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"inputs": [
+{
+"kind": "other",
+"name": "q",
+"label": "Search services",
+"maxlength": -1,
+"type": "input"
+}
+],
+"alerts": []
+},
+"credentials": {
+"path": "/department/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Sign in"
+],
+"inputs": [
+{
+"kind": "username",
+"name": "username",
+"label": "Username",
+"maxlength": -1,
+"type": "input"
+},
+{
+"kind": "password",
+"name": "password",
+"label": "Password",
+"maxlength": -1,
+"type": "password"
+}
+],
+"alerts": []
+}
+},
+"officer": {
+"choice": {
+"path": "/",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"inputs": [
+{
+"kind": "other",
+"name": "q",
+"label": "Search services",
+"maxlength": -1,
+"type": "input"
+}
+],
+"alerts": []
+},
+"credentials": {
+"path": "/department/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Sign in"
+],
+"inputs": [
+{
+"kind": "username",
+"name": "username",
+"label": "Username",
+"maxlength": -1,
+"type": "input"
+},
+{
+"kind": "password",
+"name": "password",
+"label": "Password",
+"maxlength": -1,
+"type": "password"
+}
+],
+"alerts": []
+},
+"otp": {
+"path": "/login/otp",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Verify OTP"
+],
+"inputs": [
+{
+"kind": "otp",
+"name": "otp",
+"label": "One-time password",
+"maxlength": 6,
+"type": "input"
+}
+],
+"alerts": []
+}
+},
+"admin": {
+"choice": {
+"path": "/",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"inputs": [
+{
+"kind": "other",
+"name": "q",
+"label": "Search services",
+"maxlength": -1,
+"type": "input"
+}
+],
+"alerts": []
+},
+"credentials": {
+"path": "/department/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Sign in"
+],
+"inputs": [
+{
+"kind": "username",
+"name": "username",
+"label": "Username",
+"maxlength": -1,
+"type": "input"
+},
+{
+"kind": "password",
+"name": "password",
+"label": "Password",
+"maxlength": -1,
+"type": "password"
+}
+],
+"alerts": []
+}
+},
+"citizen__peer": {
+"choice": {
+"path": "/",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Citizen Login",
+"Department Login",
+"Cancel",
+"Search"
+],
+"inputs": [
+{
+"kind": "other",
+"name": "q",
+"label": "Search services",
+"maxlength": -1,
+"type": "input"
+}
+],
+"alerts": []
+},
+"credentials": {
+"path": "/citizen/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Get OTP"
+],
+"inputs": [
+{
+"kind": "mobile",
+"name": "mobile_no",
+"label": "Mobile Number",
+"maxlength": 10,
+"type": "tel"
+}
+],
+"alerts": []
+},
+"otp": {
+"path": "/citizen/login",
+"clicks": [
+"Home",
+"Help",
+"Login",
+"Verify & Login",
+"Resend OTP"
+],
+"inputs": [
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 1",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 2",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 3",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 4",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 5",
+"maxlength": 1,
+"type": "input"
+},
+{
+"kind": "otpbox",
+"name": "",
+"label": "OTP digit 6",
+"maxlength": 1,
+"type": "input"
+}
+],
+"alerts": []
+}
+}
+}
+}

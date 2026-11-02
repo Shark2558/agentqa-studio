@@ -1,0 +1,101 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Requirements - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Requirements</span>{% endblock %}
+{% block body %}
+{% set nrules = by_req.values()|map('length')|sum %}
+<div class="page-head">
+  <div><h1>Requirements and rules</h1>
+    <p class="sub">The Requirement Analyst reads the documents into requirements and testable rules; the Requirement Writer rewrites each into clear wording, steps and acceptance criteria; the Reconciler compares the rules with the live app.</p></div>
+  <div class="actions">
+    <form method="post" action="/p/{{ slug }}/run/analyze"><button class="ghost" {{ 'disabled' if running or not files }}>{{ ui.icon('doc', 'sm') }} Read SRS</button></form>
+    <form method="post" action="/p/{{ slug }}/run/reconcile"><button class="ghost" {{ 'disabled' if running or not reqs }}>{{ ui.icon('scale', 'sm') }} Reconcile with app</button></form>
+    <form method="post" action="/p/{{ slug }}/run/write"><button class="ghost" {{ 'disabled' if running or not reqs }} title="Requirement Writer: clear wording, steps and acceptance criteria for each requirement">{{ ui.icon('list', 'sm') }} Rewrite requirements</button></form>
+  </div>
+</div>
+<div class="grid g2" style="margin-bottom:18px">
+  <div class="card">
+    <div class="card-head"><h3>{{ ui.icon('upload') }} Requirement documents</h3><span class="hint">Word, PDF (scanned too), Excel, CSV, HTML, JSON, Markdown, text, images</span></div>
+    <form method="post" enctype="multipart/form-data" class="row"><input type="file" name="file" multiple accept="{{ accept }}" required aria-label="Requirement documents"><button>{{ ui.icon('upload', 'sm') }} Upload</button></form>
+    <div class="stack" style="gap:6px;margin-top:12px">{% for f in files %}{% set d = docs.get(f) %}
+      <div class="row small" style="justify-content:space-between">
+        <span>{{ ui.icon('doc', 'sm') }} {{ f }}{% if d %} <span class="pill {{ 'ok' if d.status == 'read' else ('warn' if d.status == 'partial' else 'bad') }}">{{ {'read': 'read in full', 'partial': 'partly read', 'unread': 'not read'}[d.status] }}</span>
+          <span class="tiny muted">{{ d.segments }} part(s){% if d.pages %} · {{ d.pages }} page(s)/sheet(s){% endif %}{% if d.detail %} · {{ d.detail }}{% endif %}</span>{% else %} <span class="tiny muted">not read yet</span>{% endif %}</span>
+        <form method="post" action="/p/{{ slug }}/srs/delete"><input type="hidden" name="name" value="{{ f }}"><button class="quiet" title="Remove {{ f }}" aria-label="Remove {{ f }}">{{ ui.icon('x', 'sm') }}</button></form></div>
+    {% else %}<span class="small muted">No documents uploaded yet.</span>{% endfor %}</div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>{{ ui.icon('scale') }} Traceability</h3><a class="btn ghost" href="/p/{{ slug }}/rtm.xlsx">{{ ui.icon('download', 'sm') }} RTM (Excel)</a></div>
+    {% if cov %}<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr))">
+      <div class="kpi"><span class="label">Requirements</span><span class="value">{{ cov.requirements }}</span></div>
+      <div class="kpi"><span class="label">All tests passed</span><span class="value" style="color:var(--ok)">{{ cov.all_passed }}</span></div>
+      <div class="kpi"><span class="label">Failing</span><span class="value" style="color:var(--bad)">{{ cov.failing }}</span></div>
+      <div class="kpi"><span class="label">Tests not run</span><span class="value">{{ cov.blocked_or_not_run }}</span></div>
+      <div class="kpi"><span class="label">Gaps</span><span class="value" style="color:var(--warn)">{{ cov.gaps }}</span></div>
+    </div>
+    <p class="small" style="margin-bottom:0">{% if cov.complete %}<span class="pill ok">Complete</span> every requirement traced to a passing test.{% else %}
+      <span class="pill warn">Not complete</span> {{ cov.clarify }} need clarification, {{ cov.not_testable }} not testable, {{ cov.out_of_scope }} out of scope,
+      {{ cov.gaps }} without a test{% if cov.possibly_missed %}, {{ cov.possibly_missed }} passage(s) to review{% endif %}{% if cov.documents_not_fully_read %}, {{ cov.documents_not_fully_read|length }} document(s) not fully read{% endif %}.
+      Coverage is never claimed beyond what was traced and run.{% endif %}</p>{% else %}<p class="small muted">Read the documents first.</p>{% endif %}
+  </div>
+</div>
+{% if review %}
+<section class="card" id="review" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('alert') }} Text no requirement came from</h3><span class="hint">Requirement-like wording without 'shall', 'must' or an ID: confirm it is only context</span></div>
+  {% for g in review %}<div class="row small" style="justify-content:space-between;border-top:1px solid var(--line-2);padding:8px 0">
+    <span class="wrap" style="flex:1"><span class="tiny muted">{{ g.doc }} › {{ g.ref }}</span><br>{{ g.text }}</span>
+    <form method="post" action="/p/{{ slug }}/srs/segment/{{ g.id }}" class="row" style="gap:6px"><button class="quiet" name="disposition" value="context">Only context</button><button class="quiet" name="disposition" value="out of scope">Out of scope</button></form></div>{% endfor %}
+  <p class="tiny muted" style="margin-bottom:0">With an AI key, the completeness check proposes requirements from these passages when you read the documents again. To add one yourself, write it into the SRS with an ID.</p>
+</section>{% endif %}
+{% if reqs %}
+<div class="row" style="margin-bottom:10px">{% for k, label in dispositions.items() %}{% if disp_counts.get(k) %}<span class="chip">{{ label }} <span class="count">{{ disp_counts[k] }}</span></span>{% endif %}{% endfor %}</div>
+<div class="stack tc-list">
+{% for r in reqs %}{% set st = r.std or {} %}
+<details class="card tc {{ {'covered': 'pass', 'gap': 'fail', 'clarify': 'blocked'}.get(r.disposition, '') }}" id="{{ r.id }}">
+  <summary><span class="num tc-id">{{ r.id }}</span>
+    <span class="tc-main"><b>{{ st.title or r.text[:90] }}</b><span class="tiny muted">{{ st.category or r.kind }} · {{ st.source or r.source_file }}{% if st.actors %} · {{ st.actors|join(', ') }}{% endif %}</span></span>
+    {% for a in r.ambiguity %}<span class="pill warn">{{ a.term }}</span>{% endfor %}
+    {% if st.duplicates %}<span class="pill warn">duplicate?</span>{% endif %}{% if st.contradictions %}<span class="pill bad">contradiction</span>{% endif %}
+    <span class="pill {{ {'covered': 'ok', 'gap': 'bad', 'clarify': 'warn'}.get(r.disposition, '') }}">{{ dispositions.get(r.disposition or 'gap') }}</span></summary>
+  <div class="tc-body">
+    <div class="small"><span class="tiny muted">As written in {{ st.source or r.source_file }}:</span> {{ r.text }}</div>
+    {% set w = st.written %}{% if w %}
+    <div class="card" style="background:var(--bg-2, #f5f8ff);padding:12px 14px">
+      <div class="row" style="justify-content:space-between"><b class="small">{{ ui.icon('list', 'sm') }} Requirement Writer</b>
+        <span class="tiny muted">{{ 'written by the ' ~ w.by if w.by.startswith('model') else 'from the rules (no AI model)' }}</span></div>
+      <p style="margin:6px 0"><b>{{ w.statement }}</b></p>
+      {% if w.user_story %}<p class="small" style="margin:0 0 6px"><i>{{ w.user_story }}</i></p>{% endif %}
+      {% if w.steps %}<ol class="tc-steps">{% for x in w.steps %}<li><b>{{ x.actor }}:</b> {{ x.action }}</li>{% endfor %}</ol>{% endif %}
+      {% for c in w.acceptance_criteria or [] %}<div class="tiny">✓ {{ c }}</div>{% endfor %}
+      {% for c in (w.alternate_flows or []) + (w.exceptions or []) %}<div class="tiny muted">· {{ c }}</div>{% endfor %}
+      {% for o in w.open_points or [] %}<div class="tiny" style="color:var(--warn)">? {{ o }}</div>{% endfor %}
+      {% for f in w.flags or [] %}<div class="pill warn" style="margin-top:4px">{{ f }}</div>{% endfor %}
+    </div>{% endif %}
+    <div class="tc-meta">
+      <div><span class="label">Objective</span>{{ st.objective or '-' }}</div>
+      <div><span class="label">Trigger</span>{{ st.trigger or '-' }}</div>
+      <div><span class="label">Preconditions</span>{{ (st.preconditions or [])|join('; ') or '-' }}</div>
+      <div><span class="label">Expected outcome</span>{{ st.expected_outcome or '-' }}</div>
+    </div>
+    <div class="tc-meta">
+      <div><span class="label">Use case: main flow</span><ol class="tc-steps">{% for x in (st.use_case or {}).main_flow or st.main_flow or [] %}<li>{{ x }}</li>{% endfor %}</ol></div>
+      <div><span class="label">Exceptions{% if st.alternative_flows %} and alternatives{% endif %}</span>{% for x in (st.exceptions or []) + (st.alternative_flows or []) %}<div class="small">· {{ x }}</div>{% else %}-{% endfor %}</div>
+    </div>
+    <div><span class="label tiny" style="font-weight:700;text-transform:uppercase;color:var(--ink-2)">Business rules and acceptance criteria</span>
+      {% for x in by_req.get(r.id, []) %}<div class="small" style="margin:4px 0">{{ x.kind|replace('_', ' ') }}{% if x.field %} · <b>{{ x.field }}</b>{% endif %}{% if x.value %} <span class="muted">{{ x.value }}</span>{% endif %}
+        <span class="pill {{ x.status }}">{{ x.status }}</span>{% if x.source == 'llm' %} <span class="pill info">model</span>{% endif %}{% if x.status_note %} <span class="tiny muted">{{ x.status_note }}</span>{% endif %}</div>{% endfor %}
+      {% for c in st.acceptance_criteria or [] %}<div class="tiny muted">✓ {{ c }}</div>{% endfor %}</div>
+    {% if st.dependencies or st.duplicates or st.contradictions %}<div class="small">{% if st.dependencies %}Depends on {{ st.dependencies|join(', ') }}. {% endif %}{% if st.duplicates %}Possible duplicate of {{ st.duplicates|join(', ') }}. {% endif %}
+      {% for c in st.contradictions %}Contradiction on {{ c.field }}: {% for v, ids in c['values'].items() %}{{ ids|join(', ') }} say {{ v }}{{ '; ' if not loop.last }}{% endfor %}. {% endfor %}</div>{% endif %}
+    <form method="post" action="/p/{{ slug }}/srs/disposition" class="row" style="gap:8px">
+      <input type="hidden" name="req_id" value="{{ r.id }}"><span class="tiny muted">{{ r.disposition_note }} · clarity: {{ st.clarification or '-' }} · read by {{ st.confidence or '-' }}{% if st.enriched_by_model %} (model filled {{ st.enriched_by_model|join(', ') }}){% endif %}</span>
+      <select name="disposition" aria-label="Disposition of {{ r.id }}" style="width:auto">{% for k, label in dispositions.items() %}<option value="{{ k }}" {{ 'selected' if r.disposition == k }}>{{ label }}</option>{% endfor %}</select>
+      <input type="text" name="note" placeholder="why (kept in the change log)" aria-label="Reason" style="width:220px"><button class="ghost">Set</button></form>
+  </div>
+</details>{% endfor %}
+</div>
+{% if orphan %}<h2>Rules found in the app itself</h2>
+<div class="card flush"><div class="table-wrap"><table><thead><tr><th>Rule</th><th>Field or page</th><th>Status</th><th>Note</th></tr></thead><tbody>
+{% for x in orphan %}<tr><td>{{ x.kind|replace('_', ' ') }}</td><td>{{ x.field or x.target }}</td><td><span class="pill {{ x.status }}">{{ x.status }}</span></td><td class="small muted wrap">{{ x.status_note }}</td></tr>{% endfor %}
+</tbody></table></div></div>{% endif %}
+{% else %}<div class="card">{{ ui.empty('doc', 'No requirements yet. Upload the SRS, then run Read SRS.') }}</div>{% endif %}
+{% endblock %}

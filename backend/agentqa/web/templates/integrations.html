@@ -1,0 +1,80 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Jira and Azure DevOps - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Jira and Azure DevOps</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Jira and Azure DevOps</h1>
+    <p class="sub">Confirmed defects become issues with steps, expected and actual results and screenshots. When a developer marks one fixed,
+      AgentQA re-tests it on the next run, then closes it as verified or reopens it with the new evidence.</p></div>
+  {% if systems %}<div class="actions">
+    <a class="btn ghost" href="?test=1">{{ ui.icon('refresh', 'sm') }} Test connection</a>
+    <form method="post" action="/p/{{ slug }}/integrations/sync"><button class="lg" {{ 'disabled' if running }}>{{ ui.icon('link', 'sm') }} Sync now</button></form>
+  </div>{% endif %}
+</div>
+{% for t in tests %}<div class="flash {{ '' if t.ok else 'bad' }}">{{ t.system|replace('_', ' ')|title }}: {{ 'connected' if t.ok else 'not connected' }}. {{ t.detail }}</div>{% endfor %}
+{% if running and running.stage == 'sync' %}<div class="flash">Syncing now. This page refreshes when it is done.</div>{% endif %}
+
+{% if not systems %}
+<div class="grid g2">
+  <section class="card"><div class="card-head"><h3>{{ ui.icon('link') }} Connect Jira</h3><span class="hint">Cloud, Server or Data Center</span></div>
+    <p class="small muted" style="margin-top:0">Add this to Settings, and set the token as an environment variable on this computer (an API token for Jira Cloud, a personal access token for Server).</p>
+<pre class="log">trackers:
+  jira:
+    enabled: true
+    base_url: https://yourorg.atlassian.net
+    project_key: UR
+    email: qa.lead@example.com
+    token_env: AGENTQA_JIRA_TOKEN</pre></section>
+  <section class="card"><div class="card-head"><h3>{{ ui.icon('link') }} Connect Azure DevOps</h3><span class="hint">Services or Server</span></div>
+    <p class="small muted" style="margin-top:0">A personal access token with Work Items (Read and write) is enough.</p>
+<pre class="log">trackers:
+  azure_devops:
+    enabled: true
+    org_url: https://dev.azure.com/yourorg
+    project: Example Portal
+    token_env: AGENTQA_ADO_TOKEN</pre></section>
+</div>
+<p class="small muted">To try it without a tracker, run <code>python -m agentqa demo-trackers</code> and point <code>base_url</code> at <code>http://127.0.0.1:8900/jira</code>.</p>
+{% else %}
+<div class="kpis k4" style="margin-bottom:16px">
+  <div class="kpi"><span class="label">{{ ui.icon('link') }} Connected to</span><span class="value" style="font-size:18px">{{ systems|map('replace', '_', ' ')|map('title')|join(', ')|replace('Azure Devops', 'Azure DevOps') }}</span>
+    <span class="foot">{{ (tcfg.jira.base_url if 'jira' in systems else tcfg.azure_devops.org_url)|truncate(46) }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('upload') }} Waiting to send</span><span class="value">{{ ready }}</span><span class="foot">confirmed defects not yet in the tracker</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('bug') }} Linked issues</span><span class="value">{{ linked|length }}</span><span class="foot">{{ linked|selectattr('status', 'equalto', 'resolved')|list|length }} verified fixed</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('refresh') }} Last sync</span><span class="value" style="font-size:18px">{{ (last.at or '')[:16]|replace('T', ' ') if last else 'never' }}</span>
+    <span class="foot">{% if last %}{{ last.created }} sent · {{ last.verified }} verified · {{ last.reopened }} reopened{% if last.errors %} · {{ last.errors }} failed{% endif %}{% endif %}</span></div>
+</div>
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('activity') }} How the loop runs</h3><span class="hint">{{ 'after every Triage' if tcfg.sync and tcfg.sync.auto else 'when you press Sync now, or with agentqa sync' }}</span></div>
+  <div class="loop">
+    <div><b>1. Confirm</b><span>a QA lead confirms the defect</span></div>
+    <div><b>2. Send</b><span>AgentQA opens the issue with evidence</span></div>
+    <div><b>3. Fix</b><span>the developer marks it fixed</span></div>
+    <div><b>4. Re-test</b><span>the next run checks it again</span></div>
+    <div><b>5. Close or reopen</b><span>verified fixed, or reopened with the new failure</span></div>
+  </div>
+  <p class="tiny muted" style="margin:10px 0 0">An issue closed as Won't Fix, Duplicate or Rejected rejects the AgentQA defect, and later runs leave it rejected.</p>
+</section>
+{% if linked %}
+<h2>Linked issues</h2>
+<div class="card flush"><div class="table-wrap"><table>
+<thead><tr><th>Defect</th><th>Severity</th><th>In AgentQA</th><th>Issue</th><th>In the tracker</th></tr></thead><tbody>
+{% for d in linked %}<tr><td class="wrap"><b>{{ d.id }}</b> {{ d.title|truncate(80) }}</td><td><span class="sev {{ d.severity }}">{{ d.severity }}</span></td>
+  <td><span class="pill {{ 'ok' if d.status == 'resolved' else ('bad' if d.status in ['reopened'] else d.status) }}">{{ 'verified fixed' if d.status == 'resolved' else d.status }}</span></td>
+  <td>{% if d.external_url %}<a href="{{ d.external_url }}" target="_blank" rel="noopener">{{ d.external_key }}</a>{% else %}{{ d.external_key }}{% endif %}</td>
+  <td class="small">{{ d.external_status }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endif %}
+{% if log_rows %}
+<h2>Sync log</h2>
+<div class="card flush"><div class="table-wrap"><table>
+<thead><tr><th>When</th><th>Defect</th><th>Issue</th><th>What happened</th></tr></thead><tbody>
+{% for r in log_rows %}<tr><td class="small muted">{{ (r.at or '')[5:16]|replace('T', ' ') }}</td><td>{{ r.defect_id }}</td><td>{{ r.external_key or '' }}</td>
+  <td class="wrap"><span class="pill {{ 'ok' if r.ok else 'bad' }}">{{ r.action }}</span> <span class="small muted">{{ r.detail|truncate(140) }}</span></td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endif %}
+{% endif %}
+{% endblock %}
+{% block scripts %}{% if running and running.stage == 'sync' %}<script>
+const t = setInterval(async () => { const r = await fetch(`/p/{{ slug }}/job/{{ running.id }}/log`); const x = await r.text(); if (!x.startsWith('status: running')) { clearInterval(t); location.href = '/p/{{ slug }}/integrations'; } }, 2000);
+</script>{% endif %}{% endblock %}

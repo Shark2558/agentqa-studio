@@ -1,0 +1,73 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Ask AgentQA - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Ask AgentQA</span>{% endblock %}
+{% block topactions %}<span class="pill {{ 'info' if model_on else '' }}">{{ ui.icon('spark', 'sm') }} {{ 'Local model on' if model_on else 'Rules only, no model' }}</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>Ask AgentQA</h1>
+    <p class="sub">Ask about requirements, tests, results and defects in plain English, add a simple test, or re-run failures.
+      Answers come from this project's own records and show where they came from.</p>
+  </div>
+</div>
+<section class="card chat">
+  <div class="chat-log" id="log" aria-live="polite">
+    <div class="msg"><span class="av">AQ</span><div class="bubble">Hello. I know this project's {{ counts.apis }} API(s), its test plan, every run and every defect.
+      Try a question below, or type your own.</div></div>
+  </div>
+  <div class="chat-input">
+    <div class="suggest" id="suggest">{% for s in suggestions %}<button type="button" class="chip" data-q="{{ s }}">{{ s }}</button>{% endfor %}</div>
+    <form id="ask"><input type="text" id="q" autocomplete="off" placeholder="e.g. Why did TC-0016 fail?  ·  Show high defects for clerk  ·  Add a test that citizen cannot open /admin/users" aria-label="Your question">
+      <button>{{ ui.icon('send', 'sm') }} Ask</button></form>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script>
+const slug = {{ slug|tojson }}, log = document.getElementById('log'), q = document.getElementById('q');
+const past = {{ history|tojson }};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const SEV = {Critical: 1, High: 1, Medium: 1, Low: 1};
+function bubble(who, html) {
+  const m = document.createElement('div');
+  m.className = 'msg' + (who === 'user' ? ' user' : '');
+  m.innerHTML = `<span class="av">${who === 'user' ? 'You' : 'AQ'}</span><div class="bubble">${html}</div>`;
+  log.appendChild(m); log.scrollTop = log.scrollHeight; return m;
+}
+function render(out) {
+  let h = `<div>${esc(out.text).replace(/\n/g, '<br>')}</div>`;
+  if (out.items && out.items.length) {
+    h += '<div class="items">' + out.items.map(it => {
+      const tag = it.tag ? (SEV[it.tag] ? `<span class="sev ${esc(it.tag)}">${esc(it.tag)}</span> ` : `<span class="pill ${esc(it.tag)}">${esc(it.tag)}</span> `) : '';
+      const title = it.link ? `<a href="/p/${slug}/${esc(it.link)}">${esc(it.title)}</a>` : esc(it.title);
+      return `<div class="item"><b>${tag}${title}</b>${it.detail ? esc(it.detail) : ''}</div>`;
+    }).join('') + '</div>';
+  }
+  const acts = (out.actions || []).map((a, i) => `<button type="button" class="${a.kind === 'ask' ? 'ghost' : ''}" data-act="${i}">${esc(a.label)}</button>`);
+  const sugg = (out.suggestions || []).map(s => `<button type="button" class="chip" data-q="${esc(s)}">${esc(s)}</button>`);
+  if (acts.length || sugg.length) h += `<div class="row" style="margin-top:10px">${acts.join('')}${sugg.join('')}</div>`;
+  h += `<div class="src">${out.source === 'model' ? 'Answered by the local model from the records listed' : (out.source === 'error' ? '' : 'Answered from project records, no model used')}</div>`;
+  const m = bubble('assistant', h);
+  m.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => act(out.actions[+b.dataset.act], b)));
+  m.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => ask(b.dataset.q)));
+}
+async function act(a, btn) {
+  if (a.kind === 'ask') return ask(a.question);
+  btn.disabled = true;
+  const r = await fetch(`/p/${slug}/assistant/act`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(a)});
+  if (r.ok) { const j = await r.json(); if (j.redirect) location.href = j.redirect; }
+  else { btn.disabled = false; bubble('assistant', esc(r.status === 409 ? 'Another stage is running. Try again when it finishes.' : 'That action could not start.')); }
+}
+async function ask(text) {
+  text = (text || '').trim(); if (!text) return;
+  bubble('user', esc(text)); q.value = '';
+  const wait = bubble('assistant', '<span class="muted">Looking through the records...</span>');
+  try {
+    const r = await fetch(`/p/${slug}/assistant/ask`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({question: text})});
+    wait.remove(); render(await r.json());
+  } catch (e) { wait.remove(); bubble('assistant', 'The answer could not be loaded. Is the Studio still running?'); }
+}
+for (const h of past) { if (h.who === 'user') bubble('user', esc(h.text)); else if (h.data) render(h.data); }
+document.getElementById('ask').addEventListener('submit', e => { e.preventDefault(); ask(q.value); });
+document.querySelectorAll('#suggest [data-q]').forEach(b => b.addEventListener('click', () => ask(b.dataset.q)));
+q.focus();
+</script>{% endblock %}

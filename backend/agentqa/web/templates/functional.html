@@ -1,0 +1,80 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Functional tests - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Functional tests</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Functional test cases</h1>
+    <p class="sub">Written the way a manual tester writes them: preconditions, steps, test data and an expected result for every
+      login, menu, form and search AgentQA found, plus the checks that come from SRS rules. Run them here and hand the workbook to your team.</p></div>
+  <div class="actions">
+    <a class="btn ghost" href="/p/{{ slug }}/functional.xlsx?srs={{ srs }}">{{ ui.icon('download', 'sm') }} Excel workbook</a>
+    {% if proposed %}<form method="post" action="/p/{{ slug }}/functional/approve"><button class="ghost">{{ ui.icon('check', 'sm') }} Approve {{ proposed }} drafted</button></form>{% endif %}
+    <form method="post" action="/p/{{ slug }}/run/run"><input type="hidden" name="only" value="functional"><input type="hidden" name="watch" value="1">
+      <button {{ 'disabled' if running or not all_n }}>{{ ui.icon('play', 'sm') }} Run functional tests</button></form>
+  </div>
+</div>
+{% if not all_n %}
+<div class="card">{{ ui.empty('clipboard', 'No functional cases yet. Run Explore (AgentQA logs in and clicks through the portal) and then Design.') }}
+  {% if not accounts %}<p class="small" style="text-align:center">First add the login accounts on the <a href="/p/{{ slug }}/testdata">Test data</a> page.</p>{% endif %}</div>
+{% else %}
+<div class="kpis" style="margin-bottom:16px">
+  <div class="kpi"><div class="label">Test cases</div><div class="value">{{ totals.n }}</div><div class="hint">{{ mods|length }} modules</div></div>
+  <div class="kpi"><div class="label">Passed</div><div class="value" style="color:var(--ok)">{{ totals.Passed }}</div><div class="hint">last result per case</div></div>
+  <div class="kpi"><div class="label">Failed</div><div class="value" style="color:var(--bad)">{{ totals.Failed }}</div><div class="hint">defects drafted on the Defects page</div></div>
+  <div class="kpi"><div class="label">Blocked / not run</div><div class="value">{{ totals.Blocked }} / {{ totals['Not Run'] }}</div><div class="hint">never counted as passed</div></div>
+  <div class="kpi"><div class="label">Requirements traced</div><div class="value">{{ req_covered }}<span class="small muted"> / {{ req_total }}</span></div><div class="hint">from these cases</div></div>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('layers') }} By module</h3>
+    <span class="hint">{% if srs %}<a href="?srs=0">Hide the SRS-rule checks</a>{% else %}<a href="?srs=1">Show the SRS-rule checks too</a>{% endif %}</span></div>
+  <div class="modgrid">
+  {% for name, m in mods.items() %}
+    <a class="mod {{ 'on' if fmodule == name }}" href="?module={{ name|urlencode }}&srs={{ srs }}">
+      <b>{{ name }}</b><span class="num">{{ m.n }}</span>
+      <span class="bar" aria-hidden="true"><i class="p" style="width:{{ (m.Passed / m.n * 100)|round }}%"></i><i class="f" style="width:{{ (m.Failed / m.n * 100)|round }}%"></i><i class="b" style="width:{{ (m.Blocked / m.n * 100)|round }}%"></i></span>
+      <span class="tiny muted">{{ m.Passed }} passed · {{ m.Failed }} failed{% if m.Blocked %} · {{ m.Blocked }} blocked{% endif %}{% if m['Not Run'] %} · {{ m['Not Run'] }} not run{% endif %}</span>
+    </a>
+  {% endfor %}
+  </div>
+</div>
+
+<div class="row" style="margin-bottom:12px">
+  <a class="chip {{ 'on' if not fmodule and not fstatus }}" href="?srs={{ srs }}">All <span class="count">{{ all_n }}</span></a>
+  {% for st in ['Failed', 'Passed', 'Blocked', 'Not Run'] %}<a class="chip {{ 'on' if fstatus == st }}" href="?status={{ st|urlencode }}&srs={{ srs }}{% if fmodule %}&module={{ fmodule|urlencode }}{% endif %}">{{ st }}</a>{% endfor %}
+  {% if fmodule %}<span class="pill">{{ fmodule }} <a href="?srs={{ srs }}" aria-label="Clear module filter">×</a></span>{% endif %}
+</div>
+
+<div class="stack tc-list">
+{% for r in rows %}
+<details class="card tc {{ r.status|lower|replace(' ', '') }}">
+  <summary>
+    <span class="num tc-id">{{ r.id }}</span>
+    <span class="tc-main"><b>{{ r.title }}</b>
+      <span class="tiny muted">{{ r.module }} · {{ r.scenario or '-' }} · {{ r.role }}{% if r.reqs %} · {{ r.reqs }}{% endif %} · {{ r.test_type }}{% if r.by == 'model' or r.source == 'model' %} · drafted with the model{% elif r.by == 'rules' %} · from the use case (Visual QA){% endif %}</span></span>
+    <span class="pill {{ {'Critical': 'bad', 'High': 'warn'}.get(r.priority, '') }}">{{ r.priority }}</span>
+    <span class="pill {{ {'Passed': 'ok', 'Failed': 'bad', 'Blocked': 'warn'}.get(r.status, '') }}">{{ r.status }}</span>
+    {% if r.approved != 'approved' %}<span class="pill">{{ r.approved }}</span>{% endif %}
+  </summary>
+  <div class="tc-body">
+    <div class="tc-meta">
+      <div><span class="label">Objective</span>{{ r.objective or '-' }}</div>
+      <div><span class="label">Test type</span>{{ r.test_type }}</div>
+      <div><span class="label">Preconditions</span>{{ r.pre or '-' }}</div>
+      <div><span class="label">Test data</span>{{ r.data or '-' }}</div>
+    </div>
+    <ol class="tc-steps">{% for st in r.steps %}<li>{{ st }}</li>{% endfor %}</ol>
+    <div class="tc-meta">
+      <div><span class="label">Expected result</span>{{ r.expected }}</div>
+      <div><span class="label">Actual result{% if r.run_id %} ({{ r.run_id }}){% endif %}</span>{{ r.actual or 'Not run yet' }}
+        {% if r.defect %}<div style="margin-top:6px"><a class="pill bad" href="/p/{{ slug }}/defects#{{ r.defect }}">{{ r.defect }}</a></div>{% endif %}
+        {% if r.evidence %}<div class="tiny" style="margin-top:6px">Evidence: {% for e in r.evidence %}<a href="/p/{{ slug }}/files/runs/{{ r.run_id }}/evidence/{{ e }}">{{ e.rsplit('.', 1)[-1] == 'json' and 'step log' or e }}</a>{{ ' · ' if not loop.last }}{% endfor %}</div>{% endif %}</div>
+    </div>
+  </div>
+</details>
+{% else %}
+<div class="card">{{ ui.empty('clipboard', 'No cases match this filter.') }}</div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

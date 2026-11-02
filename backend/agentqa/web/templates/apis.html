@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}APIs - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>APIs</span>{% endblock %}
+{% block body %}
+{% set ntests = tests.values()|map('length')|sum %}
+{% set fails = namespace(n=0) %}{% for lst in tests.values() %}{% for c in lst %}{% if c.result and c.result.outcome != 'passed' %}{% set fails.n = fails.n + 1 %}{% endif %}{% endfor %}{% endfor %}
+<div class="page-head">
+  <div>
+    <h1>APIs</h1>
+    <p class="sub">Every call the screens make, captured from browser traffic while the Explorer works, plus the OpenAPI file when one is set.
+      Each endpoint is tested for status, speed and response shape, and for who may call it.</p>
+  </div>
+  <div class="actions"><form method="post" action="/p/{{ slug }}/run/explore"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('refresh', 'sm') }} Re-discover</button></form></div>
+</div>
+
+<div class="kpis" style="margin-bottom:18px">
+  <div class="kpi"><span class="label">{{ ui.icon('api') }} Endpoints</span><span class="value">{{ rows|length }}</span><span class="foot">distinct path patterns</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('doc') }} Documented</span><span class="value">{{ rows|selectattr('documented')|list|length }}</span>
+    <span class="foot">{{ 'in the OpenAPI file' if project.cfg.api.openapi else 'no OpenAPI file set' }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('shield') }} API tests</span><span class="value">{{ ntests }}</span><span class="foot">smoke, access and record isolation</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('alert') }} Failing</span><span class="value" style="color:{{ 'var(--bad)' if fails.n else 'var(--ink)' }}">{{ fails.n }}</span><span class="foot">in the latest run</span></div>
+</div>
+
+{% if rows %}
+<div class="card flush"><div class="table-wrap"><table>
+  <thead><tr><th>Endpoint</th><th>Called by</th><th>Answers each role</th><th>Response</th><th>Speed</th><th>Tests</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td><span class="pill info mono">{{ r.method }}</span> <b class="mono">{{ r.pattern }}</b>
+      <div class="tiny muted">{% if r.documented %}{{ ui.icon('check', 'sm') }} documented{% else %}found in traffic only{% endif %}
+        {% if r.initiators %} · from {{ r.initiators|sort|join(', ')|truncate(60) }}{% endif %}</div></td>
+    <td>{% for c in r.callers|sort %}<span class="chip">{{ c }}</span> {% else %}<span class="muted small">no screen calls it</span>{% endfor %}</td>
+    <td class="small">{% for role in roles %}{% if role in r.answers %}{% set st = r.answers[role] %}
+      <div class="nw"><span class="muted">{{ role }}</span> <span class="pill {{ 'ok' if st and st < 300 else ('warn' if st and st < 500 else 'bad') }}">{{ st }}</span></div>{% endif %}{% endfor %}</td>
+    <td class="small">{% if r.shape %}<span class="muted">{{ r.shape }}</span>{% endif %}
+      {% if r.fields %}<div class="mono tiny">{{ r.fields|join(', ')|truncate(70) }}</div>{% endif %}</td>
+    <td class="num small">{% if r.ms %}{{ (r.ms|sum / r.ms|length)|round|int }} ms{% else %}-{% endif %}</td>
+    <td class="small">{% for c in tests.get(r.pattern, []) %}
+      <div class="nw"><a href="/p/{{ slug }}/plan?type={{ c.type }}">{{ c.id }}</a> {{ c.type|replace('_', ' ') }}
+      {% if c.result %}<span class="pill {{ 'passed' if c.result.outcome == 'passed' else c.result.category }}">{{ 'passed' if c.result.outcome == 'passed' else c.result.category }}</span>{% else %}<span class="pill">{{ c.status }}</span>{% endif %}</div>
+      {% else %}<span class="muted">none</span>{% endfor %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table></div></div>
+<p class="small muted" style="margin-top:12px">Access is judged from the screens: when the SRS or an answered question says a role may not open a screen, that role may not call the APIs the screen uses either.
+  Record isolation logs in as a second account of the same role (its <code>peer</code> in Settings) and checks it cannot read the first account's records.</p>
+{% else %}
+<div class="card">{{ ui.empty('api', 'No API calls captured yet. Run the Explorer: it records every fetch and XHR call each screen makes.') }}</div>
+{% endif %}
+{% endblock %}

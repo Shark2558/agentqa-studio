@@ -1,0 +1,16 @@
+// AgentQA Studio in Jenkins (Windows agent shown; on Linux replace bat with sh and the venv path).
+pipeline {
+  agent { label 'windows' }
+  options { timeout(time: 60, unit: 'MINUTES') }
+  environment { AGENTQA_PW_CITIZEN = credentials('agentqa-pw-citizen') }
+  stages {
+    stage('Set up') { steps { bat 'setup.bat' } }
+    stage('Test')   { steps { bat '.venv\\Scripts\\python -m agentqa ci -p projects\\my-portal --fail-on High --min-score 70' } }
+  }
+  post {
+    always {
+      junit 'projects/my-portal/runs/*/junit.xml'
+      archiveArtifacts artifacts: 'projects/my-portal/reports/**', allowEmptyArchive: true
+    }
+  }
+}

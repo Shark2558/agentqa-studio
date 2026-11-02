@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block topactions %}{% endblock %}
+{% block body %}
+<section class="hero">
+  <div>
+    <h1>Autonomous testing for web portals, on your own computer</h1>
+    <p>AgentQA reads your SRS, logs in as every role, maps the portal and its APIs, plans risk-ranked tests, runs them in real browsers
+      and drafts defect reports with evidence. No API keys, no cloud, nothing leaves this machine.</p>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>16 agents</b>from SRS to defect report</div>
+    <div class="fact"><b>20 test types</b>UI, API, access, security, load, visual, accessibility</div>
+    <div class="fact"><b>3 human gates</b>questions, plan approval, defect confirmation</div>
+    <div class="fact"><b>0 API keys needed</b>AI providers are optional and opt-in</div>
+  </div>
+</section>
+
+<div class="page-head" style="margin-top:0"><div><h1>Projects</h1><p class="sub">Each project is one portal under test.</p></div></div>
+{% if projects %}
+<div class="proj-list" style="margin-bottom:22px">
+{% for p in projects %}
+  <a class="card proj" href="/p/{{ p.slug }}">
+    <div class="row" style="justify-content:space-between"><b>{{ p.name }}</b>
+      {% if p.verdict %}<span class="pill {{ 'ok' if p.verdict == 'Ready' else ('warn' if p.verdict == 'Ready with risks' else 'bad') }}">{{ p.score }} · {{ p.verdict }}</span>{% endif %}</div>
+    <span class="small muted">{{ p.url }} · folder {{ p.slug }}</span>
+    <div class="row small muted" style="gap:14px;margin-top:4px">
+      <span>{{ ui.icon('list', 'sm') }} {{ p.cases or 0 }} tests</span>
+      <span>{{ ui.icon('bug', 'sm') }} {{ p.defects or 0 }} open defects</span>
+      <span>{{ ui.icon('play', 'sm') }} {{ p.last or 'never run' }}</span>
+    </div>
+  </a>
+{% endfor %}
+</div>
+{% endif %}
+
+<div class="grid g2">
+  <form class="card" method="post" action="/new">
+    <div class="card-head"><h3>{{ ui.icon('plus') }} New project</h3></div>
+    <div class="grid" style="gap:12px">
+      <label class="small"><b>Name</b><br><input type="text" name="name" required placeholder="Citizen Services Portal - UAT" style="width:100%;margin-top:4px"></label>
+      <label class="small"><b>Test environment URL</b><br><input type="url" name="url" required placeholder="https://uat.example.gov.in" style="width:100%;margin-top:4px"></label>
+      <div><button>{{ ui.icon('plus', 'sm') }} Create project</button></div>
+    </div>
+  </form>
+  <form class="card" method="post" action="/demo">
+    <div class="card-head"><h3>{{ ui.icon('spark') }} Try the demo</h3></div>
+    <p class="small muted" style="margin-top:0">Creates a project for the bundled Demo Certificate Portal (start it first with <code>demo-portal.bat</code>, or <code>python -m agentqa demo-portal</code>).
+      It has four roles, an imperfect SRS, a REST API, a manual test sheet and nineteen seeded bugs to find.</p>
+    <button class="ghost">{{ ui.icon('play', 'sm') }} Create demo project</button>
+  </form>
+</div>
+<p class="tiny muted" style="margin-top:18px">Projects folder: {{ projects_dir }}</p>
+{% endblock %}

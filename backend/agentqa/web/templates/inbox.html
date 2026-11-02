@@ -1,0 +1,45 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}OTP and email inbox - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>OTP and email inbox</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>OTP and email inbox</h1>
+    <p class="sub">A mock inbox on this computer catches the one-time passwords and emails the test environment sends. Logins read their OTP from it,
+      and tests can check that an email arrived, without a real phone or mailbox.</p></div>
+  <div class="actions">
+    {% if not inbox_running %}<form method="post" action="/p/{{ slug }}/inbox/start"><button>{{ ui.icon('play', 'sm') }} Start the inbox</button></form>{% endif %}
+    <form method="post" action="/p/{{ slug }}/inbox/clear"><button class="ghost" {{ 'disabled' if not msgs }}>{{ ui.icon('x', 'sm') }} Clear messages</button></form>
+  </div>
+</div>
+<div class="grid g2" style="margin-bottom:16px">
+  <section class="card">
+    <div class="card-head"><h3>{{ ui.icon('mail') }} Where the test environment should send</h3>
+      <span class="pill {{ 'ok' if inbox_running else 'warn' }}">{{ 'listening' if inbox_running else 'stopped' }}</span></div>
+    <dl class="kv">
+      <dt>SMS gateway</dt><dd class="mono">POST {{ url }}/sms <span class="muted">{"to": "98950...", "text": "Your OTP is 123456"}</span></dd>
+      <dt>Email (SMTP)</dt><dd class="mono">{{ '127.0.0.1' if st.host in ['0.0.0.0', ''] else st.host }}:{{ st.smtp_port }} <span class="muted">no login, no TLS</span></dd>
+      <dt>Read messages</dt><dd class="mono">GET {{ url }}/messages</dd>
+    </dl>
+    <p class="tiny muted" style="margin-bottom:0">Ask the portal team to change these gateways in the test environment only. Test runs start the inbox on their own;
+      start it here when you want to catch messages while testing by hand.</p>
+  </section>
+  <section class="card">
+    <div class="card-head"><h3>{{ ui.icon('lock') }} How logins get their OTP</h3><span class="hint">Settings: login.otp</span></div>
+    <dl class="kv">
+      <dt>Source</dt><dd>{{ {'inbox': 'this inbox', 'fixed': 'a fixed test OTP', 'api': 'a test API of the portal', 'totp': 'an authenticator secret (TOTP)'}.get(otp_cfg.source or 'inbox', otp_cfg.source) if otp_cfg.field else 'no OTP step at login' }}</dd>
+      <dt>OTP field</dt><dd class="mono">{{ otp_cfg.field or '-' }}</dd>
+      <dt>Roles with a mobile or email</dt><dd>{% for r in otp_roles %}<span class="chip">{{ r }}</span> {% else %}<span class="muted">none</span>{% endfor %}</dd>
+    </dl>
+  </section>
+</div>
+{% if msgs %}
+<div class="card flush"><div class="table-wrap" tabindex="0" role="region" aria-label="Messages caught"><table>
+<thead><tr><th>Received</th><th>Type</th><th>To</th><th>Message</th><th>OTP</th></tr></thead><tbody>
+{% for m in msgs %}<tr><td class="small muted">{{ m.received_at|ts }}</td><td><span class="pill {{ 'info' if m.kind == 'sms' else 'manual' }}">{{ 'SMS' if m.kind == 'sms' else 'Email' }}</span></td>
+  <td class="mono small wrap" title="{{ m.to_addr }}">{{ m.to_addr|truncate(36, True) }}</td><td class="wrap">{% if m.subject %}<b>{{ m.subject }}</b><br>{% endif %}<span class="small">{{ m.body|truncate(220) }}</span></td>
+  <td>{% if m.otp %}<span class="chip mono"><b>{{ m.otp }}</b></span>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% else %}
+<div class="card">{{ ui.empty('mail', 'No messages caught yet. They appear here when a test logs in with an OTP or the portal sends an email.') }}</div>
+{% endif %}
+{% endblock %}

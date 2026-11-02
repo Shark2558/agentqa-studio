@@ -1,0 +1,64 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Pilot readiness - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Pilot readiness</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Pilot readiness</h1>
+    <p class="sub">Before a pilot on a real portal, this check confirms this computer, the test environment, every role's login and OTP, and the project settings.
+      Each problem comes with the fix. Run it again after every change.</p></div>
+  <div class="actions">
+    <form method="post"><input type="hidden" name="apply" value="1"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('search', 'sm') }} Detect login form and save</button></form>
+    <form method="post"><button class="lg" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Run readiness check</button></form>
+  </div>
+</div>
+{% if running and running.stage == 'doctor' %}<div class="flash">Checking now: logging in as every role takes about half a minute. This page refreshes when it is done.</div>{% endif %}
+
+{% if d %}
+<section class="card" style="margin-bottom:16px">
+  <div class="ready-grid" style="grid-template-columns:auto minmax(0,1fr) auto">
+    <span class="gi-lg {{ 'ok' if not d.fail else 'bad' }}">{{ ui.icon('check' if not d.fail else 'alert', 'lg') }}</span>
+    <div><div class="verdict-big">{{ d.verdict }}</div><div class="small muted">Checked {{ (d.at or '')[:16]|replace('T', ' ') }}</div></div>
+    <div class="row">
+      <span class="pill ok">{{ d.ok }} ok</span><span class="pill warn">{{ d.warn }} to improve</span><span class="pill {{ 'bad' if d.fail else '' }}">{{ d.fail }} blocking</span>
+    </div>
+  </div>
+</section>
+<div class="grid g2">
+{% for gname in ['This computer', 'Test environment', 'Logins and roles', 'Project setup'] %}{% if groups.get(gname) %}
+  <section class="card">
+    <div class="card-head"><h3>{{ ui.icon({'This computer': 'gauge', 'Test environment': 'external', 'Logins and roles': 'users', 'Project setup': 'sliders'}[gname]) }} {{ gname }}</h3></div>
+    <ul class="checks">
+    {% for c in groups[gname] %}
+      <li class="{{ c.status }}">{{ ui.icon('check' if c.status == 'ok' else 'alert') }}
+        <div><b>{{ c.name }}</b> <span class="muted">{{ c.detail }}</span>{% if c.fix %}<div class="fix">{{ c.fix }}</div>{% endif %}</div></li>
+    {% endfor %}
+    </ul>
+  </section>
+{% endif %}{% endfor %}
+</div>
+{% else %}
+<div class="card">{{ ui.empty('clipboard', 'Not checked yet. Run the readiness check: it takes about half a minute.') }}</div>
+{% endif %}
+
+<h2>Pilot checklist</h2>
+<p class="sub">Things AgentQA cannot check by itself. Agree them with the portal owner before the first run.</p>
+<div class="grid g2">
+  <section class="card"><div class="card-head"><h3>{{ ui.icon('lock') }} Permission and environment</h3></div>
+    <ul class="reasons" style="margin:0">
+      <li>Written approval from the portal owner to run automated and security tests</li>
+      <li>A test or UAT environment, never production; its address is in Settings</li>
+      <li>Test data that may be created and changed, and a way to reset it (Settings: <code>data.setup</code>)</li>
+      <li>A contact who can restart the environment if a test brings it down</li>
+    </ul></section>
+  <section class="card"><div class="card-head"><h3>{{ ui.icon('users') }} Accounts and messages</h3></div>
+    <ul class="reasons" style="margin:0">
+      <li>One test account per role, plus a second account for one role to test record isolation</li>
+      <li>CAPTCHA switched off or fixed in the test environment</li>
+      <li>OTP SMS and emails routed to the AgentQA inbox, or a fixed test OTP</li>
+      <li>The latest SRS, and who can answer questions about it within a day</li>
+    </ul></section>
+</div>
+{% endblock %}
+{% block scripts %}{% if running and running.stage == 'doctor' %}<script>
+const t = setInterval(async () => { const r = await fetch(`/p/{{ slug }}/job/{{ running.id }}/log`); const x = await r.text(); if (!x.startsWith('status: running')) { clearInterval(t); location.href = '/p/{{ slug }}/readiness'; } }, 2500);
+</script>{% endif %}{% endblock %}

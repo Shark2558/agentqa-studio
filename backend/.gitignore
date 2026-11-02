@@ -1,0 +1,62 @@
+# ---- AgentQA Studio: what must never reach git -------------------------------------------------
+# Project workspaces: SRS documents, encrypted vault, saved login sessions, test runs, screenshots,
+# evidence, reports and the SQLite store. Everything under projects/ is yours or your client's.
+projects/*
+!projects/README.txt
+
+# State folders, wherever a project lives
+.agentqa/
+*.db
+*.db-journal
+vault.json
+vault.key
+ai.vault
+auth/
+runs/
+reports/
+visual/
+live/
+*.session.json
+blocked.json
+language.json
+pause.flag
+
+# Logs, traces, screenshots and recordings
+*.log
+*.jsonl
+*.zip
+*.webm
+*.trace
+evidence/
+shots/
+
+# Secrets and local settings
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Installer output
+installer/Output/
+installer/*.exe

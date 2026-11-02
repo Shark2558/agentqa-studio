@@ -1,0 +1,15 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Settings - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Settings</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Settings</h1><p class="sub">project.yaml for this portal: roles and test accounts (with a <code>peer</code> account for record isolation), login form, crawl limits,
+    API, visual, security and load-test options, the divergence policy and the optional local model.</p></div>
+</div>
+{% if error %}<div class="flash bad">Not saved: {{ error }}</div>{% endif %}
+<form method="post" class="card">
+  <textarea class="code" name="text" spellcheck="false" aria-label="project.yaml">{{ text }}</textarea>
+  <div class="row" style="margin-top:12px"><button>{{ ui.icon('check', 'sm') }} Save</button>
+    <span class="small muted">Use <code>password_env</code> (an environment variable name) for real test accounts instead of a plain password.</span></div>
+</form>
+{% endblock %}

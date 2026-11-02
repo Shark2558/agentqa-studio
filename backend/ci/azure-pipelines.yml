@@ -1,0 +1,16 @@
+# AgentQA Studio in Azure DevOps Pipelines.
+trigger: none
+schedules:
+  - cron: "30 1 * * *"
+    displayName: Nightly AgentQA run
+    branches: {include: [main]}
+pool: {vmImage: ubuntu-latest}
+steps:
+  - task: UsePythonVersion@0
+    inputs: {versionSpec: "3.12"}
+  - script: pip install -r requirements.txt && python -m playwright install --with-deps chromium
+  - script: python -m agentqa ci -p projects/my-portal --fail-on High --min-score 70
+    env: {AGENTQA_PW_CITIZEN: $(AGENTQA_PW_CITIZEN)}
+  - task: PublishTestResults@2
+    condition: always()
+    inputs: {testResultsFormat: JUnit, testResultsFiles: "projects/my-portal/runs/*/junit.xml"}

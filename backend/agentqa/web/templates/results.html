@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Results - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Results</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Results</h1><p class="sub">"Defect" failures go to Triage, "test-issue" ones to the Healer, "environment" ones are retried, visual changes wait for review.</p></div>
+  {% if runs %}<form class="actions" method="get"><select name="run" onchange="this.form.submit()" aria-label="Run">{% for r in runs %}<option value="{{ r.id }}" {{ 'selected' if r.id == run_id }}>{{ r.id }}: {{ r.passed }}/{{ r.total }} passed</option>{% endfor %}</select></form>{% endif %}
+</div>
+{% if runs %}
+{% set cur = (runs|selectattr('id', 'equalto', run_id)|list or [runs[0]])[0] %}
+<div class="kpis" style="margin-bottom:18px">
+  <div class="kpi"><span class="label">{{ ui.icon('check') }} Passed</span><span class="value" style="color:var(--ok)">{{ cur.passed or 0 }}<small>/{{ cur.total or 0 }}</small></span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('bug') }} Defect failures</span><span class="value" style="color:var(--bad)">{{ cur.failed or 0 }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('wrench') }} Test issues</span><span class="value" style="color:var(--warn)">{{ cur.errors or 0 }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('eye') }} Visual changes</span><span class="value" style="color:var(--violet)">{{ cur.changes or 0 }}</span></div>
+  <div class="kpi"><span class="label">{{ ui.icon('activity') }} Skipped</span><span class="value">{{ cur.skipped or 0 }}</span></div>
+</div>
+<div class="row" style="margin-bottom:12px"><input type="search" id="filter" placeholder="Filter by case, title, role or message" style="min-width:320px" aria-label="Filter results">
+  <label class="check"><input type="checkbox" id="only-fail"> Failures only</label></div>
+<div class="card flush"><div class="table-wrap"><table id="res">
+<thead><tr><th>Case</th><th>Title</th><th>Role</th><th>Result</th><th>Detail</th><th>Evidence</th></tr></thead><tbody>
+{% for r in rows %}<tr data-pass="{{ 1 if r.outcome == 'passed' else 0 }}"><td class="num">{{ r.case_id }}</td><td class="wrap">{{ r.title }}<div class="tiny muted">{{ (r.type or '')|replace('_', ' ') }}</div></td><td class="small">{{ r.role }}</td>
+<td>{% if r.outcome == 'passed' %}<span class="pill passed">passed</span>{% else %}<span class="pill {{ r.category }}">{{ r.category }}</span>{% endif %}<div class="tiny muted">{{ r.duration }}s</div></td>
+<td class="wrap"><pre class="small">{{ (r.message or '').replace('AssertionError: DEFECT: ', '').replace('AssertionError: ', '')|truncate(600) }}</pre></td>
+<td class="small"><div class="row" style="gap:6px">{% for e in r.evidence or [] %}<a class="chip sm" target="_blank" href="/p/{{ slug }}/files/{{ e.path|replace(project.root|string ~ '/', '')|replace(project.root|string ~ '\\', '')|replace('\\', '/') }}">{{ e.kind }} ({{ e.role }})</a>{% endfor %}</div></td></tr>{% endfor %}
+</tbody></table></div></div>
+{% else %}<div class="card">{{ ui.empty('chart', 'No runs yet.') }}</div>{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+const f = document.getElementById('filter'), only = document.getElementById('only-fail');
+function apply() {
+  const t = (f.value || '').toLowerCase();
+  document.querySelectorAll('#res tbody tr').forEach(tr => {
+    tr.hidden = (only.checked && tr.dataset.pass === '1') || (t && !tr.textContent.toLowerCase().includes(t));
+  });
+}
+if (f) { f.addEventListener('input', apply); only.addEventListener('change', apply); }
+</script>{% endblock %}

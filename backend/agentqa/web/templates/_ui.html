@@ -1,0 +1,19 @@
+{% macro icon(name, cls='') %}<svg class="icon {{ cls }}" aria-hidden="true"><use href="#i-{{ name }}"/></svg>{% endmacro %}
+
+{% macro nav(page, key, href, ic, label, badge=None, badge_cls='') %}
+<a class="{{ 'on' if page == key }}" href="{{ href }}"{% if page == key %} aria-current="page"{% endif %}>{{ icon(ic) }}<span>{{ label }}</span>{% if badge %}<span class="badge {{ badge_cls }}">{{ badge }}</span>{% endif %}</a>
+{% endmacro %}
+
+{% macro gauge(score, verdict) %}
+{% set pct = (score or 0) / 100 %}
+{% set color = '#15803d' if verdict == 'Ready' else ('#d97706' if verdict == 'Ready with risks' else '#c2271d') %}
+<svg class="gauge" viewBox="0 0 200 124" role="img" aria-label="Release readiness {{ score }} out of 100: {{ verdict }}">
+  <path class="track" d="M20 110 A80 80 0 0 1 180 110" fill="none" stroke-width="16" stroke-linecap="round"/>
+  <path d="M20 110 A80 80 0 0 1 180 110" fill="none" stroke="{{ color }}" stroke-width="16" stroke-linecap="round"
+        pathLength="100" stroke-dasharray="{{ (pct * 100)|round(1) }} 100"/>
+  <text class="score" x="100" y="100" text-anchor="middle">{{ score }}</text>
+  <text class="of" x="100" y="119" text-anchor="middle">out of 100</text>
+</svg>
+{% endmacro %}
+
+{% macro empty(ic, text) %}<div class="empty">{{ icon(ic) }}<div>{{ text }}</div></div>{% endmacro %}

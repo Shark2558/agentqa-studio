@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Questions - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Questions</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Questions about the SRS</h1>
+    <p class="sub">Where the SRS is wrong, silent or vague, a person decides. Answers are remembered across runs. After answering, re-plan so the tests follow your answers.</p></div>
+  <div class="actions"><form method="post" action="/p/{{ slug }}/run/design"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('layers', 'sm') }} Re-plan</button></form></div>
+</div>
+{% for q in open %}
+<form class="q" method="post" action="/p/{{ slug }}/questions/{{ q.id }}">
+  <div class="row"><span class="pill {{ 'bad' if q.priority == 'High' else 'warn' }}">{{ q.priority }}</span><span class="tiny muted">#{{ q.id }} · {{ q.kind|replace('_', ' ') }}{% if q.req_id %} · {{ q.req_id }}{% endif %}</span></div>
+  <p style="margin:10px 0 6px;font-size:14.5px"><b>{{ q.question }}</b></p>
+  {% if q.proposed %}<p class="small muted" style="margin:0 0 6px">Proposed: {{ q.proposed }}</p>{% endif %}
+  <div class="opts">{% for o in q.options %}<label><input type="radio" name="choice" value="{{ loop.index0 }}" required> {{ o }}</label>{% endfor %}</div>
+  <div class="row" style="margin-top:10px"><input type="text" name="value" placeholder="Value, field name or page path (only if your option asks for one)" style="flex:1;min-width:280px"><button>{{ ui.icon('check', 'sm') }} Save answer</button></div>
+</form>
+{% else %}<div class="card">{{ ui.empty('check', 'No open questions. The SRS and the app agree, or every disagreement has an answer.') }}</div>{% endfor %}
+{% if answered %}<h2>Answered</h2>
+<div class="card flush"><div class="table-wrap"><table><thead><tr><th>#</th><th>Question</th><th>Answer</th><th></th></tr></thead><tbody>
+{% for q in answered %}<tr><td class="num">{{ q.id }}</td><td class="small wrap">{{ q.question }}</td><td class="small wrap"><b>{{ q.answer }}</b><div class="tiny muted">{{ (q.answered_at or '')|replace('T', ' ') }}</div></td>
+<td><form method="post" action="/p/{{ slug }}/questions/{{ q.id }}/reopen"><button class="ghost">Reopen</button></form></td></tr>{% endfor %}
+</tbody></table></div></div>{% endif %}
+{% endblock %}

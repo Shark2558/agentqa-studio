@@ -1,0 +1,55 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+htmlcov/
+.coverage
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Project workspaces and run data (yours or your client's; never in git).
+# Anchored on purpose: a bare "reports/" would also hide a future frontend/src/reports/.
+backend/projects/*
+!backend/projects/README.txt
+**/.agentqa/**
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+vault.json
+vault.key
+ai.vault
+
+# Secrets and local settings
+.env
+.env.*
+*.pem
+*.key
+secrets.*
+
+# Logs, traces, recordings (run data lives under backend/projects/** and .agentqa/**, ignored above)
+*.log
+*.webm
+*.trace
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Installer output
+backend/installer/Output/
+backend/installer/*.exe

@@ -1,0 +1,57 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Visual review - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Visual review</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>Visual review</h1>
+    <p class="sub">Each screen is compared with its approved snapshot. Text is hidden before comparing, so new records and changed numbers do not count;
+      layout, colour, spacing and missing or extra elements do. Approve intended changes, report the rest.</p>
+  </div>
+  {% if vcounts.get('changed') %}<form class="actions" method="post" action="/p/{{ slug }}/visual-approve-all"><button class="ghost">{{ ui.icon('check', 'sm') }} Approve all {{ vcounts.changed }} changes</button></form>{% endif %}
+</div>
+<div class="row" style="margin-bottom:16px">
+  {% for key, label in [('changed', 'Changed'), ('baseline', 'New baseline'), ('same', 'Unchanged'), ('approved', 'Approved'), ('reported', 'Reported'), ('all', 'All')] %}
+  <a class="chip {{ 'on' if show == key }}" href="?show={{ key }}">{{ label }} <span class="count">{{ total if key == 'all' else vcounts.get(key, 0) }}</span></a>
+  {% endfor %}
+</div>
+
+{% if rows %}
+<div class="shots">
+{% for v in rows %}
+  <section class="card shot-card" id="v-{{ v.key }}">
+    <div class="card-head">
+      <div><b class="mono">{{ v.path }}</b><div class="tiny muted">as {{ v.role }}{% if v.case_id %} · {{ v.case_id }}{% endif %}{% if v.diff_ratio %} · {{ '%.2f'|format(v.diff_ratio * 100) }}% of layout differs{% endif %}</div></div>
+      <span class="pill {{ v.status }}">{{ v.status }}</span>
+    </div>
+    {% set first = v.diff_rel or v.cur_rel or v.base_rel %}
+    <div class="seg" role="group" aria-label="Snapshot to show" style="margin-bottom:10px">
+      {% if v.diff_rel %}<button type="button" class="on" aria-pressed="true" data-src="/p/{{ slug }}/files/{{ v.diff_rel }}">Difference</button>{% endif %}
+      {% if v.cur_rel %}<button type="button" class="{{ 'on' if not v.diff_rel }}" data-src="/p/{{ slug }}/files/{{ v.cur_rel }}">Now</button>{% endif %}
+      {% if v.base_rel %}<button type="button" class="{{ 'on' if not v.diff_rel and not v.cur_rel }}" data-src="/p/{{ slug }}/files/{{ v.base_rel }}">Approved</button>{% endif %}
+    </div>
+    <a class="frame" href="/p/{{ slug }}/files/{{ first }}" target="_blank">{% if first %}<img loading="lazy" alt="Snapshot of {{ v.path }} as {{ v.role }}" src="/p/{{ slug }}/files/{{ first }}">{% endif %}</a>
+    {% if v.status == 'changed' %}
+    <div class="row" style="margin-top:12px">
+      <form method="post" action="/p/{{ slug }}/visual/{{ v.key }}"><button name="action" value="approve">{{ ui.icon('check', 'sm') }} Approve as new baseline</button></form>
+      <form method="post" action="/p/{{ slug }}/visual/{{ v.key }}"><button class="danger" name="action" value="defect">{{ ui.icon('bug', 'sm') }} Report as defect</button></form>
+    </div>
+    {% endif %}
+  </section>
+{% endfor %}
+</div>
+{% else %}
+<div class="card">{{ ui.empty('eye', 'Nothing here. Visual snapshots are taken during runs; the first run saves each screen as its baseline.' if not total else 'No snapshots in this group.') }}</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll('.shot-card').forEach(card => {
+  const img = card.querySelector('.frame img'), link = card.querySelector('.frame');
+  const btns = card.querySelectorAll('.seg button');
+  btns.forEach(x => x.setAttribute('aria-pressed', x.classList.contains('on')));
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    if (img) { img.src = b.dataset.src; link.href = b.dataset.src; }
+  }));
+});
+</script>{% endblock %}

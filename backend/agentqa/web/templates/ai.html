@@ -1,0 +1,121 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}AI providers - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>AI providers</span>{% endblock %}
+{% block body %}
+{% set e = editing or {} %}
+<div class="page-head">
+  <div><h1>AI providers</h1>
+    <p class="sub">Every AI service AgentQA may use, and the order it tries them. When a key hits a rate limit, runs out of quota,
+      times out or the service is down, the next key takes over without you; a rejected key or exhausted billing is never retried
+      until you fix it. Shared by every project on this computer. Keys are encrypted and never shown again after saving.</p></div>
+  <div class="actions"><form method="post" action="/p/{{ slug }}/ai/test-all"><button class="ghost" {{ 'disabled' if not keys }}>{{ ui.icon('check', 'sm') }} Test all keys</button></form>
+    <a class="btn" href="#add">{{ ui.icon('plus', 'sm') }} Add a key</a></div>
+</div>
+{% if msg %}<div class="flash">{{ msg }}</div>{% endif %}
+
+<div class="kpis" style="margin-bottom:16px">
+  <div class="kpi"><div class="label">Keys</div><div class="value">{{ summary['keys'] }}</div><div class="hint">{{ summary.active }} active</div></div>
+  <div class="kpi"><div class="label">Usable now</div><div class="value" style="color:var(--ok)">{{ summary.usable }}</div><div class="hint">active, healthy, not cooling down</div></div>
+  <div class="kpi"><div class="label">Cooling down</div><div class="value" style="color:var(--warn)">{{ summary.cooling }}</div><div class="hint">rate limit, quota or outage</div></div>
+  <div class="kpi"><div class="label">Need your attention</div><div class="value" style="color:var(--bad)">{{ summary.dead }}</div><div class="hint">rejected, billing or model</div></div>
+  <div class="kpi"><div class="label">Today</div><div class="value">{{ summary.ok_today }}</div><div class="hint">answers · {{ summary.failures_today }} failures · {{ summary.switches_today }} switches</div></div>
+</div>
+
+<section class="card flush" id="keys" style="margin-bottom:16px">
+  <div class="card-head" style="padding:16px 18px 0"><h3>{{ ui.icon('lock') }} Keys, in the order they are tried</h3><span class="hint">Provider order from the policy, then priority (1 first)</span></div>
+  {% if not keys %}{{ ui.empty('spark', 'No keys yet. AgentQA works without AI; add a key to let it draft cases, read messy SRS text and find its way on unclear screens.') }}
+  {% else %}<div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Key</th><th>Provider</th><th>Model</th><th>Health</th><th>Last result</th><th></th></tr></thead><tbody>
+    {% for k in keys %}{% set st = k.state or {} %}
+    <tr class="{{ 'muted-row' if k.status == 'disabled' }}">
+      <td class="num">{{ k.priority }}</td>
+      <td><b>{{ k.label }}</b><div class="tiny muted mono">{{ k.masked }}</div></td>
+      <td class="small">{{ catalog[k.provider].name if k.provider in catalog else k.provider }}{% if k.base_url %}<div class="tiny muted mono wrap">{{ k.base_url }}</div>{% endif %}</td>
+      <td class="small">{{ k.model or 'auto' }}{% if k.fallback_model %}<div class="tiny muted">then {{ k.fallback_model }}</div>{% endif %}
+        {% if st.models %}<div class="tiny muted">{{ st.models|length }} model(s) available</div>{% endif %}</td>
+      <td>{% if k.status == 'disabled' %}<span class="pill">Disabled</span>
+        {% elif st.state in ['invalid_key', 'billing', 'model'] %}<span class="pill bad">{{ kinds.get(st.state, st.state) }}</span>
+        {% elif k.cool_s %}<span class="pill warn">Cooling down · {{ (k.cool_s // 60) ~ ' min' if k.cool_s >= 60 else k.cool_s ~ ' s' }}</span>
+        {% elif st.state == 'ok' %}<span class="pill ok">Healthy</span>
+        {% else %}<span class="pill">Not tested</span>{% endif %}
+        <div class="tiny muted">{{ st.requests or 0 }} request(s) · {{ st.failures or 0 }} failure(s){% if st.last_ms %} · {{ st.last_ms }} ms{% endif %}</div></td>
+      <td class="small wrap" style="max-width:280px">{% if st.last_error and st.state != 'ok' %}<span class="tiny">{{ kinds.get(st.last_kind, st.last_kind) }}: {{ st.last_error.split(': {')[0][:120] }}</span>
+        {% elif st.last_ok %}<span class="tiny muted">OK at {{ st.last_ok[11:16] }}</span>{% else %}<span class="tiny muted">-</span>{% endif %}</td>
+      <td class="nw">
+        <form method="post" action="/p/{{ slug }}/ai/key/{{ k.id }}/test" style="display:inline"><button class="quiet">Test</button></form>
+        <a class="btn quiet" href="?edit={{ k.id }}#add">Edit</a>
+        <form method="post" action="/p/{{ slug }}/ai/key/{{ k.id }}/{{ 'enable' if k.status == 'disabled' else 'disable' }}" style="display:inline"><button class="quiet">{{ 'Enable' if k.status == 'disabled' else 'Disable' }}</button></form>
+        {% if st.state in ['invalid_key', 'billing', 'model', 'cooling'] %}<form method="post" action="/p/{{ slug }}/ai/key/{{ k.id }}/reset" style="display:inline"><button class="quiet" title="Clear its failure state and try it again">Retry</button></form>{% endif %}
+        <form method="post" action="/p/{{ slug }}/ai/key/{{ k.id }}/delete" style="display:inline"><button class="quiet danger-text" aria-label="Delete {{ k.label }}">Delete</button></form></td>
+    </tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</section>
+
+<div class="grid g2" style="margin-bottom:16px">
+<form class="card" method="post" action="/p/{{ slug }}/ai/key" id="add">
+  <div class="card-head"><h3>{{ ui.icon('plus') }} {{ 'Edit ' ~ e.label if editing else 'Add a key' }}</h3></div>
+  {% if editing %}<input type="hidden" name="id" value="{{ e.id }}">{% endif %}
+  <div class="formgrid">
+    <label>Provider<select name="provider" id="ai-provider">{% for pid, c in catalog.items() %}<option value="{{ pid }}" {{ 'selected' if e.provider == pid }} data-url="{{ c.base_url }}">{{ c.name }}</option>{% endfor %}</select></label>
+    <label>Name<input type="text" name="label" value="{{ e.label }}" placeholder="Gemini - Primary"></label>
+    <label>API key<input type="password" name="key" autocomplete="off" placeholder="{{ 'saved (' ~ e.masked ~ '): leave empty to keep' if editing else 'paste the key' }}"></label>
+    <label>Priority (1 is tried first)<input type="number" name="priority" min="1" max="99" value="{{ e.priority or 1 }}"></label>
+    <label>Model<input type="text" name="model" value="{{ e.model or 'auto' }}" placeholder="auto"></label>
+    <label>Fallback model<input type="text" name="fallback_model" value="{{ e.fallback_model }}" placeholder="used if the model is unavailable"></label>
+    <label>Base URL (optional)<input type="text" name="base_url" id="ai-url" value="{{ e.base_url }}" placeholder="default for the provider"></label>
+    <label>Azure deployment / API version<span class="row" style="gap:6px"><input type="text" name="deployment" value="{{ e.deployment }}" placeholder="deployment" style="flex:1"><input type="text" name="api_version" value="{{ e.api_version }}" placeholder="2024-10-21" style="width:110px"></span></label>
+  </div>
+  <div class="row" style="margin-top:12px"><button name="test" value="1">{{ ui.icon('check', 'sm') }} Save and test</button><button class="ghost">Save</button>
+    <label class="check"><input type="checkbox" name="disabled" value="1" {{ 'checked' if e.status == 'disabled' }}> Disabled</label>
+    {% if editing %}<a class="btn quiet" href="/p/{{ slug }}/ai">Cancel</a>{% endif %}</div>
+  <p class="tiny muted" style="margin-bottom:0"><b>auto</b> picks a suitable model from the ones the key can use. Several keys for one provider
+    (Primary, Secondary, Backup) are tried by priority. Ollama needs no key; OpenAI-compatible covers any other service with an OpenAI-style API.</p>
+</form>
+
+<form class="card" method="post" action="/p/{{ slug }}/ai/policy" id="policy">
+  <div class="card-head"><h3>{{ ui.icon('sliders') }} Failover policy</h3></div>
+  <label class="small" style="display:grid;gap:4px;font-weight:600">Provider order (first is tried first)
+    <input type="text" name="order" value="{{ policy.order|join(', ') }}"></label>
+  <div class="row" style="margin-top:8px">
+    <label class="check"><input type="checkbox" name="provider_fallback" value="1" {{ 'checked' if policy.provider_fallback }}> When all keys of a provider fail, try the next provider</label></div>
+  <div class="formgrid" style="margin-top:8px">
+    <label>Tries per key on timeouts and outages<input type="number" name="attempts_per_key" min="1" max="5" value="{{ policy.attempts_per_key }}"></label>
+    <label>Timeout per request (s)<input type="number" name="timeout_s" min="5" max="600" value="{{ policy.timeout_s|int }}"></label>
+    <label>Wait between tries (s)<input type="number" step="0.5" name="backoff_s" min="0" max="30" value="{{ policy.backoff_s }}"></label>
+    {% for k, v in policy.cooldown_s.items() %}<label>Cool-down after {{ kinds.get(k, k)|lower }} (s)<input type="number" name="cd_{{ k }}" min="0" value="{{ v|int }}"></label>{% endfor %}
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label class="check"><input type="checkbox" name="redact" value="1" {{ 'checked' if policy.redact }}> Mask mobile numbers, emails and 12-digit numbers</label>
+    <label class="check"><input type="checkbox" name="send_screenshots" value="1" {{ 'checked' if policy.send_screenshots }}> Allow screenshots (Visual QA agent)</label></div>
+  <div class="row" style="margin-top:12px"><button class="ghost">Save policy</button></div>
+</form>
+</div>
+
+<section class="card" id="project" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('spark') }} This project</h3></div>
+  <form method="post" action="/p/{{ slug }}/ai/project" class="row">
+    <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if project_on }}> Use AI in {{ project.name }}</label><button class="ghost">Save</button>
+    <span class="tiny muted">Off: every agent works with rules only. On: the agents use the keys above, in this order.</span></form>
+</section>
+
+<section class="card flush" id="audit">
+  <div class="card-head" style="padding:16px 18px 0"><h3>{{ ui.icon('list') }} Audit log</h3><span class="hint">Failures, switches, tests and answers, newest first</span></div>
+  {% if not events %}{{ ui.empty('list', 'Nothing yet.') }}{% else %}
+  <div class="table-wrap"><table class="plain">
+    <thead><tr><th>Time</th><th>What happened</th><th>Key</th><th>Model</th><th>Task</th><th>Detail</th></tr></thead><tbody>
+    {% for ev in events %}<tr>
+      <td class="nw small mono">{{ ev.at[5:16]|replace('T', ' ') }}</td>
+      <td><span class="pill {{ 'ok' if ev.outcome in ['ok', 'test_ok'] else ('warn' if ev.outcome in ['switched', 'rate_limit', 'quota', 'timeout', 'unavailable', 'connection', 'bad_output'] else 'bad') }}">{{ {'switched': 'Switched key', 'test_ok': 'Test passed', 'test_failed': 'Test failed', 'all_failed': 'All keys failed', 'no_key': 'No usable key'}.get(ev.outcome, kinds.get(ev.outcome, ev.outcome)) }}</span></td>
+      <td class="small">{{ ev.label or '-' }}{% if ev.switched_to %} <span class="muted">→ {{ ev.switched_to }}</span>{% endif %}</td>
+      <td class="small">{{ ev.model or '' }}</td><td class="small">{{ ev.task or '' }}</td>
+      <td class="tiny wrap" style="max-width:420px">{{ ev.detail }}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</section>
+<p class="tiny muted">Stored for your Windows account in <span class="mono">{{ home }}</span> (keys encrypted). Anyone using this
+  Windows account can use the keys through AgentQA but cannot read them back; per-user permissions arrive with user accounts in v1.0.</p>
+{% endblock %}
+{% block scripts %}<script>
+(() => { const s = document.getElementById('ai-provider'), u = document.getElementById('ai-url');
+  const ph = () => { const o = s.selectedOptions[0]; u.placeholder = o && o.dataset.url ? o.dataset.url : 'https://your-service/v1'; };
+  s && s.addEventListener('change', ph); s && ph(); })();
+</script>{% endblock %}

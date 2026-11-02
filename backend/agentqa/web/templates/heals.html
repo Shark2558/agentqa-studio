@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Healer - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><span>Healer</span>{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div><h1>Healer</h1><p class="sub">Proposed fixes for tests that broke because the UI changed. A heal may change how an element is found, never what the test expects.
+    After approving, generate and run again.</p></div>
+  <div class="actions"><form method="post" action="/p/{{ slug }}/run/continue"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Generate and run</button></form></div>
+</div>
+{% if rows %}
+<div class="card flush"><div class="table-wrap"><table><thead><tr><th>#</th><th>Case</th><th>Proposal</th><th>Status</th><th></th></tr></thead><tbody>
+{% for h in rows %}<tr><td class="num">{{ h.id }}</td><td>{{ h.case_id }}</td><td class="wrap">{% if h.kind == 'workflow' %}<span class="pill info">workflow step</span> {% endif %}{{ h.reason }}{% if h.new %}<div class="tiny mono muted">{% if h.kind == 'workflow' %}{{ h.old.value }} &rarr; {{ h.new.value }}{% else %}{{ h.old.field }} &rarr; {{ h.new.field }}{% endif %}</div>{% endif %}</td>
+<td><span class="pill {{ h.status }}">{{ h.status }}</span></td>
+<td>{% if h.status == 'proposed' and h.kind in ('locator', 'workflow') %}<form method="post" action="/p/{{ slug }}/heals/{{ h.id }}" class="row"><button name="action" value="approve">Approve</button><button class="danger" name="action" value="reject">Reject</button></form>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% else %}<div class="card">{{ ui.empty('wrench', 'Nothing to heal. Tests that fail because a button or field moved will show up here.') }}</div>{% endif %}
+{% endblock %}

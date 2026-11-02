@@ -1,0 +1,145 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}{{ project.name }} - AgentQA Studio{% endblock %}
+{% block body %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="sub">{{ project.base_url }} · {{ project.roles()|length }} role(s) · {{ srs_files }} SRS file(s). Every stage runs on this computer.</p>
+  </div>
+  <div class="actions">
+    <form method="post" action="/p/{{ slug }}/run/continue" class="runform"><button class="ghost" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Continue after approval</button></form>
+    <form method="post" action="/p/{{ slug }}/run/pipeline" class="runform" id="pipeform">
+      <input type="hidden" name="policy" id="policy-hidden">
+      <input type="hidden" name="auto_approve" id="auto-hidden">
+      <button class="lg" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Run full pipeline</button>
+    </form>
+  </div>
+</div>
+
+<div class="card" style="padding:12px 16px;margin-bottom:16px">
+  <div class="row" style="gap:18px">
+    <b class="small">Run options</b>
+    <label class="check"><input type="checkbox" id="opt-watch" checked> Watch in Live View</label>
+    <label class="check"><input type="checkbox" id="opt-headed"> Show real browser windows (slow motion)</label>
+    <label class="small">When the SRS and app disagree
+      <select id="opt-policy"><option value="">use project setting ({{ project.cfg.policy.divergence }})</option><option value="ask">ask me</option><option value="srs_wins">SRS is correct</option><option value="app_wins">app is correct</option></select></label>
+    <label class="check"><input type="checkbox" id="opt-auto"> Skip plan approval (demo only)</label>
+  </div>
+</div>
+
+<section class="card" style="margin-bottom:16px">
+  <div class="card-head"><h3>{{ ui.icon('gauge') }} Release readiness</h3>
+    <span class="pill {{ 'ok' if r.verdict == 'Ready' else ('warn' if r.verdict == 'Ready with risks' else 'bad') }}">{{ r.verdict }}</span></div>
+  <div class="ready-grid">
+    {{ ui.gauge(r.score, r.verdict) }}
+    <ul class="reasons">{% for x in r.reasons %}<li>{{ x }}</li>{% endfor %}</ul>
+    <div class="parts">
+      {% for label, key, weight in [('Tests passed, by priority', 'passed', '50%'), ('Defect severity', 'defects', '30%'), ('Requirement coverage', 'coverage', '20%')] %}
+      {% set v = r.parts[key] %}
+      <div><div class="row small" style="justify-content:space-between"><span>{{ label }} <span class="muted tiny">· {{ weight }}</span></span><b class="num">{{ (v * 100)|round|int }}%</b></div>
+        <div class="meter {{ 'ok' if v >= 0.85 else ('warn' if v >= 0.6 else 'bad') }}"><span style="width:{{ (v * 100)|round }}%"></span></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<section class="kpis k4">
+    <div class="kpi"><span class="label">{{ ui.icon('doc') }} Requirements</span><span class="value">{{ k.requirements }}</span>
+      <span class="foot">{{ k.covered }} have tests</span><a class="cover" href="/p/{{ slug }}/srs" aria-label="Requirements"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('map') }} Screens mapped</span><span class="value">{{ k.screens }}</span>
+      <span class="foot">across {{ k.roles }} role(s)</span><a class="cover" href="/p/{{ slug }}/appmap" aria-label="App map"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('api') }} APIs found</span><span class="value">{{ k.apis }}</span>
+      <span class="foot">from screen traffic{{ ' and OpenAPI' if k.documented else '' }}</span><a class="cover" href="/p/{{ slug }}/apis" aria-label="APIs"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('list') }} Test cases</span><span class="value">{{ k.cases }}</span>
+      <span class="foot">{{ k.approved }} approved · {{ k.types }} test types</span><a class="cover" href="/p/{{ slug }}/plan" aria-label="Test plan"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('chart') }} Latest run</span>
+      <span class="value">{% if run %}{{ run.passed }}<small>/{{ run.total }}</small>{% else %}-{% endif %}</span>
+      <div class="meter ok"><span style="width:{{ ((run.passed / run.total * 100) if run and run.total else 0)|round }}%"></span></div>
+      <a class="cover" href="/p/{{ slug }}/results" aria-label="Results"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('bug') }} Open defects</span><span class="value">{{ k.defects }}</span>
+      <div class="sevbar">{% for sev, col in [('Critical', 'var(--crit)'), ('High', 'var(--high)'), ('Medium', 'var(--med)'), ('Low', 'var(--low)')] %}{% if defects.get(sev) %}<span style="width:{{ (defects[sev] / k.defects * 100)|round }}%;background:{{ col }}" title="{{ defects[sev] }} {{ sev }}"></span>{% endif %}{% endfor %}</div>
+      <span class="foot">{% for sev in ['Critical', 'High', 'Medium', 'Low'] %}{% if defects.get(sev) %}{{ defects[sev] }} {{ sev|lower }}{{ ' · ' if not loop.last }}{% endif %}{% endfor %}{% if not k.defects %}none open{% endif %}</span>
+      <a class="cover" href="/p/{{ slug }}/defects" aria-label="Defects"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('eye') }} Visual changes</span><span class="value">{{ k.visual_changed }}</span>
+      <span class="foot">{{ k.visual }} snapshot(s) tracked</span><a class="cover" href="/p/{{ slug }}/visual" aria-label="Visual review"></a></div>
+    <div class="kpi"><span class="label">{{ ui.icon('upload') }} Imported tests</span><span class="value">{{ k.manual }}</span>
+      <span class="foot">{{ k.manual_auto }} automated</span><a class="cover" href="/p/{{ slug }}/imports" aria-label="Imported tests"></a></div>
+</section>
+
+<h2>Human gates</h2>
+<div class="gates">
+  <div class="gate {{ 'ok' if counts.questions == 0 }}"><span class="gi">{{ ui.icon('help') }}</span><div><b>1. Questions about the SRS</b>
+    <p>{% if counts.questions %}{{ counts.questions }} question(s) wait. Rules behind them are not tested until answered. <a href="/p/{{ slug }}/questions">Answer them</a>{% else %}Nothing waiting.{% endif %}</p></div></div>
+  <div class="gate {{ 'ok' if plan and plan.approved }}"><span class="gi">{{ ui.icon('list') }}</span><div><b>2. Test plan approval</b>
+    <p>{% if not plan %}Not designed yet.{% elif plan.approved %}Approved {{ plan.approved_at|replace('T', ' ') }}.{% else %}{{ counts.proposed }} case(s) wait for approval. <a href="/p/{{ slug }}/plan">Review the plan</a>{% endif %}</p></div></div>
+  <div class="gate {{ 'ok' if counts.drafts == 0 }}"><span class="gi">{{ ui.icon('bug') }}</span><div><b>3. Defect confirmation</b>
+    <p>{% if counts.drafts %}{{ counts.drafts }} draft defect(s) to confirm before export. <a href="/p/{{ slug }}/defects">Review them</a>{% else %}Nothing waiting.{% endif %}</p></div></div>
+</div>
+
+<h2>Agents</h2>
+<div class="flow">
+{% for a in agents %}
+  <form class="agent runform {{ 'done' if a.done }} {{ 'active' if a.active }}" method="post" action="/p/{{ slug }}/run/{{ a.key }}">
+    <div class="top"><span class="ic">{{ ui.icon(a.icon) }}</span><div><div class="n">Step {{ loop.index }}</div><b>{{ a.name }}</b></div></div>
+    <div class="stat">{{ a.stat or 'not run yet' }}</div>
+    <div class="desc">{{ a.desc }}</div>
+    <button class="ghost run" {{ 'disabled' if running }}>{{ ui.icon('play', 'sm') }} Run</button>
+  </form>
+{% endfor %}
+</div>
+
+<div class="grid g2" style="margin-top:22px">
+  <section class="card">
+    <div class="card-head"><h3>{{ ui.icon('chart') }} Run history</h3><span class="hint">last {{ trend|length }} run(s)</span></div>
+    {% if trend %}
+    {% set maxt = (trend|map(attribute='total')|max) or 1 %}
+    {% set W = 520 %}{% set H = 170 %}{% set step = (W - 40) / trend|length %}{% set bw = [step * 0.62, 46]|min|round(1) %}
+    <svg class="chart" viewBox="0 -12 {{ W }} {{ H + 38 }}" role="img" aria-label="Passed and failed tests in recent runs" style="width:100%">
+      <g class="grid">{% for i in range(5) %}<line x1="34" x2="{{ W }}" y1="{{ (H - H * i / 4)|round(1) }}" y2="{{ (H - H * i / 4)|round(1) }}"/>
+        <text x="28" y="{{ (H - H * i / 4 + 4)|round(1) }}" text-anchor="end">{{ (maxt * i / 4)|round|int }}</text>{% endfor %}</g>
+      {% for t in trend %}{% set x = 40 + step * loop.index0 + (step - bw) / 2 %}
+        {% set hp = H * (t.passed or 0) / maxt %}{% set hf = H * (t.failed or 0) / maxt %}{% set he = H * (t.errors or 0) / maxt %}{% set hv = H * (t.changes or 0) / maxt %}
+        <rect x="{{ x|round(1) }}" y="{{ (H - hp)|round(1) }}" width="{{ bw }}" height="{{ hp|round(1) }}" rx="3" fill="#2563eb"><title>{{ t.id }}: {{ t.passed }} passed</title></rect>
+        <rect x="{{ x|round(1) }}" y="{{ (H - hp - hf)|round(1) }}" width="{{ bw }}" height="{{ hf|round(1) }}" fill="#e0453a"><title>{{ t.failed }} defect failure(s)</title></rect>
+        <rect x="{{ x|round(1) }}" y="{{ (H - hp - hf - he - hv)|round(1) }}" width="{{ bw }}" height="{{ (he + hv)|round(1) }}" fill="#f2b33d"><title>{{ t.errors }} test issue(s) or visual change(s)</title></rect>
+        <text x="{{ (x + bw / 2)|round(1) }}" y="{{ H + 16 }}" text-anchor="middle">{{ t.started_at[11:16] }}</text>
+      {% endfor %}
+    </svg>
+    <div class="legend"><span><i style="background:#2563eb"></i>passed</span><span><i style="background:#e0453a"></i>failed on a defect</span><span><i style="background:#f2b33d"></i>test issue or visual change</span></div>
+    {% else %}{{ ui.empty('chart', 'No runs yet. Run the full pipeline to see results here.') }}{% endif %}
+  </section>
+  <section class="card">
+    <div class="card-head"><h3>{{ ui.icon('activity') }} Recent activity</h3><a class="small" href="/p/{{ slug }}/live">Open Live View</a></div>
+    {% if sessions %}
+    <div class="table-wrap"><table class="plain"><thead><tr><th>Run</th><th>When</th><th>Status</th><th></th></tr></thead><tbody>
+    {% for x in sessions[:7] %}{% set jid = x.id.split('-')[1] if x.id.startswith('job-') else None %}
+      <tr><td>{{ x.label }}</td><td class="small muted">{{ x.when }}</td>
+      <td>{% if x.running %}<span class="pill running">running</span>{% else %}{% set j = jobs_by_id.get(jid|int) if jid else None %}<span class="pill {{ j.status if j else 'done' }}">{{ j.status if j else 'finished' }}</span>{% endif %}</td>
+      <td class="small"><a href="/p/{{ slug }}/live?s={{ x.id }}">{{ 'watch' if x.running else 'replay' }}</a>{% if jid %} · <a href="#" onclick="showLog({{ jid }});return false">log</a>{% endif %}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if jobs %}<pre class="log" id="log" style="margin-top:12px">Loading log for job {{ jobs[0].id }}...</pre>{% endif %}
+    {% else %}{{ ui.empty('activity', 'Nothing has run yet.') }}{% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const $ = id => document.getElementById(id);
+const keep = (id, key, prop) => { try { const v = localStorage.getItem(key); if (v !== null) $(id)[prop] = prop === 'checked' ? v === '1' : v; } catch (e) {}
+  $(id).addEventListener('change', ev => { try { localStorage.setItem(key, prop === 'checked' ? (ev.target.checked ? '1' : '0') : ev.target.value); } catch (e) {} }); };
+keep('opt-watch', 'aq-watch', 'checked');
+document.querySelectorAll('form.runform').forEach(f => f.addEventListener('submit', () => {
+  if (f.id === 'pipeform') { $('policy-hidden').value = $('opt-policy').value; $('auto-hidden').value = $('opt-auto').checked ? '1' : ''; }
+  for (const [id, name] of [['opt-watch', 'watch'], ['opt-headed', 'headed']]) {
+    if (!$(id).checked) continue;
+    const i = document.createElement('input'); i.type = 'hidden'; i.name = name; i.value = '1'; f.appendChild(i);
+  }
+}));
+async function showLog(id) {
+  const r = await fetch(`/p/{{ slug }}/job/${id}/log`); const t = await r.text();
+  const el = $('log'); if (el) { el.textContent = t; el.scrollTop = el.scrollHeight; }
+  return t;
+}
+{% if jobs %}showLog({{ jobs[0].id }});{% endif %}
+{% if running %}
+const timer = setInterval(async () => { const t = await showLog({{ running.id }}); if (!t.startsWith('status: running')) { clearInterval(timer); location.reload(); } }, 2500);
+{% endif %}
+</script>{% endblock %}

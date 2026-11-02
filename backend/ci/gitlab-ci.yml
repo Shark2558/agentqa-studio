@@ -1,0 +1,12 @@
+# AgentQA Studio in GitLab CI: add this job to .gitlab-ci.yml.
+agentqa:
+  image: mcr.microsoft.com/playwright/python:v1.48.0-jammy
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - python -m agentqa ci -p projects/my-portal --fail-on High --min-score 70
+  artifacts:
+    when: always
+    paths: [projects/my-portal/reports/]
+    reports:
+      junit: projects/my-portal/runs/*/junit.xml

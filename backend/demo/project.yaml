@@ -1,0 +1,113 @@
+# Demo project: tests the bundled demo (demo/portal): a Citizen Portal and a Department Portal over one back end
+project: Demo Certificate Portal
+base_url: http://127.0.0.1:8800
+
+# The portals under test. The first is the primary one; paths on another are written '@<id>/path'.
+applications:
+  citizen:
+    name: Citizen Portal
+    description: Citizens apply for certificates and follow their applications
+    base_url: http://127.0.0.1:8800
+    module: Citizen services
+    environment: Test / QA
+    auth: Mobile number and OTP
+    priority: 1
+    srs: [Demo_Certificate_Portal_SRS.docx]
+  department:
+    name: Department Portal
+    description: Clerks verify, officers approve, administrators manage users and reports
+    base_url: http://127.0.0.1:8810
+    module: Back office
+    environment: Test / QA
+    auth: Username and password (officers also get an OTP)
+    priority: 2
+    srs: [Demo_Certificate_Portal_SRS.docx]
+    login: {start: /, url: /department/login}
+
+roles:
+  # Accounts can also be entered on the Test data page (stored encrypted, never in this file).
+  # login_option is the button a tester clicks to choose the kind of login; AgentQA finds the rest.
+  citizen:
+    app: citizen
+    login_option: Citizen Login
+    method: mobile_otp              # mobile number + OTP
+    mobile: "9847012345"
+    otp_source: inbox               # demo: the portal's SMS goes to AgentQA's mock inbox. Live portal: ask
+    aliases: [Citizen, Citizens, Applicant]
+    peer:                           # a second citizen: checks one user cannot read another's records
+      login_option: Citizen Login
+      method: mobile_otp
+      mobile: "9946098765"
+      otp_source: inbox
+  clerk:
+    app: department
+    login_option: Department Login
+    username: clerk1
+    password: Clerk@123             # demo data only; enter real passwords on the Test data page
+    aliases: [Clerk, Front office]
+  officer:
+    app: department
+    login_option: Department Login
+    method: password_otp            # password, then an OTP by SMS
+    username: officer1
+    password: Officer@123
+    mobile: "9895000001"
+    otp_source: inbox
+    aliases: [Officer, Approving officer]
+  admin:
+    app: department
+    login_option: Department Login
+    username: admin1
+    password: Admin@123
+    aliases: [Administrator, Admin]
+
+login:
+  start: /                          # a tester starts at the home page and clicks Login
+  url: /login                       # where the portal sends visitors who are not logged in
+
+# Mock inbox for OTP SMS and emails. The demo portal sends SMS to http://127.0.0.1:8025/sms
+# and email to 127.0.0.1:2525; point a real test environment's gateways here the same way.
+inbox:
+  http_port: 8025
+  smtp_port: 2525
+
+# Test data: reset the demo portal before each run so results do not depend on earlier runs.
+data:
+  setup:
+    - name: Reset the demo portal's data
+      http: {method: POST, url: /test-support/reset, headers: {X-Test-Key: demo-reset-key}, expect_status: 200}
+
+explore:
+  start_paths: ["/", "/dashboard"]
+  max_pages_per_role: 40
+  exclude_patterns: [logout, signout, delete, remove]
+
+api:
+  openapi: /openapi.json   # the demo portal publishes its API description here
+  prefix: /api/
+
+policy:
+  divergence: ask          # the demo pipeline passes --policy srs_wins to run unattended
+  inferred_access: ask
+
+execution:
+  workers: auto             # 2-4 parallel browsers depending on the CPU
+
+llm:
+  enabled: false
+  model: qwen3:4b
+
+# Multi-role workflows: the Workflow agent derives them from the SRS (FR-07: the Clerk verifies, FR-09: the
+# Officer approves) and the app map, across both portals. Flows it cannot derive can still be written here:
+# workflows: [{id: WF-01, title: ..., steps: [{role: citizen, goto: /apply, ...}, {role: clerk, goto: "@department/clerk/queue", ...}]}]
+workflows: []
+
+visual_qa:
+  # The demo pipeline runs unattended: steps the Visual QA agent cannot do without a model are Not Run instead of
+  # waiting for a person. On a real project leave this on, so AgentQA asks you on the live screen.
+  ask_person: false
+
+functional:
+  # The demo has a test clock (POST /test-support/clock), so OTP expiry (5 min) and idle-session expiry (15 min)
+  # are tested without waiting. Without a hook, waits longer than max_wait_s are reported as Not Run.
+  clock_hook: {url: /test-support/clock, headers: {X-Test-Key: demo-reset-key}}

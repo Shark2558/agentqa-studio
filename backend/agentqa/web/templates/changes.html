@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% import "_ui.html" as ui %}
+{% block title %}Change log - {{ project.name }}{% endblock %}
+{% block crumb %}<span>/</span><a href="/p/{{ slug }}/execution">Execution</a><span>/</span><span>Change log</span>{% endblock %}
+{% block body %}
+<div class="page-head"><div><h1>Change log</h1>
+  <p class="sub">Every change to the plan, a case, a rule or a requirement's disposition: who made it, when, and why. Execution agents
+    never change an expected result; changes come from the designer re-planning, a person's answer, or an approved heal.</p></div></div>
+<div class="card flush"><div class="table-wrap"><table><thead><tr><th>When</th><th>By</th><th>What</th><th>Change</th><th>Why</th></tr></thead><tbody>
+{% for r in rows %}<tr><td class="small num">{{ (r.at or '')[:16]|replace('T', ' ') }}</td><td class="small">{{ r.agent }}{% if r.by %} <span class="tiny muted">via {{ r.by }}</span>{% endif %}</td>
+  <td class="small">{{ r.object }} <b class="num">{{ r.object_id }}</b></td><td class="small wrap">{{ r.change }}</td><td class="small wrap muted">{{ r.justification or '-' }}</td></tr>
+{% else %}<tr><td colspan="5">{{ ui.empty('list', 'No changes recorded yet.') }}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

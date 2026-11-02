@@ -1,0 +1,209 @@
+{% import "_ui.html" as ui %}<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AgentQA Studio{% endblock %}</title><link rel="stylesheet" href="/static/style.css?v={{ version }}">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d4ed8'/%3E%3Ctext x='16' y='21' font-family='Segoe UI,Arial' font-size='13' font-weight='800' fill='white' text-anchor='middle'%3EAQ%3C/text%3E%3C/svg%3E">
+</head>
+<body>{% include "_icons.html" %}
+<div class="shell">
+<nav class="side" aria-label="Main">
+  <a class="brand" href="/"><span class="mark">AQ</span><span><b>AgentQA Studio</b><span>Autonomous testing on local AI</span></span></a>
+  {% if slug %}
+  <a class="proj-card" href="/" title="Switch project"><b>{{ project.name }}</b><span>{{ project.base_url }}</span></a>
+  <div class="nav">
+    <div class="nav-sect">Overview</div>
+    {{ ui.nav(page, 'overview', '/p/' ~ slug, 'grid', 'Dashboard') }}
+    {{ ui.nav(page, 'masterplan', '/p/' ~ slug ~ '/masterplan', 'route', 'Master plan', ('!' if next_step and next_step.status == 'you' else None), 'warn') }}
+    {{ ui.nav(page, 'live', '/p/' ~ slug ~ '/live', 'activity', 'Live View', 'live' if running else None, 'live') }}
+    {{ ui.nav(page, 'assistant', '/p/' ~ slug ~ '/assistant', 'chat', 'Ask AgentQA') }}
+    <div class="nav-sect">Understand</div>
+    {{ ui.nav(page, 'srs', '/p/' ~ slug ~ '/srs', 'doc', 'Requirements') }}
+    {{ ui.nav(page, 'appmap', '/p/' ~ slug ~ '/appmap', 'map', 'App map') }}
+    {{ ui.nav(page, 'apis', '/p/' ~ slug ~ '/apis', 'api', 'APIs', counts.apis or None) }}
+    {{ ui.nav(page, 'questions', '/p/' ~ slug ~ '/questions', 'help', 'Questions', counts.questions or None, 'warn') }}
+    <div class="nav-sect">Test</div>
+    {{ ui.nav(page, 'functional', '/p/' ~ slug ~ '/functional', 'clipboard', 'Functional tests', counts.functional or None) }}
+    {{ ui.nav(page, 'plan', '/p/' ~ slug ~ '/plan', 'list', 'Test plan', counts.proposed or None, 'warn') }}
+    {{ ui.nav(page, 'imports', '/p/' ~ slug ~ '/imports', 'upload', 'Imported tests', counts.manual_review or None, 'warn') }}
+    {{ ui.nav(page, 'execution', '/p/' ~ slug ~ '/execution', 'gauge', 'Execution') }}
+    {{ ui.nav(page, 'results', '/p/' ~ slug ~ '/results', 'chart', 'Results') }}
+    {{ ui.nav(page, 'visual', '/p/' ~ slug ~ '/visual', 'eye', 'Visual review', counts.visual or None, 'warn') }}
+    {{ ui.nav(page, 'security', '/p/' ~ slug ~ '/security', 'shield', 'Security scan', counts.zap or None, 'warn') }}
+    {{ ui.nav(page, 'heals', '/p/' ~ slug ~ '/heals', 'wrench', 'Healer', counts.heals or None, 'warn') }}
+    <div class="nav-sect">Report</div>
+    {{ ui.nav(page, 'defects', '/p/' ~ slug ~ '/defects', 'bug', 'Defects', counts.drafts or None, 'warn') }}
+    {{ ui.nav(page, 'integrations', '/p/' ~ slug ~ '/integrations', 'link', 'Jira and DevOps', counts.sync_errors or None, 'warn') }}
+    <a href="/p/{{ slug }}/files/reports/report.html" target="_blank">{{ ui.icon('report') }}<span>Report</span>{{ ui.icon('external', 'sm') }}</a>
+    <div class="nav-sect">Setup</div>
+    {{ ui.nav(page, 'testdata', '/p/' ~ slug ~ '/testdata', 'lock', 'Test data', counts.accounts_missing or None, 'warn') }}
+    {{ ui.nav(page, 'ai', '/p/' ~ slug ~ '/ai', 'spark', 'AI providers') }}
+    {{ ui.nav(page, 'readiness', '/p/' ~ slug ~ '/readiness', 'clipboard', 'Pilot readiness', counts.doctor_fail or None, 'warn') }}
+    {{ ui.nav(page, 'inbox', '/p/' ~ slug ~ '/inbox', 'mail', 'OTP and email inbox') }}
+    {{ ui.nav(page, 'config', '/p/' ~ slug ~ '/config', 'sliders', 'Settings') }}
+  </div>
+  {% endif %}
+  <div class="side-foot"><span class="local"><i></i> Runs locally · AI keys optional</span><span>AgentQA Studio {{ version }}</span></div>
+</nav>
+<main>
+  <div class="topbar">
+    <div class="crumbs"><a href="/">Projects</a>{% if slug %}<span>/</span><a href="/p/{{ slug }}">{{ project.name }}</a>{% endif %}{% block crumb %}{% endblock %}</div>
+    <div class="spacer"></div>
+    {% if slug and running %}<a class="running-pill" href="/p/{{ slug }}/live"><i></i>Running: {{ running.stage }} · Watch live</a>
+    <button type="button" class="ghost" id="aq-pause" title="Every agent stops at its next step and hands you its browser">{{ ui.icon('wrench', 'sm') }} <span>Pause and take over</span></button>{% endif %}
+    {% block topactions %}{% if slug %}<a class="btn ghost" href="/p/{{ slug }}/assistant">{{ ui.icon('spark', 'sm') }} Ask AgentQA</a>{% endif %}{% endblock %}
+  </div>
+  {% if slug and next_step and page != 'masterplan' %}
+  <div class="nextbar {{ next_step.status }}" role="status">
+    <span class="nb-ic">{% if next_step.status == 'you' %}{{ ui.icon('alert', 'sm') }}{% elif next_step.status == 'running' %}<i class="spin"></i>{% else %}{{ ui.icon('arrow', 'sm') }}{% endif %}</span>
+    <span class="nb-text"><b>{{ 'Your turn' if next_step.status == 'you' else ('Running' if next_step.status == 'running' else 'Next step') }}:</b> {{ next_step.name }}<span class="muted"> · {{ next_step.detail|truncate(120) }}</span></span>
+    {% if next_step.action %}{% if next_step.action.post %}<form method="post" action="{{ next_step.action.href }}" style="margin:0"><input type="hidden" name="watch" value="1"><button class="sm" {{ 'disabled' if running }}>{{ next_step.action.label }}</button></form>{% else %}<a class="btn sm" href="{{ next_step.action.href }}">{{ next_step.action.label }}</a>{% endif %}{% endif %}
+    <a class="tiny" href="/p/{{ slug }}/masterplan">All steps</a>
+  </div>
+  {% endif %}
+  {% block body %}{% endblock %}
+</main>
+</div>
+{% if slug %}
+<div class="assist" id="aq-assist" hidden role="dialog" aria-modal="true" aria-labelledby="aq-assist-q">
+  <div class="assist-box">
+    <div class="assist-head"><span class="pill warn" id="aq-assist-badge">{{ ui.icon('alert', 'sm') }} AgentQA needs you</span><span class="tiny muted" id="aq-assist-meta"></span></div>
+    <h2 id="aq-assist-q"></h2>
+    <p class="small muted" id="aq-assist-hint"></p>
+    <div class="assist-body">
+      <div class="assist-shot" id="aq-assist-shotwrap"><img id="aq-assist-img" alt="The screen the agent is looking at, as it is now"><span class="assist-dot" id="aq-assist-dot" hidden></span>
+        <div class="tiny muted" id="aq-assist-shotnote">Click on the screenshot to show where to click.</div></div>
+      <div class="assist-side" id="aq-ask-side">
+        <form id="aq-assist-form"><label for="aq-assist-text" id="aq-assist-label">Your answer</label>
+          <div class="row"><input type="text" id="aq-assist-text" autocomplete="one-time-code" style="flex:1"><button>{{ ui.icon('send', 'sm') }} Send</button></div></form>
+        <div class="assist-opts" id="aq-assist-opts"></div>
+        <button type="button" class="ghost" id="aq-assist-take" hidden>{{ ui.icon('wrench', 'sm') }} Let me take over the browser</button>
+        <button type="button" class="quiet" id="aq-assist-skip">I can't help with this: skip it</button>
+      </div>
+      <div class="assist-side" id="aq-take-side" hidden>
+        <p class="small" style="margin:0">You have the browser. Click on the screenshot to click there, select a box and type, then press <b>Continue</b>.
+          <span id="aq-take-headed" hidden>You can also use the browser window that opened on this computer.</span> AgentQA records the path and the details you type (passwords and OTPs stay hidden and are saved encrypted) and repeats them next time.</p>
+        <form id="aq-take-form"><label for="aq-take-text">Type into the selected box</label>
+          <div class="row"><input type="text" id="aq-take-text" autocomplete="off" style="flex:1"><button class="ghost">Type</button></div>
+          <label class="check small" style="margin-top:6px"><input type="checkbox" id="aq-take-secret"> Hide what I type (password, OTP)</label></form>
+        <div class="row" style="gap:6px">
+          <button type="button" class="chip" data-key="Enter">Enter</button><button type="button" class="chip" data-key="Tab">Tab</button>
+          <button type="button" class="chip" data-key="Backspace">Backspace</button><button type="button" class="chip" data-cmd="back">Back</button>
+          <button type="button" class="chip" data-cmd="scroll">Scroll down</button></div>
+        <form id="aq-take-goto"><label for="aq-take-path">Or open an address on the portal</label>
+          <div class="row"><input type="text" id="aq-take-path" placeholder="/help/contact or @department/reports" autocomplete="off" style="flex:1;font-size:14px;letter-spacing:0"><button class="ghost">Open</button></div></form>
+        <div><span class="tiny muted">Or pick from the screen:</span><div class="assist-opts" id="aq-take-chips" style="margin-top:4px"></div></div>
+        <ol class="tiny muted" id="aq-take-log" style="margin:0;padding-left:18px"></ol>
+        <div class="row" style="gap:8px"><button type="button" id="aq-take-done">{{ ui.icon('check', 'sm') }} Continue: I'm done</button>
+          <button type="button" class="quiet" id="aq-take-cancel">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const base = '/p/{{ slug }}/assist', box = document.getElementById('aq-assist');
+  const $ = id => document.getElementById(id);
+  let cur = null, title = document.title, notified = new Set(), fastUntil = 0;
+  const isTake = () => cur && cur.kind === 'takeover';
+  async function send(ans) {
+    if (!cur) return;
+    const r = await fetch(`${base}/${cur.id}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(ans)});
+    box.hidden = true; cur = null; document.title = title; $('aq-assist-text').value = ''; $('aq-take-text').value = '';
+    if (!r.ok) console.warn('That question had already been answered or expired.');
+    setTimeout(poll, 600);
+  }
+  async function cmd(c) {
+    if (!isTake()) return;
+    const r = await fetch(`${base}/${cur.id}/cmd`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(c)});
+    if (!r.ok) console.warn('The browser is no longer handed over');
+    fastUntil = Date.now() + 6000; setTimeout(poll, 500);
+  }
+  function setShot(q) {
+    const img = $('aq-assist-img');
+    if (q.shot && img.dataset.v !== String(q.shot_v)) { img.src = q.shot + '&t=' + Date.now(); img.dataset.v = String(q.shot_v); $('aq-assist-dot').hidden = true; }
+    $('aq-assist-shotwrap').hidden = !q.shot; box.classList.toggle('noshot', !q.shot);
+    $('aq-assist-meta').textContent = `${q.agent || ''}${q.role ? ' · ' + q.role : ''}${q.url ? ' · ' + q.url : ''}`;
+    if (q.kind === 'takeover') {
+      $('aq-take-log').innerHTML = (q.log || []).slice(-6).map(x => `<li>${x.replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]))}</li>`).join('');
+      const box = $('aq-take-chips'), sig = JSON.stringify([q.fields, q.clickables]);
+      if (box.dataset.sig !== sig) {
+        box.dataset.sig = sig; box.innerHTML = '';
+        (q.fields || []).forEach(f => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+          b.textContent = '\u270e ' + f.label; b.title = 'Select this box, then type'; b.onclick = () => { cmd({kind: 'click', x: f.x, y: f.y}); $('aq-take-secret').checked = /password/i.test(f.type); $('aq-take-text').type = $('aq-take-secret').checked ? 'password' : 'text'; $('aq-take-text').focus(); }; box.appendChild(b); });
+        (q.clickables || []).slice(0, 24).forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+          b.textContent = c.text; b.title = 'Click it'; b.onclick = () => cmd({kind: 'click', x: c.x, y: c.y}); box.appendChild(b); });
+      }
+    }
+  }
+  function show(q) {
+    cur = q; box.hidden = false; $('aq-assist-img').dataset.v = '';
+    $('aq-assist-q').textContent = q.question;
+    $('aq-assist-hint').textContent = q.hint || '';
+    const take = q.kind === 'takeover';
+    $('aq-ask-side').hidden = take; $('aq-take-side').hidden = !take; $('aq-take-headed').hidden = !q.headed;
+    $('aq-assist-badge').lastChild.textContent = take ? ' You have the browser' : ' AgentQA needs you';
+    const isText = ['otp', 'captcha', 'value'].includes(q.kind);
+    $('aq-assist-label').textContent = q.kind === 'otp' ? 'One-time password' : q.kind === 'captcha' ? 'CAPTCHA text' : 'Or type the button text';
+    const t = $('aq-assist-text'); t.type = 'text'; t.inputMode = q.kind === 'otp' ? 'numeric' : 'text';
+    $('aq-assist-shotnote').textContent = take ? 'Live screen: click where you would click. It refreshes by itself.' : 'Click on the screenshot to show where to click. It refreshes while AgentQA waits.';
+    $('aq-assist-shotnote').hidden = isText && !take;
+    $('aq-assist-take').hidden = q.kind !== 'navigate';
+    const opts = $('aq-assist-opts'); opts.innerHTML = '';
+    if (!take) {
+      (q.options || []).forEach((o, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = o;
+        b.onclick = () => send({option: i}); opts.appendChild(b); });
+      if (!(q.options || []).length) (q.clickables || []).forEach(c => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = c.text;
+        b.onclick = () => send({x: c.x, y: c.y, text: c.text}); opts.appendChild(b); });
+    }
+    setShot(q);
+    setTimeout(() => (take ? $('aq-take-text') : t).focus(), 50);
+    document.title = '(!) AgentQA needs you';
+    if (!notified.has(q.id) && 'Notification' in window) {
+      notified.add(q.id);
+      const go = () => { try { new Notification('AgentQA needs you', {body: q.question}); } catch (e) {} };
+      if (Notification.permission === 'granted') go(); else if (Notification.permission !== 'denied') Notification.requestPermission().then(p => p === 'granted' && go());
+    }
+  }
+  $('aq-assist-form').addEventListener('submit', e => { e.preventDefault(); const v = $('aq-assist-text').value.trim(); if (v) send({text: v}); });
+  $('aq-assist-skip').addEventListener('click', () => send({skip: true}));
+  $('aq-assist-take').addEventListener('click', () => send({takeover: true}));
+  $('aq-take-form').addEventListener('submit', e => { e.preventDefault(); const v = $('aq-take-text').value; if (!v) return;
+    cmd({kind: 'type', text: v, secret: $('aq-take-secret').checked}); $('aq-take-text').value = ''; });
+  $('aq-take-secret').addEventListener('change', e => { $('aq-take-text').type = e.target.checked ? 'password' : 'text'; });
+  $('aq-take-goto').addEventListener('submit', e => { e.preventDefault(); const v = $('aq-take-path').value.trim(); if (!v) return;
+    cmd({kind: 'goto', path: v}); $('aq-take-path').value = ''; });
+  document.querySelectorAll('#aq-take-side [data-key]').forEach(b => b.addEventListener('click', () => cmd({kind: 'press', key: b.dataset.key})));
+  document.querySelectorAll('#aq-take-side [data-cmd]').forEach(b => b.addEventListener('click', () => cmd({kind: b.dataset.cmd})));
+  $('aq-take-done').addEventListener('click', () => send({done: true}));
+  $('aq-take-cancel').addEventListener('click', () => send({skip: true}));
+  $('aq-assist-img').addEventListener('click', e => {
+    if (!cur || (['otp', 'captcha', 'value'].includes(cur.kind))) return;
+    const img = e.currentTarget, r = img.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (cur.vw || img.naturalWidth) / r.width, y = (e.clientY - r.top) * (cur.vh || img.naturalHeight) / r.height;
+    const d = $('aq-assist-dot'); d.hidden = false; d.style.left = (e.clientX - r.left) + 'px'; d.style.top = (e.clientY - r.top) + 'px';
+    if (isTake()) cmd({kind: 'click', x: Math.round(x), y: Math.round(y)});
+    else setTimeout(() => send({x: Math.round(x), y: Math.round(y)}), 350);
+  });
+  async function poll() {
+    try {
+      const r = await fetch(`${base}/pending`, {cache: 'no-store'}); if (!r.ok) return;
+      const list = await r.json();
+      const same = cur && list.find(q => q.id === cur.id);
+      if (same) setShot(same);                       // the same question: only the live screen and its log change
+      else if (list.length) show(list[0]);
+      else if (cur) { box.hidden = true; cur = null; document.title = title; }
+    } catch (e) {}
+  }
+  poll();
+  (function loop() { setTimeout(() => { poll().finally(loop); }, Date.now() < fastUntil || isTake() ? 900 : 2000); })();
+  const pb = $('aq-pause');
+  if (pb) {
+    const label = p => { pb.lastElementChild.textContent = p ? 'Paused: resume all' : 'Pause and take over'; pb.classList.toggle('on', p); pb.dataset.p = p ? '1' : ''; };
+    fetch('/p/{{ slug }}/paused', {cache: 'no-store'}).then(r => r.json()).then(d => label(d.paused)).catch(() => {});
+    pb.addEventListener('click', async () => {
+      const r = await fetch(pb.dataset.p ? '/p/{{ slug }}/resume' : '/p/{{ slug }}/pause', {method: 'POST'});
+      if (r.ok) label(!(pb.dataset.p)); setTimeout(poll, 800);
+    });
+  }
+})();
+</script>
+{% endif %}
+{% block scripts %}{% endblock %}</body></html>
