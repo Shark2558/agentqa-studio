@@ -6,6 +6,15 @@
 # python:3.12-slim (Debian 13 "trixie", pinned so `playwright install --with-deps` always meets the release it was
 # built for) + Playwright's Chromium and its system libraries + Tesseract for scanned requirement documents.
 # Chosen over Microsoft's 2 GB Playwright image to keep the download small (ADR 0001 / plan m0-2-docker.md).
+# ---- stage 1: build the React app (frontend/dist), served by the backend at /app ----
+FROM node:24-slim AS web
+WORKDIR /web
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
+# ---- stage 2: the backend image ----
 FROM python:3.12-slim-trixie
 
 ENV PYTHONUNBUFFERED=1 \
@@ -34,6 +43,7 @@ RUN pip install -r requirements.txt -c /tmp/constraints.txt \
     && chmod -R a+rX /opt/ms-playwright
 
 COPY backend/ ./
+COPY --from=web /web/dist /srv/frontend/dist
 
 # Run as an unprivileged user. Only /data (a volume) is writable; the engine's code stays read-only to the user
 # that executes generated tests (PYTHONDONTWRITEBYTECODE keeps Python from wanting to write there).

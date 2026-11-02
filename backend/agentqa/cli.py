@@ -490,11 +490,44 @@ def cmd_llm_check(args):
     log(check(p.cfg["llm"], p))
 
 
+def cmd_owner_set(args):
+    """Create or replace the owner sign-in for the API: writes backend/.env (git-ignored) with the password hash."""
+    import getpass
+    import secrets
+    from agentqa.api.auth import hash_password
+    from agentqa.api.settings import DOTENV, MIN_SECRET_LEN
+    email = (args.email or input("Owner email: ")).strip().lower()
+    if "@" not in email:
+        sys.exit("That is not an email address")
+    password = getpass.getpass("Owner password (typed hidden): ")
+    if len(password) < 10:
+        sys.exit("Use at least 10 characters")
+    if password != getpass.getpass("Repeat the password: "):
+        sys.exit("The two passwords differ")
+    existing = {}
+    if DOTENV.exists():
+        for line in DOTENV.read_text(encoding="utf-8").splitlines():
+            if "=" in line and not line.startswith("#"):
+                k, _, v = line.partition("=")
+                existing[k.strip()] = v.strip()
+    secret = existing.get("AGENTQA_SECRET_KEY", "")
+    if len(secret) < MIN_SECRET_LEN:
+        secret = secrets.token_urlsafe(48)
+    existing.update({"AGENTQA_OWNER_EMAIL": email, "AGENTQA_OWNER_PASSWORD_HASH": hash_password(password),
+                     "AGENTQA_SECRET_KEY": secret})
+    text = ("# AgentQA Studio owner sign-in. Keep this file private; it is git-ignored.\n"
+            + "".join(f"{k}={v}\n" for k, v in existing.items()))
+    fd = os.open(DOTENV, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)     # owner-only where the OS honours modes
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    log(f"Owner {email} saved to {DOTENV}. Restart the dashboard (python -m agentqa ui) to use it.")
+
+
 def cmd_ui(args):
     import uvicorn
     os.environ["AGENTQA_PROJECTS"] = str(Path(args.projects_dir).resolve())
     log(f"AgentQA Studio UI on http://{args.host}:{args.port}  (projects folder: {os.environ['AGENTQA_PROJECTS']})")
-    uvicorn.run("agentqa.web.app:app", host=args.host, port=args.port, log_level="warning")
+    uvicorn.run("agentqa.api.server:app", host=args.host, port=args.port, log_level="warning")
 
 
 def cmd_demo_project(args):
@@ -646,6 +679,9 @@ def main(argv=None):
     sp.add_argument("--host", default="127.0.0.1")
     sp.add_argument("--projects-dir", default="projects")
     sp.set_defaults(func=cmd_ui)
+    sp = sub.add_parser("owner-set", help="create or replace the owner sign-in for the API (writes backend/.env)")
+    sp.add_argument("--email", default="")
+    sp.set_defaults(func=cmd_owner_set)
     sp = sub.add_parser("demo-ai", help="start stand-ins for the AI provider APIs (port 8950), to try key failover")
     sp.add_argument("--port", type=int, default=8950)
     sp.set_defaults(func=cmd_demo_ai)

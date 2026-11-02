@@ -16,6 +16,8 @@ htmlcov/
 node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/test-results/
+frontend/playwright-report/
 
 # Project workspaces and run data (yours or your client's; never in git).
 # Anchored on purpose: a bare "reports/" would also hide a future frontend/src/reports/.

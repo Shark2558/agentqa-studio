@@ -10,7 +10,9 @@
 # recreated on its own, run `make up` again so the dashboard rejoins its network.
 #
 # Optional `.env` next to this file (never committed): AGENTQA_VAULT_KEY=<Fernet key>  to pin the key that encrypts
-# test accounts and AI keys; without it the key file is created on the data volume.
+# test accounts and AI keys; without it the key file is created on the data volume. The sign-in variables
+# (AGENTQA_OWNER_EMAIL, AGENTQA_OWNER_PASSWORD_HASH, AGENTQA_SECRET_KEY) go there too; behind HTTPS (the cloud
+# edition) also set AGENTQA_COOKIE_SECURE=1 so the session cookie is never sent over plain HTTP.
 name: agentqa-studio
 
 x-image: &image

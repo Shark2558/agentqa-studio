@@ -8,8 +8,6 @@ from __future__ import annotations
 import os
 import re
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import yaml
@@ -25,8 +23,6 @@ from agentqa.store import Store, now
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
-PROJECTS = Path(os.environ.get("AGENTQA_PROJECTS", ROOT / "projects")).resolve()
-PROJECTS.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="AgentQA Studio")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -43,6 +39,44 @@ def _ts(value) -> str:
 
 
 tpl.env.filters["ts"] = _ts
+
+# ---------------------------------------------------------------------------
+# Projects, jobs and live recordings live in agentqa.orchestrator (M0.5); these wrappers keep the
+# dashboard's names and its HTTP errors.
+# ---------------------------------------------------------------------------
+from agentqa.orchestrator import Busy, NotFound  # noqa: E402
+from agentqa.orchestrator import jobs as _jobs, live as _live, projects as _proj  # noqa: E402
+
+PROCS = _jobs.PROCS
+_pid_alive = _jobs.pid_alive
+_running = _jobs.running
+_prune_live = _jobs.prune_live
+_projects = _proj.list_projects
+_sessions = _live.sessions
+
+
+def _open(slug: str) -> tuple[Project, Store]:
+    try:
+        return _proj.open_project(slug)
+    except NotFound as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+def _spawn(p: Project, s: Store, args: list[str], label: str, headed: bool = False, shots: bool | None = None) -> int:
+    try:
+        return _jobs.spawn(p, s, args, label, headed=headed, shots=shots)
+    except Busy as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+def _session_dir(p: Project, session: str) -> Path:
+    try:
+        return _live.session_dir(p, session)
+    except NotFound as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+PROJECTS = _proj.projects_dir()
 
 ICONS = {"analyze": "doc", "write": "list", "explore": "search", "reconcile": "scale", "design": "layers", "generate": "code",
          "run": "play", "exploratory": "compass", "security": "shield", "triage": "bug", "heal": "wrench", "report": "report"}
@@ -61,70 +95,6 @@ STAGE_INFO = [
     ("heal", "Healer", "Proposes fixes for tests broken by UI changes"),
     ("report", "Reporter", "HTML report, traceability matrix and defect CSV"),
 ]
-
-
-def _projects() -> list[dict]:
-    out = []
-    for d in sorted(PROJECTS.iterdir()):
-        if (d / "project.yaml").exists():
-            try:
-                p = Project(d)
-                row = {"slug": d.name, "name": p.name, "url": p.base_url}
-                if p.db_path.exists():
-                    st = Store(p.db_path)
-                    run = st.one("SELECT * FROM runs WHERE status='done' ORDER BY started_at DESC LIMIT 1")
-                    row.update(cases=st.scalar("SELECT COUNT(*) FROM cases"),
-                               defects=st.scalar("SELECT COUNT(*) FROM defects WHERE status NOT IN ('rejected','resolved')"),
-                               last=(run["started_at"][:16].replace("T", " ") if run else None))
-                    if run:
-                        r = readiness.compute(p, st)
-                        row.update(score=r["score"], verdict=r["verdict"])
-                out.append(row)
-            except Exception as exc:  # noqa: BLE001
-                out.append({"slug": d.name, "name": d.name, "url": f"config error: {exc}"})
-    return out
-
-
-def _open(slug: str) -> tuple[Project, Store]:
-    d = (PROJECTS / slug).resolve()
-    if d.parent != PROJECTS or not (d / "project.yaml").exists():
-        raise HTTPException(404, "No such project")
-    p = Project(d)
-    return p, Store(p.db_path)
-
-
-PROCS: dict[int, subprocess.Popen] = {}
-
-
-def _pid_alive(pid: int) -> bool:
-    if os.name == "nt":  # os.kill(pid, 0) would terminate the process on Windows
-        import ctypes
-        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
-        if not handle:
-            return False
-        code = ctypes.c_ulong()
-        ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
-        ctypes.windll.kernel32.CloseHandle(handle)
-        return code.value == 259  # STILL_ACTIVE
-    try:
-        os.kill(pid, 0)
-        return True
-    except OSError:
-        return False
-
-
-def _running(store: Store) -> dict | None:
-    job = store.one("SELECT * FROM jobs WHERE status='running' ORDER BY id DESC LIMIT 1")
-    if not job:
-        return None
-    proc = PROCS.get(job["id"])
-    alive = (proc.poll() is None) if proc else (bool(job.get("pid")) and _pid_alive(job["pid"]))
-    if not alive:
-        fresh = store.one("SELECT status FROM jobs WHERE id=?", [job["id"]])
-        if fresh and fresh["status"] == "running":
-            store.update("jobs", "id", job["id"], {"status": "failed", "finished_at": now(), "exit_code": -1})
-        return None
-    return job
 
 
 from agentqa.login_flow import account_status  # noqa: E402  (re-exported for templates and the master plan)
@@ -164,28 +134,6 @@ def _ctx(request: Request, slug: str, page: str, **extra) -> dict:
         nxt = None
     return {"request": request, "slug": slug, "project": p, "store": s, "page": page, "counts": counts,
             "running": running, "next_step": nxt, **extra}
-
-
-def _spawn(p: Project, s: Store, args: list[str], label: str, headed: bool = False, shots: bool | None = None) -> int:
-    if _running(s):
-        raise HTTPException(409, "A stage is already running for this project.")
-    log_path = p.state / "logs" / f"{label}-{now().replace(':', '')}.log"
-    job_id = s.insert("jobs", {"stage": label, "status": "running", "started_at": now(), "log_path": str(log_path)})
-    lc = p.cfg.get("live", {})
-    live_dir = p.state / "live" / f"job-{job_id}-{label}"
-    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "AGENTQA_LIVE_DIR": str(live_dir), "AGENTQA_LIVE_FROM_UI": "1",
-           "AGENTQA_LIVE_SHOTS": "1" if (lc.get("screenshots", True) if shots is None else shots) else "0",
-           "AGENTQA_LIVE_QUALITY": str(lc.get("quality", 50))}
-    if headed:
-        env.update({"AGENTQA_HEADED": "1", "AGENTQA_SLOWMO": str(lc.get("slowmo_ms", 400))})
-    _prune_live(p)
-    live_dir.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "w", encoding="utf-8") as fh:
-        proc = subprocess.Popen([sys.executable, "-u", "-m", "agentqa", *args, "-p", str(p.root), "--job-id", str(job_id)],
-                                cwd=str(ROOT), stdout=fh, stderr=subprocess.STDOUT, env=env)
-    PROCS[job_id] = proc
-    s.update("jobs", "id", job_id, {"pid": proc.pid})
-    return job_id
 
 
 # ---------------------------------------------------------------------------
@@ -368,45 +316,6 @@ async def execute(request: Request, slug: str):
 # ---------------------------------------------------------------------------
 # Live View
 # ---------------------------------------------------------------------------
-
-def _prune_live(p: Project) -> None:
-    root = p.state / "live"
-    if not root.exists():
-        return
-    keep = int(p.cfg.get("live", {}).get("keep_sessions", 15))
-    sessions = sorted((d for d in root.iterdir() if d.is_dir()), key=lambda d: d.stat().st_mtime)
-    for old in sessions[:-keep] if len(sessions) > keep else []:
-        shutil.rmtree(old, ignore_errors=True)
-
-
-def _sessions(p: Project, s: Store) -> list[dict]:
-    root = p.state / "live"
-    if not root.exists():
-        return []
-    running = _running(s)
-    out = []
-    for d in sorted((d for d in root.iterdir() if d.is_dir()), key=lambda d: d.stat().st_mtime, reverse=True):
-        parts = d.name.split("-")
-        is_running = bool(running and d.name.startswith(f"job-{running['id']}-"))
-        files = list(d.glob("events-*.jsonl"))
-        if d.name.startswith("cli-") and files:
-            import time as _t
-            is_running = _t.time() - max(f.stat().st_mtime for f in files) < 8
-        label = (f"Job {parts[1]}: {'-'.join(parts[2:])}" if d.name.startswith("job-")
-                 else f"Command line: {'-'.join(parts[3:])}")
-        from datetime import datetime as _dt
-        out.append({"id": d.name, "label": label, "running": is_running,
-                    "when": _dt.fromtimestamp(d.stat().st_mtime).strftime("%d %b %H:%M"),
-                    "shots": len(list((d / "shots").glob("*.jpg"))) if (d / "shots").exists() else 0})
-    return out
-
-
-def _session_dir(p: Project, session: str) -> Path:
-    d = (p.state / "live" / Path(session).name).resolve()
-    if d.parent != (p.state / "live").resolve() or not d.is_dir():
-        raise HTTPException(404, "No such live session")
-    return d
-
 
 @app.get("/p/{slug}/live", response_class=HTMLResponse)
 def live_page(request: Request, slug: str, s: str = ""):  # noqa: A002

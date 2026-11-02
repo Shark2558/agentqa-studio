@@ -13,7 +13,7 @@ DEMO := projects/demo
 COMPOSE := docker compose -f deploy/docker-compose.yml
 IMAGE ?= agentqa-studio:dev
 
-.PHONY: setup test lint demo-portal demo-regression demo-check dev image up down smoke
+.PHONY: setup test lint demo-portal demo-regression demo-check dev image up down smoke web-install web-test web-build web-dev
 
 setup:            ## create the venv outside the repo and install everything
 	py -3.13 -m venv "$(VENV)" || python3 -m venv "$(VENV)"
@@ -40,6 +40,26 @@ demo-check:       ## only the 19-seeded-bug check against an already completed d
 
 dev:              ## the v0.8 dashboard at http://127.0.0.1:8700 (until the new UI lands in M0.5)
 	cd backend && "$(PY)" -m agentqa ui --port 8700 --projects-dir projects
+
+# On Windows the repo is on Google Drive, so npm runs through a local-disk mirror (see frontend/local-node.sh).
+ifeq ($(OS),Windows_NT)
+NPM := bash frontend/local-node.sh
+else
+NPM := cd frontend && npm
+endif
+
+web-install:      ## frontend packages
+	$(NPM) ci --no-audit --no-fund
+
+web-test:         ## frontend type-check + unit tests
+	$(NPM) run typecheck
+	$(NPM) test
+
+web-build:        ## production build into frontend/dist (served by the backend at /app)
+	$(NPM) run build
+
+web-dev:          ## Vite dev server on 5173, proxying /api to the backend on 8700
+	$(NPM) run dev
 
 image:            ## build the container image (dashboard + jobs)
 	docker build -f deploy/Dockerfile -t $(IMAGE) .

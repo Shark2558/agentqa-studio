@@ -12,7 +12,7 @@ without an AI model.
 
 ## Status
 
-Milestones **M0.1** (repo, ECC, CI), **M0.2** (Docker image), **M0.3** (real-AI validation) and **M0.4** (design system: `frontend/design-system/MASTER.md`, tokens, owner-approved mock) done; next **M0.5** API skeleton + React scaffold. Plans in `docs/plans/`.
+**Phase 0 complete** (M0.1 repo+ECC+CI · M0.2 Docker · M0.3 real-AI validation · M0.4 design system · M0.5 `/api/v1` + React app shell at `/app`). Next: Phase 1, M1.1 onboarding wizard. Plans in `docs/plans/`.
 
 ## Quick start (developers)
 

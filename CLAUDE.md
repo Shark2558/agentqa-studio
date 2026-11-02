@@ -36,7 +36,15 @@ The Python venv lives outside the repo at `~/.venvs/agentqa-studio` (Windows: `C
 Never create it inside this Google Drive folder: Drive's virtual filesystem makes OpenSSL's certificate-bundle read
 take ~45 s per `httpx.Client()`, which breaks timing-sensitive tests (M0.1 plan, ADR 0001). `make setup` does it right.
 
+The same goes for the frontend: Drive rejects junctions and symlinks and npm fails with EBADF writing `node_modules`
+there, so on this machine every npm command runs through `bash frontend/local-node.sh <npm args>`, which mirrors
+`frontend/` to `~/.cache/agentqa-studio/frontend-work`, runs npm there and copies `dist/`, `package*.json` and test
+results back. `make web-*` does this for you. On Linux/CI run npm in `frontend/` directly.
+
 ## Commands (run from `backend/` with that venv's python unless noted)
 python -m pytest -q tests · python -m pyflakes agentqa demo tools tests · python -m agentqa demo-portal ·
 python -m agentqa demo-project projects/demo · python -m agentqa pipeline -p projects/demo ·
-python tools/check_demo.py projects/demo · python -m agentqa ui (dashboard) · `make` targets in the repo root wrap these.
+python tools/check_demo.py projects/demo · python -m agentqa owner-set (one-time sign-in, writes backend/.env) ·
+python -m agentqa ui (API at /api/v1, React app at /app, old dashboard at /) · `make` targets in the repo root wrap these.
+First time on a machine, the OWNER runs `python -m playwright install chromium` in his own terminal: the assistant's
+shell is sandboxed and browsers it downloads into %LOCALAPPDATA% are invisible to the real user session.

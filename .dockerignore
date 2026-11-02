@@ -3,7 +3,11 @@
 .github
 .claude
 docs
-frontend
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
+frontend/design-system/mock
 deploy/*.md
 **/.venv
 **/venv
