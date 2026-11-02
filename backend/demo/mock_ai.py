@@ -27,8 +27,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 CALLS: dict[str, int] = {}
 LOCK = threading.Lock()
-MODELS = ["gpt-4o-mini", "gpt-4o", "claude-sonnet-4-5", "gemini-2.5-flash", "gemini-2.5-pro", "deepseek-chat",
-          "llama-3.3-70b-versatile", "mistral-small-latest"]
+MODELS = ["gpt-4o-mini", "gpt-4o", "claude-sonnet-5-5", "claude-haiku-5-5", "gemini-2.5-flash", "gemini-2.5-pro",
+          "deepseek-chat", "llama-3.3-70b-versatile", "mistral-small-latest"]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -106,7 +106,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.path.startswith("/gemini"):
             return self._send(200, {"candidates": [{"content": {"parts": [{"text": answer}]}}]})
         if self.path.startswith("/anthropic"):
-            return self._send(200, {"content": [{"type": "text", "text": answer}]})
+            # the shape of a real Messages response, so the official SDK parses it
+            return self._send(200, {"id": "msg_mock", "type": "message", "role": "assistant", "model": model,
+                                    "content": [{"type": "text", "text": answer}], "stop_reason": "end_turn",
+                                    "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}})
         return self._send(200, {"choices": [{"message": {"role": "assistant", "content": answer}}]})
 
 

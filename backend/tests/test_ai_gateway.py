@@ -32,6 +32,13 @@ def add(g, provider, label, key, path, model="auto", prio=1, **kw):
                                "priority": prio, **kw})
 
 
+def test_an_answer_records_its_token_usage_for_the_cost_record(gw):
+    add(gw, "anthropic", "Claude", "sk-ant-good-0000000000000003", "/anthropic/v1", "claude-sonnet-5-5", 1)
+    assert gw.complete_json("s", "u", task="t")["served_by"] == "000003"
+    ok = next(e for e in gw.store.events(10) if e["outcome"] == "ok")
+    assert "1 in / 1 out tokens" in ok["detail"]          # the stand-in reports usage {input: 1, output: 1}
+
+
 def test_failover_walks_the_keys_and_never_retries_a_rejected_key(gw):
     p1 = add(gw, "openai", "OpenAI Primary", "sk-one-ratelimit-000000000001", "/openai/v1", "gpt-4o-mini", 1)
     p2 = add(gw, "openai", "OpenAI Secondary", "sk-two-invalid-0000000000002", "/openai/v1", "gpt-4o-mini", 2)
@@ -54,9 +61,9 @@ def test_provider_fallback_model_fallback_and_billing(gw):
     add(gw, "openai", "OpenAI billing", "sk-x-billing-000000000000001", "/openai/v1", "gpt-4o-mini", 1)
     add(gw, "openai", "OpenAI down", "sk-x-down-0000000000000000002", "/openai/v1", "gpt-4o-mini", 2)
     ant = add(gw, "anthropic", "Claude", "sk-ant-good-0000000000000003", "/anthropic/v1", "retired-model", 1,
-              fallback_model="claude-sonnet-4-5")
+              fallback_model="claude-sonnet-5-5")
     out = gw.complete_json("s", "u")
-    assert out["model"] == "claude-sonnet-4-5" and gw.last["provider"] == "anthropic"
+    assert out["model"] == "claude-sonnet-5-5" and gw.last["provider"] == "anthropic"
     st = {s["key_id"]: s for s in gw.store.states()}
     billing = next(k for k in gw.store.keys() if k["label"] == "OpenAI billing")
     assert st[billing["id"]]["state"] == "billing"                         # insufficient_quota is billing, not a rate limit

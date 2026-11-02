@@ -28,6 +28,14 @@ def redact(text: str) -> str:
     return text
 
 
+def _answered(task: str, usage: dict | None) -> str:
+    """Audit-log line for a successful answer, with the token counts when the provider reported them."""
+    line = f"{task or 'request'} answered"
+    if usage:
+        line += f" · {usage.get('input_tokens', 0)} in / {usage.get('output_tokens', 0)} out tokens"
+    return line
+
+
 class Gateway:
     def __init__(self, store: AIStore | None = None):
         self.store = store or AIStore()
@@ -125,7 +133,7 @@ class Gateway:
                     ms = int((time.time() - started) * 1000)
                     self.store.update_state(k["id"], state="ok", consecutive=0, cooldown_until=None, last_ok=time.strftime(
                         "%Y-%m-%dT%H:%M:%S"), last_ms=ms, requests="+1")
-                    self.store.event(k, "ok", f"{task or 'request'} answered", task=task, model=model, ms=ms)
+                    self.store.event(k, "ok", _answered(task, a.last_usage), task=task, model=model, ms=ms)
                     self.last = {"provider": k["provider"], "label": k.get("label"), "model": model, "ms": ms}
                     return data, "ok"
                 except P.ProviderError as exc:

@@ -10,14 +10,19 @@ import base64
 import json
 import re
 import time
+from typing import Callable, TypeVar
 
+import anthropic
 import httpx
+
+T = TypeVar("T")
 
 CATALOG: dict[str, dict] = {
     "openai": {"name": "OpenAI", "family": "openai", "base_url": "https://api.openai.com/v1",
                "prefer": [r"^gpt-4o-mini$", r"^gpt-4\.1-mini", r"^gpt-4o$", r"mini"], "vision": True},
     "anthropic": {"name": "Anthropic Claude", "family": "anthropic", "base_url": "https://api.anthropic.com/v1",
-                  "prefer": [r"sonnet", r"haiku", r"claude"], "vision": True},
+                  "prefer": [r"^claude-sonnet-5-5$", r"^claude-haiku-5-5$", r"^claude-opus-5-5$", r"sonnet", r"haiku", r"claude"],
+                  "vision": True},
     "gemini": {"name": "Google Gemini", "family": "gemini", "base_url": "https://generativelanguage.googleapis.com/v1beta",
                "prefer": [], "vision": True},
     "deepseek": {"name": "DeepSeek", "family": "openai", "base_url": "https://api.deepseek.com/v1",
@@ -80,7 +85,8 @@ def classify(status: int | None, text: str) -> str:
     return "unavailable" if (status or 0) >= 500 else "bad_request"
 
 
-def _retry_after(r: httpx.Response) -> float | None:
+def _retry_after(r) -> float | None:
+    """Seconds from a Retry-After header; works for httpx and SDK responses alike (both expose .headers)."""
     v = r.headers.get("retry-after")
     try:
         return float(v) if v else None
@@ -110,6 +116,7 @@ class Adapter:
         self.base = (key.get("base_url") or CATALOG.get(key["provider"], {}).get("base_url") or "").rstrip("/")
         self.secret = key.get("key") or ""
         self.timeout = timeout
+        self.last_usage: dict | None = None     # {"input_tokens", "output_tokens"} of the last chat, when the provider reports it
 
     # -- to implement ------------------------------------------------------------------------
     def models(self) -> list[str]:
@@ -194,24 +201,81 @@ class AzureAdapter(OpenAIAdapter):
 
 
 class AnthropicAdapter(Adapter):
-    family = "anthropic"
+    """Claude through the official SDK. The router owns retries, cool-downs and failover, so the client never retries.
 
-    def _h(self) -> dict:
-        return {"x-api-key": self.secret, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+    Current Messages API rules: no sampling parameters (current models reject them), thinking is adaptive and shares
+    max_tokens (so a floor keeps short JSON tasks from being eaten by thinking), effort kept low for these small
+    tasks, and the server-side refusal fallback on. A model that rejects one of the newer fields (a 400 naming the
+    field, or "... not supported for this model") is asked once more in plain form, the way the OpenAI adapter drops
+    response_format. Whatever the SDK raises becomes a ProviderError, so the router can fail over."""
+    family = "anthropic"
+    MIN_TOKENS = 1024
+    EFFORT = "low"
+    NEWER_FIELDS = ("output_config", "fallbacks", "anthropic-beta", "server-side-fallback")
+    FALLBACK_BETA = "server-side-fallback-2026-07-01"
+    MODELS_PAGE = 100
+
+    def client(self) -> anthropic.Anthropic:
+        base = re.sub(r"/v1/?$", "", self.base)              # keys store .../v1; the SDK adds /v1 itself
+        return anthropic.Anthropic(api_key=self.secret, base_url=base, timeout=self.timeout, max_retries=0)
+
+    def _call(self, fn: Callable[[], T]) -> T:
+        """Run one SDK call, translating its exceptions into the gateway's ProviderError kinds."""
+        try:
+            return fn()
+        except anthropic.APITimeoutError as exc:                  # a subclass of APIConnectionError: keep it first
+            raise ProviderError("timeout", f"no answer within {self.timeout:.0f} s") from exc
+        except anthropic.APIConnectionError as exc:
+            raise ProviderError("connection", f"{exc.__class__.__name__}: {exc}") from exc
+        except anthropic.APIStatusError as exc:
+            body = (exc.response.text if exc.response is not None else str(exc))[:600]
+            retry_after = _retry_after(exc.response) if exc.response is not None else None
+            raise ProviderError(classify(exc.status_code, body), f"HTTP {exc.status_code}: {body}", exc.status_code,
+                                retry_after) from exc
+        except anthropic.APIError as exc:                         # anything else the SDK could not make sense of
+            raise ProviderError("unavailable", f"{exc.__class__.__name__}: {str(exc)[:300]}") from exc
 
     def models(self) -> list[str]:
-        r = self._send("GET", f"{self.base}/models", headers=self._h(), params={"limit": 100}, timeout=20)
-        return [m.get("id", "") for m in (r.json().get("data") or []) if m.get("id")]
+        with self.client() as c:
+            return [m.id for m in self._call(lambda: list(c.models.list(limit=self.MODELS_PAGE))) if m.id]
 
-    def chat(self, model, system, user, max_tokens, image) -> str:
-        content = [{"type": "text", "text": user + "\n\nReply with one JSON object only."}]
+    def _rejects_newer_fields(self, exc: ProviderError) -> bool:
+        return exc.status == 400 and any(f in str(exc) for f in self.NEWER_FIELDS)
+
+    def _request(self, c: anthropic.Anthropic, params: dict):
+        """The beta call with the newer fields; plain form once if this model rejects them."""
+        try:
+            return self._call(lambda: c.beta.messages.create(**params, output_config={"effort": self.EFFORT},
+                                                             fallbacks="default", betas=[self.FALLBACK_BETA]))
+        except ProviderError as exc:
+            if not self._rejects_newer_fields(exc):
+                raise
+            return self._call(lambda: c.messages.create(**params))
+
+    def chat(self, model: str, system: str, user: str, max_tokens: int, image: bytes | None) -> str:
+        self.last_usage = None
+        content: list[dict] = [{"type": "text", "text": user + "\n\nReply with one JSON object only."}]
         if image is not None:
             content.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
                                                         "data": base64.b64encode(image).decode()}})
-        r = self._send("POST", f"{self.base}/messages", headers=self._h(),
-                       json={"model": model, "max_tokens": max_tokens, "temperature": 0, "system": system,
-                             "messages": [{"role": "user", "content": content}]})
-        return "".join(p.get("text", "") for p in (r.json().get("content") or []) if p.get("type") == "text")
+        params = {"model": model, "max_tokens": max(max_tokens, self.MIN_TOKENS), "system": system,
+                  "messages": [{"role": "user", "content": content}]}
+        with self.client() as c:
+            msg = self._request(c, params)
+        if not isinstance(getattr(msg, "content", None), list):
+            raise ProviderError("bad_output", f"answer was not a Messages response: {str(msg)[:160]}")
+        stop = getattr(msg, "stop_reason", None)
+        if stop == "refusal":
+            category = getattr(getattr(msg, "stop_details", None), "category", None)
+            raise ProviderError("bad_request", f"the model declined this request (refusal, category {category})")
+        if stop == "max_tokens":
+            raise ProviderError("bad_output", f"answer cut off at max_tokens={params['max_tokens']} "
+                                              "(adaptive thinking shares that budget)")
+        usage = getattr(msg, "usage", None)
+        if usage is not None:
+            self.last_usage = {"input_tokens": getattr(usage, "input_tokens", 0) or 0,
+                               "output_tokens": getattr(usage, "output_tokens", 0) or 0}
+        return "".join(getattr(b, "text", "") for b in msg.content if getattr(b, "type", "") == "text")
 
 
 _SKIP_GEMINI = re.compile(r"(lite|tts|image|live|audio|embed|vision|aqa|imagen|veo|transcribe|omni|nano|banana|learnlm|gemma|"
