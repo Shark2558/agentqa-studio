@@ -23,8 +23,9 @@ setup:            ## create the venv outside the repo and install everything
 test:             ## unit tests (no browser, no portal)
 	cd backend && "$(PY)" -m pytest -q tests
 
-lint:             ## unused and undefined names
+lint:             ## unused and undefined names; design-token contrast (WCAG) in both themes
 	cd backend && "$(PY)" -m pyflakes agentqa demo tools tests
+	"$(PY)" -I frontend/design-system/check_contrast.py
 
 demo-portal:      ## the two demo portals on 8800 (citizen) and 8810 (department); keep it running in its own terminal
 	cd backend && "$(PY)" -m agentqa demo-portal --port 8800

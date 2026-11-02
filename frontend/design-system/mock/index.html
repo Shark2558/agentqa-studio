@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgentQA Studio — design mock</title>
+<!-- Preview only: the product bundles its fonts locally (M0.5). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+/* ---------- mock-only chrome: screen / theme / font switches ---------- */
+:root { --mockbar-h: 49px; }
+.mock-bar { position: sticky; top: 0; z-index: 10; display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4); background: var(--color-surface-2); border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-sm); color: var(--color-muted); }
+.mock-bar b { color: var(--color-ink); }
+.sw { display: inline-flex; border-radius: var(--radius-pill); box-shadow: var(--neu-pressed); padding: 3px; gap: 3px; }
+.sw button { position: relative; border: 0; background: transparent; color: var(--color-muted); padding: 0 12px; border-radius: var(--radius-pill);
+  font: inherit; font-weight: var(--weight-medium); cursor: pointer; min-height: 34px; }
+.sw button::before { content: ""; position: absolute; inset: -5px 0; }               /* hit area 44 px */
+.sw button[aria-pressed="true"] { background: var(--color-surface-raised); color: var(--color-primary-ink); box-shadow: var(--neu-raised-sm); }
+body[data-font="jakarta"] { --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; }
+.screen[hidden] { display: none; }
+
+/* ---------- shell ---------- */
+.shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: calc(100vh - var(--mockbar-h)); }
+.side { padding: var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); background: var(--color-bg); }
+.brand { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-4); color: var(--color-ink); text-decoration: none; }
+.brand .mark { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--color-on-primary);
+  font-weight: var(--weight-bold); font-size: 13px; letter-spacing: .04em; background: var(--color-primary); box-shadow: var(--neu-primary); }
+.brand .name { display: block; font-size: var(--text-md); line-height: var(--leading-tight); font-weight: var(--weight-semibold); }
+.brand .tag { display: block; font-size: var(--text-xs); color: var(--color-muted); }
+.proj { border-radius: var(--radius); padding: var(--space-3); box-shadow: var(--neu-pressed); margin: 0 0 var(--space-3); }
+.proj b { display: block; font-size: var(--text-sm); } .proj span { font-size: var(--text-xs); color: var(--color-muted); font-family: var(--font-mono); }
+.nav-sect { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .09em; text-transform: uppercase; color: var(--color-muted); padding: var(--space-3) var(--space-2) var(--space-1); }
+.nav a { display: flex; align-items: center; gap: 10px; min-height: var(--target-min); padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--color-ink-2);
+  text-decoration: none; font-weight: var(--weight-medium); transition: box-shadow var(--dur-ui) var(--ease); }
+.nav a:hover { color: var(--color-ink); box-shadow: var(--neu-raised-sm); }
+.nav a[aria-current="page"] { box-shadow: var(--neu-pressed); color: var(--color-primary-ink); font-weight: var(--weight-semibold); }
+.nav a svg { color: var(--color-icon); } .nav a[aria-current="page"] svg { color: var(--color-primary); }
+.nav .count { margin-left: auto; min-width: 22px; text-align: center; font-size: var(--text-xs); font-weight: var(--weight-semibold); border-radius: var(--radius-pill); padding: 1px 7px; white-space: nowrap; }
+.main { padding: var(--space-4) var(--space-5) var(--space-6); min-width: 0; }
+.topbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); min-height: var(--header-h); }
+.crumbs { font-size: var(--text-sm); color: var(--color-muted); } .crumbs b { color: var(--color-ink); font-weight: var(--weight-semibold); }
+.spacer { flex: 1; }
+.btn { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 0 var(--space-4); border-radius: var(--radius-sm); border: 0; font: inherit;
+  font-weight: var(--weight-semibold); cursor: pointer; color: var(--color-ink-2); background: var(--color-surface); box-shadow: var(--neu-raised-sm);
+  transition: box-shadow var(--dur-press) var(--ease), transform var(--dur-press) var(--ease); }
+.btn::before { content: ""; position: absolute; inset: -2px 0; }                      /* 40 px control, 44 px hit area */
+.btn:hover { color: var(--color-ink); } .btn:active { box-shadow: var(--neu-pressed); transform: translateY(1px); }
+.btn.primary { background: var(--color-primary); color: var(--color-on-primary); box-shadow: var(--neu-primary); }
+.btn.primary:hover { background: var(--color-primary-hover); }
+.btn.sm { min-height: 32px; padding: 0 var(--space-3); font-size: var(--text-sm); } .btn.sm::before { inset: -6px 0; }
+.next { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius); margin-bottom: var(--space-4);
+  background: var(--color-warn-soft); color: var(--color-warn-ink); box-shadow: var(--neu-flat); }
+.next b { font-weight: var(--weight-semibold); }
+h1 { font-size: var(--text-xl); margin: 0; letter-spacing: -.01em; } h2 { font-size: var(--text-md); margin: 0 0 var(--space-3); }
+.sub { color: var(--color-muted); font-size: var(--text-sm); margin: 2px 0 0; }
+.row { display: flex; align-items: center; gap: var(--space-2); } .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
+
+/* ---------- cards: raised (hero), flat (dense data), sunken (wells) ---------- */
+.card { background: var(--color-surface); border-radius: var(--radius); padding: var(--space-4); box-shadow: var(--neu-raised); min-width: 0; }
+.card.flat { box-shadow: var(--neu-flat); border: 1px solid var(--color-line); }
+.card.sunk { box-shadow: var(--neu-pressed); background: var(--color-bg); padding-bottom: var(--space-5); }
+.scroll-x { overflow-x: auto; }                                                       /* dense tables scroll inside their panel */
+.grid { display: grid; gap: var(--space-4); }
+.g-dash { grid-template-columns: 1.3fr 1fr 1fr 1fr; }
+.g-two { grid-template-columns: 2fr 1fr; }
+td.wrap { white-space: normal; min-width: 180px; }                                   /* the one column allowed to wrap */
+.g-live { grid-template-columns: 300px minmax(0, 1fr) 320px; }
+.kpi .label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); font-weight: var(--weight-semibold); }
+.kpi .value { font-size: var(--text-2xl); font-weight: var(--weight-bold); letter-spacing: -.02em; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.kpi .value small { font-size: var(--text-md); font-weight: var(--weight-medium); color: var(--color-muted); }
+.kpi .delta { font-size: var(--text-sm); margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.verdict .value { font-size: 44px; }
+.bullet { height: 10px; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--color-bad-soft) 0 70%, var(--color-warn-soft) 70% 85%, var(--color-ok-soft) 85% 100%); position: relative; margin-top: var(--space-3); box-shadow: var(--neu-pressed); }
+.bullet i { position: absolute; left: 0; top: 2px; height: 6px; width: 82%; border-radius: var(--radius-pill); background: var(--color-primary); }
+.bullet s { position: absolute; left: 85%; top: -3px; width: 3px; height: 16px; background: var(--color-ink); border-radius: 2px; text-decoration: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-3); font-size: var(--text-xs); color: var(--color-muted); margin-top: 6px; }
+.legend > * { white-space: nowrap; }
+.legend .marker { display: inline-block; width: 3px; height: 12px; background: var(--color-ink); border-radius: 2px; vertical-align: -2px; margin-right: 4px; }
+
+/* ---------- status: colour + glyph + label, never colour alone ---------- */
+.pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 6px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: var(--weight-semibold); white-space: nowrap; line-height: 18px; }
+.pill svg { width: 14px; height: 14px; }
+.pill.ok { background: var(--color-ok-soft); color: var(--color-ok-ink); } .pill.bad { background: var(--color-bad-soft); color: var(--color-bad-ink); }
+.pill.warn { background: var(--color-warn-soft); color: var(--color-warn-ink); } .pill.info { background: var(--color-info-soft); color: var(--color-info-ink); }
+.pill.visual { background: var(--color-visual-soft); color: var(--color-visual-ink); } .pill.neutral { background: var(--color-neutral-soft); color: var(--color-neutral-ink); }
+.nav .count.warn { background: var(--color-warn-soft); color: var(--color-warn-ink); } .nav .count.info { background: var(--color-info-soft); color: var(--color-info-ink); }
+.sev { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-semibold); white-space: nowrap; }
+.sev.crit { color: var(--color-bad); } .sev.high { color: var(--color-warn); } .sev.med { color: var(--color-info); } .sev.low { color: var(--color-muted); }
+
+/* ---------- dense table (Data-Dense rules) ---------- */
+table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+th { text-align: left; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .05em; color: var(--color-muted); font-weight: var(--weight-semibold);
+  padding: 8px 10px; background: var(--color-surface-2); position: sticky; top: 0; }
+th:first-child { border-radius: var(--radius-xs) 0 0 var(--radius-xs); } th:last-child { border-radius: 0 var(--radius-xs) var(--radius-xs) 0; }
+td { padding: 0 10px; height: var(--row-h); border-bottom: 1px solid var(--color-line); white-space: nowrap; }
+tr:hover td { background: var(--color-surface-2); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ---------- agent board ---------- */
+.agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+.agents.one-col { grid-template-columns: 1fr; }
+.agent { border-radius: var(--radius-sm); padding: var(--space-3); box-shadow: var(--neu-raised-sm); background: var(--color-surface); position: relative; min-height: 84px; }
+.agent .name { font-weight: var(--weight-semibold); font-size: var(--text-sm); display: flex; align-items: center; gap: 6px; }
+.agent .state { font-size: var(--text-xs); color: var(--color-muted); margin-top: 4px; }
+.agent .meta { font-size: var(--text-xs); color: var(--color-muted); margin-top: 8px; font-family: var(--font-mono); }
+.agent.done .name svg { color: var(--color-ok); } .agent.running { box-shadow: var(--neu-pressed), 0 0 0 2px var(--color-primary); }
+.agent.running .name svg { color: var(--color-primary); animation: spin var(--dur-pulse) linear infinite; }
+.agent.waiting { box-shadow: var(--neu-raised-sm), 0 0 0 2px var(--color-warn); } .agent.waiting .name svg { color: var(--color-warn); }
+.agent.idle { box-shadow: none; border: 1px dashed var(--color-line-strong); background: transparent; }   /* queued: no opacity on text */
+.agent.idle .name { color: var(--color-muted); } .agent.idle .name svg { color: var(--color-icon); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- live view ---------- */
+.stream { display: flex; flex-direction: column; gap: var(--space-2); max-height: 420px; overflow: auto; padding-right: 4px; }
+.evt { display: grid; grid-template-columns: 64px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface); box-shadow: var(--neu-flat); border: 1px solid var(--color-line); }
+.evt .k { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); padding-top: 2px; }
+.evt.thought .k { color: var(--color-visual); } .evt.action .k { color: var(--color-info); } .evt.result .k { color: var(--color-ok); } .evt.result.fail .k { color: var(--color-bad); }
+.evt p { margin: 0; font-size: var(--text-sm); } .evt .t { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+.frame { aspect-ratio: 16 / 10; border-radius: var(--radius-sm); box-shadow: var(--neu-pressed); background: var(--color-surface-2); position: relative; overflow: hidden; }
+.frame .url { position: absolute; top: 8px; left: 8px; right: 8px; height: 26px; border-radius: 6px; background: var(--color-surface); font-family: var(--font-mono); font-size: var(--text-xs); display: flex; align-items: center; padding: 0 10px; color: var(--color-muted); }
+.frame .page { position: absolute; top: 44px; left: 8px; right: 8px; bottom: 8px; border-radius: 6px; background: var(--color-surface); padding: 12px; }
+.frame .field { height: 28px; border-radius: 6px; background: var(--color-surface-2); margin-bottom: 8px; }
+.frame .field.hit { outline: 2px solid var(--color-warn); outline-offset: 2px; } .frame .field.cta { width: 40%; background: var(--color-primary-soft); }
+.frame .act { position: absolute; left: 12px; bottom: 12px; font-size: var(--text-xs); background: var(--color-warn-soft); color: var(--color-warn-ink); padding: 2px 8px; border-radius: var(--radius-pill); font-weight: var(--weight-semibold); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 4px; list-style: none; margin: 0; padding: 0; }
+.tile { aspect-ratio: 1; border-radius: 6px; background: var(--color-surface-2); display: grid; place-items: center; color: var(--color-icon); }
+.tile svg { width: 14px; height: 14px; }
+.tile.ok { background: var(--color-ok-soft); color: var(--color-ok-ink); } .tile.bad { background: var(--color-bad-soft); color: var(--color-bad-ink); }
+.tile.run { background: var(--color-info-soft); color: var(--color-info-ink); } .tile.visual { background: var(--color-visual-soft); color: var(--color-visual-ink); }
+.timeline { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; align-items: end; height: 54px; margin-top: var(--space-3); }
+.timeline div { height: var(--h, 30%); border-radius: 4px 4px 0 0; background: var(--color-track); position: relative; }
+.timeline div.done { background: var(--color-primary); } .timeline div.gate { background: var(--color-warn); }
+.timeline div span { position: absolute; top: 100%; left: 0; right: 0; font-size: var(--text-xs); text-align: center; color: var(--color-muted); padding-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cost { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
+svg.ic { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: var(--stroke); stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
+@media (max-width: 1100px) { .g-dash, .g-two { grid-template-columns: 1fr 1fr; } .g-two { grid-template-columns: 1fr; } .g-live { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .shell { grid-template-columns: 1fr; } .side { display: none; } .main { padding: var(--space-3); } .g-dash { grid-template-columns: 1fr; }
+  .topbar, .next { flex-wrap: wrap; row-gap: var(--space-2); } .topbar .spacer, .next .spacer { flex-basis: 100%; } }
+</style>
+</head>
+<body data-font="plex">
+<!-- Placeholder icon sprite (one family, 1.75 stroke, 24 grid). M0.5 replaces it with Phosphor (regular). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.3 2.3 4.7-5"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-circle-dashed" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 1 6.4 2.6M21 12a9 9 0 0 1-2.6 6.4M12 21a9 9 0 0 1-6.4-2.6M3 12a9 9 0 0 1 2.6-6.4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-spinner" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.2 2.2M16.2 16.2l2.2 2.2M5.6 18.4l2.2-2.2M16.2 7.8l2.2-2.2"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V6.5a1.5 1.5 0 0 1 3 0V12M11 11V5a1.5 1.5 0 0 1 3 0v7M14 12V6.5a1.5 1.5 0 0 1 3 0V14M17 13.5V10a1.5 1.5 0 0 1 3 0v4.5A6.5 6.5 0 0 1 13.5 21h-1A6.5 6.5 0 0 1 6 14.5V12a1.5 1.5 0 0 1 3 0"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V7.5L14 3Z"/><path d="M14 3v4.5h4.5M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+  <symbol id="i-bug" viewBox="0 0 24 24"><path d="M8 9a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0ZM8 12H4M20 12h-4M6 6l2 2M18 6l-2 2M6 18l2-2M18 18l-2-2M12 13v6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5v14l12-7Z"/></symbol>
+</svg>
+
+<div class="mock-bar" role="toolbar" aria-label="Mock controls">
+  <b>Design mock</b> · static, no data
+  <span class="sw" role="group" aria-label="Screen"><button aria-pressed="true" data-screen="dash">Dashboard</button><button aria-pressed="false" data-screen="live">Live View</button></span>
+  <span class="sw" role="group" aria-label="Theme"><button aria-pressed="true" data-theme-pick="light">Light</button><button aria-pressed="false" data-theme-pick="dark">Dark</button></span>
+  <span class="sw" role="group" aria-label="Font"><button aria-pressed="true" data-font-pick="plex">IBM Plex Sans</button><button aria-pressed="false" data-font-pick="jakarta">Plus Jakarta Sans</button></span>
+</div>
+
+<div class="shell">
+  <nav class="side" aria-label="Main">
+    <a class="brand" href="#"><span class="mark" aria-hidden="true">AQ</span><span><span class="name">AgentQA Studio</span><span class="tag">Agents that test like people</span></span></a>
+    <div class="proj"><b>Demo Certificate Portal</b><span>127.0.0.1:8800 · Test / QA</span></div>
+    <div class="nav">
+      <div class="nav-sect">Overview</div>
+      <a href="#" id="nav-dash" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Dashboard</a>
+      <a href="#" id="nav-live"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Live View<span class="count info">running</span></a>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Ask AgentQA</a>
+      <div class="nav-sect">Understand</div>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Requirements</a>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>Questions<span class="count warn">15</span></a>
+      <div class="nav-sect">Test</div>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Test plan</a>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Execution</a>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-bug"/></svg>Defects<span class="count warn">19</span></a>
+      <div class="nav-sect">Operate</div>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Schedules</a>
+      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- ================= DASHBOARD ================= -->
+    <section class="screen" id="screen-dash" aria-labelledby="h-dash">
+      <div class="topbar">
+        <div><div class="crumbs">Projects / <b>Demo Certificate Portal</b></div><h1 id="h-dash">Dashboard</h1></div>
+        <div class="spacer"></div>
+        <button class="btn"><svg class="ic sm" aria-hidden="true"><use href="#i-spark"/></svg>Ask AgentQA</button>
+        <button class="btn primary"><svg class="ic sm" aria-hidden="true"><use href="#i-play"/></svg>Run full pipeline</button>
+      </div>
+      <div class="next"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg><span role="status"><b>Your turn: Gate 1.</b> 15 questions about the requirements wait; the rules behind them stay untested until you answer.</span><span class="spacer"></span><button class="btn sm">Answer questions</button></div>
+
+      <div class="grid g-dash">
+        <div class="card kpi verdict">
+          <div class="label">Release readiness</div>
+          <div class="row"><div class="value">82</div><span class="pill warn"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>Ready with risks</span></div>
+          <div class="bullet" role="img" aria-label="Score 82 against target 85; bands: below 70 not ready, 70 to 85 ready with risks, above 85 ready"><i></i><s></s></div>
+          <div class="legend"><span>Not ready &lt; 70</span><span>Risks 70–85</span><span>Ready ≥ 85</span><span><span class="marker" aria-hidden="true"></span>target 85</span></div>
+        </div>
+        <div class="card kpi"><div class="label">Requirements covered</div><div class="value">38<small>/45</small></div><div class="delta"><span class="pill info"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>7 need clarification</span></div></div>
+        <div class="card kpi"><div class="label">Tests, last run</div><div class="value">184<small>/214</small></div><div class="delta"><span class="pill ok"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg>184 passed</span><span class="pill bad"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg>30 failed</span></div></div>
+        <div class="card kpi"><div class="label">Open defects</div><div class="value">19</div><div class="delta"><span class="sev crit">3 CRIT</span><span class="sev high">6 HIGH</span><span class="sev med">7 MED</span><span class="sev low">3 LOW</span></div></div>
+      </div>
+
+      <div class="grid g-two mt-4">
+        <div class="card flat">
+          <h2>Defects to confirm</h2>
+          <div class="scroll-x">
+          <table>
+            <thead><tr><th>ID</th><th>Severity</th><th>Defect</th><th>Where</th><th>Found by</th><th class="num">Evidence</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">DEF-001</td><td><span class="sev crit">Critical</span></td><td class="wrap">/api/users open to every role</td><td class="mono">GET /api/users</td><td>API access test</td><td class="num">2</td></tr>
+              <tr><td class="mono">DEF-002</td><td><span class="sev crit">Critical</span></td><td class="wrap">Approval Queue open to every role</td><td class="mono">/officer/queue</td><td>Tests + Explorer</td><td class="num">5</td></tr>
+              <tr><td class="mono">DEF-003</td><td><span class="sev crit">Critical</span></td><td class="wrap">Another citizen's record via the API</td><td class="mono">/api/applications/{id}</td><td>Record isolation</td><td class="num">2</td></tr>
+              <tr><td class="mono">DEF-004</td><td><span class="sev high">High</span></td><td class="wrap">Citizen login takes a 9-digit mobile</td><td class="mono">/citizen/login</td><td>Functional login</td><td class="num">1</td></tr>
+              <tr><td class="mono">DEF-005</td><td><span class="sev high">High</span></td><td class="wrap">Resend OTP does nothing</td><td class="mono">/citizen/login</td><td>Functional login</td><td class="num">1</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <div class="row mt-3"><button class="btn sm primary">Confirm 5 defects</button><button class="btn sm">Export Zoho CSV</button><span class="spacer"></span><span class="cost">14 more</span></div>
+        </div>
+        <div class="card">
+          <h2>Agents right now</h2>
+          <div class="agents">
+            <div class="agent done"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-check-circle"/></svg>Analyst</div><div class="state">Done · 45 requirements</div><div class="meta">12 s · rules</div></div>
+            <div class="agent done"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-check-circle"/></svg>Writer</div><div class="state">Done · 35 rewritten, 4 flagged</div><div class="meta">114 s · sonnet-5-5 · $0.03</div></div>
+            <div class="agent running"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-spinner"/></svg>Explorer</div><div class="state">Running · clerk, 12 screens</div><div class="meta">38 s · no AI</div></div>
+            <div class="agent waiting"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-hand"/></svg>Reconciler</div><div class="state">Waiting for you · 15 questions</div><div class="meta">gate 1</div></div>
+            <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Designer</div><div class="state">Queued</div><div class="meta">—</div></div>
+            <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Executor</div><div class="state">Queued</div><div class="meta">—</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= LIVE VIEW ================= -->
+    <section class="screen" id="screen-live" aria-labelledby="h-live" hidden>
+      <div class="topbar">
+        <div><div class="crumbs">Projects / <b>Demo Certificate Portal</b></div><h1 id="h-live">Live View</h1><p class="sub">Run 20261103-0214 · started 02:14 · 4 workers · <span class="cost">AI so far: 2,806 in / 2,749 out tokens · $0.03</span></p></div>
+        <div class="spacer"></div>
+        <button class="btn"><svg class="ic sm" aria-hidden="true"><use href="#i-hand"/></svg>Pause and take over</button>
+        <button class="btn sm">Go live</button>
+      </div>
+      <div class="card sunk">
+        <div class="row" style="justify-content:space-between"><span class="cost">Pipeline</span><span class="cost">gates marked in amber</span></div>
+        <div class="timeline" role="img" aria-label="Pipeline progress: analyze, write, explore done; questions gate waiting; design, plan gate, generate, run, triage, defects gate pending">
+          <div class="done" style="--h:70%"><span>analyze</span></div><div class="done" style="--h:100%"><span>write</span></div><div class="done" style="--h:60%"><span>explore</span></div>
+          <div class="gate" style="--h:45%"><span>questions</span></div><div><span>design</span></div><div class="gate"><span>plan</span></div>
+          <div><span>generate</span></div><div><span>run</span></div><div><span>triage</span></div><div class="gate"><span>defects</span></div>
+        </div>
+      </div>
+
+      <div class="grid g-live mt-4">
+        <div class="card">
+          <h2>Agents</h2>
+          <div class="agents one-col">
+            <div class="agent done"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-check-circle"/></svg>Requirement Analyst</div><div class="state">Done · 45 requirements, 7 vague</div><div class="meta">12 s · rules only</div></div>
+            <div class="agent done"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-check-circle"/></svg>Requirement Writer</div><div class="state">Done · 35 rewritten, 4 flagged</div><div class="meta">114 s · claude-sonnet-5-5 · $0.03</div></div>
+            <div class="agent running"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-spinner"/></svg>Explorer</div><div class="state">Running · clerk · 12 screens mapped</div><div class="meta">38 s · no AI</div></div>
+            <div class="agent waiting"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-hand"/></svg>Reconciler</div><div class="state">Waiting for you · 15 questions</div><div class="meta">since 02:16</div></div>
+            <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Test Designer</div><div class="state">Queued</div></div>
+          </div>
+        </div>
+
+        <div class="card flat">
+          <div class="row" style="margin-bottom:var(--space-3)"><h2 style="margin:0">Explorer · what it is doing</h2><span class="pill info"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg>running</span><span class="spacer"></span><span class="cost">worker 2 · clerk</span></div>
+          <div class="frame" role="img" aria-label="Live browser frame: department login, typing into the username field">
+            <div class="url">127.0.0.1:8810/department/login</div>
+            <div class="page"><div class="field hit"></div><div class="field"></div><div class="field cta"></div></div>
+            <span class="act">typing username</span>
+          </div>
+          <div class="stream mt-3" tabindex="0" aria-label="Explorer activity">
+            <div class="evt thought"><div class="k">thought</div><div><p>Department Login needs a username and a password; the saved steps for clerk start here.</p><div class="t">02:17:41 · rule: recorded login</div></div></div>
+            <div class="evt action"><div class="k">action</div><div><p>Type <span class="mono">{username}</span> into "Username", then <span class="mono">{password}</span> (hidden) and press Sign in.</p><div class="t">02:17:42</div></div></div>
+            <div class="evt result"><div class="k">result</div><div><p>Logged in as clerk; landed on /department/dashboard (HTTP 200, 412 ms).</p><div class="t">02:17:43 · evidence: shot-0142.jpg</div></div></div>
+            <div class="evt action"><div class="k">action</div><div><p>Open the "Applications" menu and visit every item.</p><div class="t">02:17:44</div></div></div>
+            <div class="evt result fail"><div class="k">result</div><div><p>/department/admin/reports answered HTTP 500 — noted for Triage.</p><div class="t">02:17:49 · evidence: shot-0147.jpg, trace</div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Tests <span class="cost">214 · 184 passed</span></h2>
+          <ul class="tiles" aria-label="Test results, one square per test">
+            <li class="tile ok" aria-label="TC-0001 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0002 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile bad" aria-label="TC-0003 failed"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg></li><li class="tile ok" aria-label="TC-0004 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile run" aria-label="TC-0005 running"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg></li><li class="tile ok" aria-label="TC-0006 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile visual" aria-label="TC-0007 visual change"><svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg></li><li class="tile ok" aria-label="TC-0008 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0009 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile bad" aria-label="TC-0010 failed"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg></li><li class="tile" aria-label="TC-0011 not run"><svg class="ic" aria-hidden="true"><use href="#i-circle-dashed"/></svg></li><li class="tile" aria-label="TC-0012 not run"><svg class="ic" aria-hidden="true"><use href="#i-circle-dashed"/></svg></li><li class="tile ok" aria-label="TC-0013 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0014 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0015 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile bad" aria-label="TC-0016 failed"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg></li><li class="tile ok" aria-label="TC-0017 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0018 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile run" aria-label="TC-0019 running"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg></li><li class="tile ok" aria-label="TC-0020 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0021 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile ok" aria-label="TC-0022 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li><li class="tile" aria-label="TC-0023 not run"><svg class="ic" aria-hidden="true"><use href="#i-circle-dashed"/></svg></li><li class="tile ok" aria-label="TC-0024 passed"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg></li>
+          </ul>
+          <div class="legend"><span class="pill ok"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg>passed</span><span class="pill bad"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg>failed</span><span class="pill info"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg>running</span><span class="pill visual"><svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg>visual change</span><span class="pill neutral"><svg class="ic" aria-hidden="true"><use href="#i-circle-dashed"/></svg>not run</span></div>
+          <h2 class="mt-4">Findings</h2>
+          <table><tbody>
+            <tr><td><span class="sev crit">CRIT</span></td><td>/api/users open to every role</td></tr>
+            <tr><td><span class="sev high">HIGH</span></td><td>Admin Reports crashes (500)</td></tr>
+            <tr><td><span class="sev med">MED</span></td><td>No security headers</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+// Mock-only switches. The product does this with React state; here it is plain DOM.
+function pressOnly(attr, value) {
+  document.querySelectorAll(`[data-${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(`data-${attr}`) === value)));
+}
+document.querySelectorAll('[data-screen]').forEach(b => b.addEventListener('click', () => {
+  const which = b.getAttribute('data-screen');
+  document.getElementById('screen-dash').hidden = which !== 'dash';
+  document.getElementById('screen-live').hidden = which !== 'live';
+  document.getElementById('nav-dash').toggleAttribute('aria-current', which === 'dash');
+  document.getElementById('nav-live').toggleAttribute('aria-current', which === 'live');
+  document.getElementById(which === 'dash' ? 'nav-dash' : 'nav-live').setAttribute('aria-current', 'page');
+  pressOnly('screen', which);
+}));
+document.querySelectorAll('[data-theme-pick]').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.setAttribute('data-theme', b.getAttribute('data-theme-pick')); pressOnly('theme-pick', b.getAttribute('data-theme-pick'));
+}));
+document.querySelectorAll('[data-font-pick]').forEach(b => b.addEventListener('click', () => {
+  document.body.setAttribute('data-font', b.getAttribute('data-font-pick')); pressOnly('font-pick', b.getAttribute('data-font-pick'));
+}));
+</script>
+</body>
+</html>

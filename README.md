@@ -12,7 +12,7 @@ without an AI model.
 
 ## Status
 
-Milestones **M0.1** (repo, ECC, CI), **M0.2** (Docker image) and **M0.3** (real-AI validation: Anthropic SDK adapter, Anthropic + Gemini verified live) done; next **M0.4** design system. Plans in `docs/plans/`.
+Milestones **M0.1** (repo, ECC, CI), **M0.2** (Docker image), **M0.3** (real-AI validation) and **M0.4** (design system: `frontend/design-system/MASTER.md`, tokens, owner-approved mock) done; next **M0.5** API skeleton + React scaffold. Plans in `docs/plans/`.
 
 ## Quick start (developers)
 
