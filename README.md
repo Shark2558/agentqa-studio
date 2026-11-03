@@ -12,7 +12,7 @@ without an AI model.
 
 ## Status
 
-**Phase 0 complete** (M0.1 repo+ECC+CI · M0.2 Docker · M0.3 real-AI validation · M0.4 design system · M0.5 `/api/v1` + React app shell at `/app`). Next: Phase 1, M1.1 onboarding wizard. Plans in `docs/plans/`.
+**Phase 0 complete** (M0.1 repo+ECC+CI · M0.2 Docker · M0.3 real-AI validation · M0.4 design system · M0.5 `/api/v1` + React app shell at `/app`). **Phase 1:** M1.1 onboarding wizard done (six steps at `/app/projects/new`: documents with read verdicts, typed requirements with the Requirement Chat agent, accounts into the vault, address check). Next: M1.2 AI modes & selector. Plans in `docs/plans/`.
 
 ## Quick start (developers)
 

@@ -441,15 +441,17 @@ def srs_page(request: Request, slug: str):
 
 @app.post("/p/{slug}/srs")
 async def upload_srs(slug: str, file: list[UploadFile] = File(...)):
-    from agentqa.documents import SUPPORTED
+    """Same checks as the new API (name, type, size, zip bombs): both UIs go through intake.save_document."""
+    from agentqa.orchestrator import intake
     p, _ = _open(slug)
     bad = []
     for up in file:
-        name = Path(up.filename or "srs.docx").name
-        if Path(name).suffix.lower() not in SUPPORTED:
-            bad.append(name)
-            continue
-        (p.srs_dir / name).write_bytes(await up.read())
+        try:
+            intake.save_document(p, up.filename or "srs.docx", await up.read())
+        except intake.Unsupported:
+            bad.append(Path(up.filename or "srs.docx").name)
+        except intake.TooLarge as exc:
+            raise HTTPException(413, str(exc)) from exc
     if bad:
         raise HTTPException(400, f"Not a supported document: {', '.join(bad)}")
     return RedirectResponse(f"/p/{slug}/srs", status_code=303)

@@ -31,6 +31,9 @@ def create_project(body: ProjectIn):
     except ValueError as exc:
         raise ApiError(422, "validation", str(exc)) from exc
     p, _ = projects.open_project(slug)
+    if created:
+        from agentqa.orchestrator import intake
+        intake.set_environment(p, body.environment)
     return ok(projects.summary(p.root), status=201 if created else 200)
 
 

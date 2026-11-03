@@ -6,6 +6,8 @@ import { SignIn } from "./pages/SignIn";
 import { Projects } from "./pages/Projects";
 import { Project } from "./pages/Project";
 import { Live } from "./pages/Live";
+import { Requirements } from "./pages/Requirements";
+import { NewProject } from "./pages/wizard/NewProject";
 
 export function useMe() {
   return useQuery({
@@ -35,7 +37,9 @@ export function App() {
             <Shell>
               <Routes>
                 <Route index element={<Projects />} />
+                <Route path="projects/new" element={<NewProject />} />
                 <Route path="projects/:slug" element={<Project />} />
+                <Route path="projects/:slug/requirements" element={<Requirements />} />
                 <Route path="projects/:slug/live" element={<Live />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

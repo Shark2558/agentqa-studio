@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Play, Pulse } from "@phosphor-icons/react";
+import { ListChecks, Play, Pulse } from "@phosphor-icons/react";
 import { ApiError, api } from "../lib/api";
 
 const RUNNING_POLL_MS = 3000;
@@ -48,6 +48,10 @@ export function Project() {
           <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
           Approve the gates automatically
         </label>
+        <Link className="btn" to={`/projects/${encodeURIComponent(slug)}/requirements`}>
+          <ListChecks aria-hidden="true" />
+          Requirements
+        </Link>
         <Link className="btn" to={`/projects/${encodeURIComponent(slug)}/live`}>
           <Pulse aria-hidden="true" />
           Live View

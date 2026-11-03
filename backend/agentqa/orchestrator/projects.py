@@ -41,7 +41,9 @@ def summary(d: Path) -> dict:
     """One row for the projects list: counts, last run and readiness when a run exists."""
     try:
         p = Project(d)
-        row = {"slug": d.name, "name": p.name, "url": p.base_url}
+        apps = p.applications()
+        row = {"slug": d.name, "name": p.name, "url": p.base_url,
+               "environment": next(iter(apps.values()))["environment"] if apps else ""}
         if p.db_path.exists():
             st = Store(p.db_path)
             run = st.one("SELECT * FROM runs WHERE status='done' ORDER BY started_at DESC LIMIT 1")
