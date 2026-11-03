@@ -1,128 +1,153 @@
 # AgentQA Studio — design system (MASTER)
 
-*Source of truth for every screen from M0.5 on. Generated with the ui-ux-pro-max method on 3 Nov 2026 and reconciled
-with PRD §11; the generator's raw output is kept beside this file as `MASTER.generated.md`. Page-specific overrides go
-in `pages/<page>.md` and win over this file.*
+*Source of truth for every screen. First generated with the ui-ux-pro-max method on 3 Nov 2026 (M0.4, soft-UI
+neumorphism) and **replaced the same day by the flat system below (M1.2-UI)** after the owner rejected the soft look
+in the real app. The generator's raw outputs stay beside this file as `MASTER.generated.md`. Page-specific overrides
+go in `pages/<page>.md` and win over this file.*
 
 ## 1. Direction
 
-**Soft-UI neumorphism in professional blue and white, with Data-Dense Dashboard rules wherever data is shown.**
-Product type: QA test-automation platform (desktop/laptop monitoring and review; phone for a glance). Audience: a
-non-technical owner first, testers and viewers second. Stack: React + TypeScript + Vite (PRD D9).
+**Flat, professional blue and white, with Data-Dense Dashboard rules wherever data is shown, five accent colours the
+person can choose, light and dark.** Product type: QA test-automation platform (desktop/laptop monitoring and review;
+phone for a glance and for starting or checking a run). Audience: a non-technical owner first, testers and viewers
+second. Stack: React + TypeScript + Vite (PRD D9).
 
-Point of view (ECC web/design-quality: no "dashboard by numbers"): the interface is organised around **the next
-thing a person must do** — the "Your turn" banner and the agent board sit above everything; numbers explain, they do
-not lead. Depth comes from the neumorphic surfaces; information density comes from the Data-Dense rules; status is
-always glyph + label + colour.
+Point of view (ECC web/design-quality, which bans "flat layouts with no layering" and "gray-on-white with one
+accent"): this flat system earns its place through **hierarchy by scale** (a 44 px verdict number over 12 px labels),
+**semantic colour** (status colour always paired with a glyph and a word; the accent is brand, status is never
+the accent), **designed states** (hover, focus ring, active press, selected tint with a 3 px bar, dashed "queued",
+disabled as dashed outline), **motion that explains testing** (a running agent pulses, a finished one draws its
+tick, a frame shows a scan line) and **data visualisation as part of the system** (bullet chart, stacked bars,
+timeline bars in the same tokens). Depth comes from one elevated layer (menus, drawer) and the white-on-near-white
+contrast of cards on the page, never from soft shadows.
 
-## 2. What the database said, what we kept, what we discarded
+## 2. What the database said, what we kept, what we discarded (3 Nov 2026 searches)
 
 | Search | Database match | Decision |
 |---|---|---|
-| `--design-system` (density 8) | Pattern *Real-Time / Operations Landing*; style **Glassmorphism**; dark-tech palette (`#0F172A` bg, green CTA); type *Plus Jakarta Sans* | **Discarded** the landing-page pattern (this is a product UI, not a marketing page), Glassmorphism (owner chose neumorphism) and the dark-tech palette (owner chose blue and white). **Kept** its live-telemetry rules: label data as live only with an update time and a stale state; pause/update-frequency controls; static snapshot under reduced motion. Plus Jakarta Sans is offered as the alternative font in the mock. |
-| `style: neumorphism` | Soft UI, 12–16 px radius, two-layer soft shadows, 150 ms press; **risk: high**, "do not use for data-heavy dashboards / high contrast" | **Kept** for surfaces and controls only (shell, cards, buttons, inputs, toggles, agent cards). **Discarded** its pastel palette and its use on text, tables, charts and status. |
-| `style: data dense dashboard` | 12-column grid, 8 px gap, 12 px card padding, 12–14 px type, 36 px rows, sticky headers, 240 px sidebar, 56 px header | **Kept** for Live View, tables, results, KPI rows (tokens `--row-h`, `--sidebar-w`, `--header-h`, `--text-sm`). |
-| `color: enterprise saas blue trust` | **SaaS (General)**: primary `#2563EB`, bg `#F8FAFC`, fg `#1E293B`, muted fg `#475569`, border `#E2E8F0`, destructive `#DC2626`, accent orange `#EA580C` | **Kept** the blue/slate system. Shell background lowered one tone (`#EDF2F8`) so soft shadows read; cards `#F8FAFC`, raised tops `#FFFFFF`. **Discarded** the orange accent: amber `#B45309` is used for *warnings and gates* only, never as a decorative CTA. |
-| `typography: dashboard data monospace` | *Dashboard Data* (Fira Sans + Fira Code); *Terminal CLI* (JetBrains Mono); *Science/Tech* | **Chose IBM Plex Sans + JetBrains Mono** (PRD §11; Plex is designed for UI text, JetBrains Mono for ids/logs/tokens). Fira is a close second. Fonts are bundled locally in the product (no CDN at runtime; offline mode). |
-| `chart: test results pass fail trend` / `real-time dashboard` | Line chart for trends (solid/dashed/dotted per series, direct labels); **bullet chart** for KPI-vs-target; streaming area for live; part-to-whole as stacked bar, not pie | **Kept**: readiness = bullet chart with threshold bands + target marker (mock); pass/fail/blocked = stacked bars; trends = line charts with distinct line styles; no pie charts. Every chart gets a data table fallback and keyboard-reachable values. |
-| `icons` (outcome queries) | **Phosphor** (primary) + Heroicons (fallback); decorative icons `aria-hidden`; meaningful icons get a text alternative; icon buttons get an accessible name and state | **Kept** for the product (M0.5 installs `@phosphor-icons/react`, regular weight): one family, sizes 16/20/24 as tokens; status glyphs in `--glyph-*`. The mock's inline sprite is a hand-drawn placeholder in the same style, not Phosphor. |
-| `ux` rules | Contrast 4.5:1 (3:1 non-text), compact labels never wrap, one atomic live-status message, loading states that keep layout, focus not obscured, WCAG 2.2 focus appearance | **Kept** (see §5 rules). |
-| `--stack react` | Semantic HTML (`button`, `nav`), focus management in dialogs, labels with `htmlFor`, profile before optimising | **Kept** for M0.5+. |
+| `--design-system` ("QA test automation platform … clean flat professional blue white") | Pattern *Trust & Authority* (a landing page); style *Accessible & Ethical*; palette "professional navy + blue CTA" (`#0F172A` primary); type EB Garamond / Lato | **Discarded** the landing-page pattern, the navy primary and the serif pairing (a product UI, not a law-firm page). **Kept** the accessibility rules: 3–4 px focus rings, 44 px targets, reduced motion, 375/768/1024/1440. |
+| `style: flat design clean enterprise saas` | **Flat Design**: no shadows or gradients, 1–2 px strokes, clean lines, 150–200 ms transitions, risk: low; best for SaaS and dashboards | **Kept** as the base style. |
+| `style: minimalism professional dashboard` | **Minimalism & Swiss**: white space, grid, high contrast, "sharp shadows if any" | **Kept** for layout rhythm and the single overlay shadow. |
+| `color: enterprise saas blue white trust` | **SaaS (General)**: primary `#2563EB`, bg `#F8FAFC`, fg `#1E293B`, muted `#475569`, border `#E2E8F0`, destructive `#DC2626`, accent orange | **Kept** the blue/slate system as the default accent; orange discarded (amber is for warnings and gates only). |
+| `ux: responsive dashboard mobile sidebar collapse` | Mobile first; tables scroll or become cards; touch-sized targets; viewport meta | **Kept**: the shell is mobile-first (top bar + drawer under 760 px); tables scroll inside their panel. |
+| `ux: loading progress animation status` | Step indicators; skeletons over blank screens; infinite animation only for loading indicators | **Kept**: skeleton cards, progress bars, the pulse only on a running (loading) card. |
+| `ux: theme switcher dark mode user preference` | **No entry** (results were unrelated) | The Appearance menu (§8) is **general practice, not a database match**, and is labelled so. |
+| `typography: enterprise saas dashboard` | Plus Jakarta Sans; Fira Sans + Fira Code | **IBM Plex Sans + JetBrains Mono kept** (the owner chose them twice in M0.4; bundled locally, no CDN). |
+| M0.4 searches still in force | Data-Dense Dashboard rules; Phosphor icons; chart guidance (bullet for KPI-vs-target, stacked bars, lines; no pie) | **Kept** unchanged (see `docs/plans/m0-4-design-system.md`). |
 
 ## 3. Tokens
 
-`tokens.css` is the single source. Every colour is declared once with `light-dark(light, dark)`; `color-scheme` on the
-root picks the side (OS preference by default, `data-theme` when a person chose), so there is no duplicated dark block
-to drift. Layers: primitive scales (blue, slate, green, amber, red, violet) → semantic roles → component recipes; a
-few one-off surfaces (`--shell-light`, `--card-dark`…) are named primitives rather than a full scale. Highlights:
+`tokens.css` is the single source. Every colour is declared once with `light-dark(light, dark)`; `color-scheme` on
+the root picks the side (OS preference by default, `data-theme` when a person chose). The five **accent slots**
+(`--accent`, `--accent-hover`, `--accent-soft`, `--accent-ink`, `--accent-focus`) are set for Blue in `:root` and
+overridden by `:root[data-accent="indigo|teal|green|slate"]`; `--color-primary*` and `--color-focus` read the slots,
+so no component knows which accent is on. Layers: primitive scales (blue, indigo, teal, green, slate, amber, red,
+violet) → semantic roles → component recipes.
 
-- **Surfaces (light):** bg `#EDF2F8` · surface `#F8FAFC` · raised `#FFFFFF` · sunken `#EAF0F7`. **Dark:** bg `#0F172A` ·
-  surface `#151D31` · raised `#1A2338` · sunken `#0C1324`.
-- **Text:** ink `#1E293B` / `#E2E8F0`, ink-2, muted `#475569` / `#94A3B8` (muted is still ≥ 6.1:1 in both themes).
-  **Never dim text with opacity** (the checker cannot see it): a queued/disabled state uses `--color-muted` and a
-  dashed boundary.
-- **Brand:** primary `#2563EB` (dark `#60A5FA`), hover `#1D4ED8`, tint `#DBEAFE` with primary-ink `#1D4ED8` for text on
-  the tint (plain primary on the tint measures 4.24:1 light / 4.07:1 dark, so it is never used that way). The brand mark
-  is `--color-primary` with `--color-on-primary` (no gradient: the gradient measured 3.68:1).
-- **Status:** ok `#166534`, warn `#92400E`, bad `#C2271D`, info `#1D4ED8`, visual `#6D28D9` for text (the lighter
-  `#15803D` / `#B45309` measured 4.37:1 on hovered rows), each with a `-soft` tint and a `-ink` text colour for badges,
-  and a glyph (`check-circle`, `x-circle`, `prohibit`, `circle-dashed`, `eye`, `spinner`, `hand-palm`).
-  `--color-track` (`#64748B`) draws pending bars and empty tracks at ≥ 3:1.
-- **Neumorphic recipes:** `--neu-raised` (cards, buttons), `--neu-raised-sm`, `--neu-pressed` (inputs, active nav,
-  selected switch, wells), `--neu-flat` (dense panels, tables, event rows), `--neu-primary` (primary button lift).
-  Light source top-left in both themes; only the two shadow colours (`--shadow-hi`, `--shadow-lo`) change per theme.
-- **Type scale:** 12 (min) / 13 (tables) / 14 (body) / 16 / 18 / 22 / 28 (KPI numbers); line-height 1.5; tabular
-  numbers on every figure.
-- **Spacing (density 8):** 4 / 8 / 12 / 16 / 24 / 32. **Radii:** 16 / 14 / 10 / 8 / pill. Controls 40 px high, hit area
-  ≥ 44 px, rows 36 px, sidebar 248 px, header 56 px.
-- **Motion:** press 150 ms, UI 200 ms, panels 300 ms, pulse 1.2 s, ease `cubic-bezier(.2,.8,.2,1)`; all zero and every
-  animation off under `prefers-reduced-motion`. Layout properties never animate; `transform`/`opacity` are the
-  compositor-friendly choices, `box-shadow` and `color` transitions are accepted on small controls only.
+- **Surfaces (light):** page `#F8FAFC` · card `#FFFFFF` · overlay `#FFFFFF` · sunken `#F1F5F9` (table header, row hover,
+  wells, skeletons). **Dark:** `#0F172A` · `#151D31` · `#1A2338` · `#0C1324`. Lines `#E2E8F0` / `#2A3650`; control
+  boundaries and pending tracks `#64748B` (≥ 3:1 in both themes).
+- **Text:** ink `#1E293B` / `#E2E8F0`, ink-2, muted `#475569` / `#94A3B8`. **Never dim text with opacity**: a queued or
+  disabled state uses `--color-muted` and a dashed boundary.
+- **Accents (light solid / hover · tint + ink · focus; dark in brackets):** Blue 600/700 · 100+700 · 500 (400/300 ·
+  900+200 · 400) · Indigo 600/700 · 100+700 · 500 (400/300 · 900+200 · 400) · Teal **700**/800 · 100+800 · **600**
+  (400/300 · 900+200 · 400) · Green **700**/800 · 100+800 · **700** (400/300 · 900+200 · 400) · Slate **700**/800 ·
+  **200**+800 · 500 (**300**/200 · 700+100 · 400). Bold shades depart from the Blue pattern because the lighter ones
+  measured below 4.5:1 for white text or below 3:1 as a focus ring. On-primary text is white in light and `#0B1120`
+  in dark for every accent.
+- **Status:** ok `#166534`, warn `#92400E`, bad `#C2271D`, info `#1D4ED8` (info stays blue in every accent), visual
+  `#6D28D9`, each with a `-soft` tint and `-ink` text for badges, and a glyph (`check-circle`, `x-circle`, `prohibit`,
+  `circle-dashed`, `eye`, `spinner`, `hand-palm`).
+- **Elevation:** none on cards (1 px line); `--elev-overlay` on the one floating layer (menus, drawer).
+- **Type scale:** 12 (min) / 13 (tables) / 14 (body) / 16 / 18 / 22 / 28 (KPI numbers), 44 for the verdict; line-height
+  1.5; tabular numbers on every figure.
+- **Spacing (density 8):** 4 / 8 / 12 / 16 / 24 / 32. **Radii:** 12 / 10 / 8 / 6 / pill. Controls 40 px, hit area ≥ 44 px,
+  rows 36 px, sidebar 248 px, header 56 px, drawer 280 px.
+- **Motion:** press 150 ms, UI 200 ms, draw 200 ms, panels 300 ms, pulse 1.2 s, scan 1.6 s, ease `cubic-bezier(.2,.8,.2,1)`;
+  every duration zero and every animation off under `prefers-reduced-motion`.
+- **Base rules in tokens.css:** `box-sizing: border-box` everywhere (so a `width: 100%` field never crosses its card),
+  the focus ring, `.sr-only`.
 
-**Contrast (measured by `check_contrast.py`, 40 pairs × 2 themes, every combination the mock uses): 80/80 pass.**
-Lowest: light focus ring on page background 3.27:1 (non-text, min 3), light link on page background 4.59:1 (text,
-min 4.5). The checker has its own tests (`backend/tests/test_check_contrast.py`) and runs in `make lint`, so a token
-change that breaks a pair fails the build.
+**Contrast (measured by `check_contrast.py`, 45 pairs: 31 theme-only × 2 themes + 14 accent pairs × 2 themes × 5
+accents = 202 checks): 202/202 pass.** The checker reads the accent blocks, fails closed when an accent block is
+missing, and runs in `make lint`; its own tests are `backend/tests/test_check_contrast.py`.
 
-## 4. Components (recipes; React components in M0.5 follow these)
+## 4. Components (recipes; the React components follow these, `frontend/src/styles/*.css`)
 
 | Component | Surface | States |
 |---|---|---|
-| Shell / sidebar | bg; nav items flat, hover raised-sm, current pressed + primary-ink | focus ring 2 px |
-| Card (hero: verdict, KPI, agents) | surface, `--neu-raised`, radius 14 | — |
-| Panel (table, stream, dense data) | surface, `--neu-flat` + 1 px line, radius 14 | row hover sunken |
-| Sunken well (timeline, gauge, project chip) | bg, `--neu-pressed` | — |
-| Button primary | primary bg, on-primary text, `--neu-primary` | hover darker, active pressed + 1 px down, 150 ms |
-| Button secondary | surface, `--neu-raised-sm` | hover ink, active pressed |
-| Switch / segmented | pressed track, raised-sm thumb with primary-ink | `aria-pressed` |
-| Input | sunken, 40 px, label above (never placeholder-only), error text below the field | focus ring; error = bad-ink text + bad line |
+| Shell / sidebar (≥ 760 px) | card surface, 1 px right line, sticky, own scroll | nav item: hover sunken; current = accent tint + accent ink + 3 px accent bar |
+| Top bar + drawer (< 760 px) | 56 px bar; the drawer is a modal panel on the overlay layer with a backdrop | menu button `aria-expanded`; Escape / backdrop / link closes; focus returns to the button |
+| Card | white, 1 px line, radius 10 | — (the verdict card carries a 4 px accent top border) |
+| Button primary | solid accent, on-primary text | hover darker, active 1 px down, 150 ms; disabled dashed |
+| Button secondary | white, 1 px strong line | hover sunken; active 1 px down |
+| Input / select / textarea | white, 1 px strong line, 40 px, label above (never placeholder-only) | focus ring; read-only sunken + muted |
 | Status pill | `-soft` tint, `-ink` text, glyph 14 px, no wrap | — |
-| Severity | mono, uppercase short form (CRIT/HIGH/MED/LOW) in status colour **and** the word | — |
-| Agent card | raised-sm; running = pressed + 2 px primary ring + spinning glyph; waiting = 2 px warn ring + hand glyph; done = check; queued = muted text + dashed boundary (never opacity) | click opens the agent's stream |
-| Event row (thought / action / result) | flat; kind in mono caps coloured visual / info / ok-or-bad; time + evidence in mono muted | — |
-| Table | sticky uppercase header on sunken; 36 px rows; numbers right-aligned tabular; one-line cells | row hover |
-| Readiness | the score as the hero number + verdict pill, then a bullet chart: bands bad/warn/ok tints, primary bar, ink target marker (no donut/pie) | `role="img"` with a full text label |
-| Live frame | sunken; url bar; acting element outlined in warn colour; action label pill | — |
-| Test tiles | 26 px squares, status tint + glyph, a list with one accessible label per tile ("TC-0003 failed"); a read-only summary — opening a test goes through the results table (44 px rows) | — |
-| Timeline | sunken well; stages as bars (done primary, pending `--color-track`, **gates amber**) | — |
+| Agent card | 1 px line; running = accent border + pulsing ring; waiting = amber border; failed = red border; done = green tick; queued = dashed + muted | tick / cross draw in once when the state changes after first paint |
+| Event row | white, 1 px line; kind in mono caps | — |
+| Table | sticky uppercase header on sunken, 36 px rows, one-line cells, scrolls inside `.scroll-x` | row hover sunken |
+| Progress bar | 8 px sunken track, accent fill by `transform: scaleX` | 300 ms fill |
+| Skeleton | sunken blocks that pulse only inside an `aria-busy` region | — |
+| Appearance menu | 44 px button; panel on the overlay layer: theme as three segments, accent as five 44 px swatches, a preview strip | selected = accent tint + accent ring; Escape / outside click closes |
+| Stepper (wizard) | numbers in a row under 1100 px (current step shows its title; others `.sr-only`), a rail beside the form above | done = green tick drawn in; current = accent tint |
 
 ## 5. Rules every screen follows
 
-1. Text ≥ 4.5:1, non-text ≥ 3:1, in both themes, measured. Never colour alone: glyph + label with every status.
-2. Keyboard: every control reachable, visible 2 px focus ring, nothing obscures the focused element, dialogs trap and
-   return focus. Hit areas ≥ 44 px even when the control is drawn smaller (40 px buttons and 32 px small buttons
-   extend their hit box with a `::before`; nav rows are 44 px tall).
+1. Text ≥ 4.5:1, non-text ≥ 3:1, in both themes and every accent, measured. Never colour alone: glyph + label with
+   every status.
+2. Keyboard: every control reachable, visible 2 px focus ring, nothing obscures the focused element, the drawer and
+   menus close on Escape and return focus. Hit areas ≥ 44 px even when the control is drawn smaller.
 3. Semantic HTML first (`nav`, `main`, `section` with headings, `button`, `table`); icon buttons carry an accessible
    name; decorative icons are `aria-hidden`.
-4. One atomic live-status message per region (`role="status"`, `aria-atomic`), never a bare number.
-5. Compact labels never wrap (pills, severities, ids); long values get a shrinkable label and a keyboard-reachable
-   full text.
-6. Loading keeps layout (skeletons with reserved space, `aria-busy`); live data says when it last updated and marks
-   itself stale; tickers have pause/update controls; a static final frame under reduced motion.
-7. Density: dense scale on monitoring and data screens (Live View, Execution, Results, Defects); the onboarding wizard
-   and reports may breathe (24–32 px) but never exceed the token scale.
-8. Typography: 14 px app body, 13 px in tables, 12 px minimum; two families only; local fonts with `font-display: swap`.
-9. Motion only on compositor-friendly properties; durations from tokens; reduced-motion honoured.
-10. Forms: visible labels, helper text, inline errors next to the field plus an error summary on multi-error submits.
-11. Charts: legend + tooltip + keyboard values + data-table fallback; line styles distinguish series; bullet for
-    KPI-vs-target; stacked bars for part-to-whole; no pie.
-12. Responsive: 375 / 768 / 1024 / 1440; no horizontal scroll; sidebar collapses to a top bar under 760 px.
+4. One atomic live-status message per region, never a bare number.
+5. Compact labels never wrap (pills, severities, ids); long values (URLs) wrap anywhere rather than overflow.
+6. Loading keeps layout (skeletons with reserved space, `aria-busy`); every list has an honest empty state that says
+   what to do next; live data says when it last updated.
+7. Density: dense scale on monitoring and data screens; the wizard may breathe but never exceeds the token scale.
+8. Typography: 14 px app body, 13 px in tables, 12 px minimum; two families only; local fonts.
+9. Motion only on transform, opacity and clip-path; durations from tokens; nothing moves when idle; reduced motion
+   honoured (the global rule in tokens.css).
+10. Forms: visible labels, helper text, inline errors next to the field.
+11. Charts: legend + keyboard values + data-table fallback; bullet for KPI-vs-target; stacked bars for part-to-whole; no pie.
+12. Responsive, mobile first: 320 / 375 / 768 / 1024 / 1440 with no horizontal scroll; under 760 px the sidebar
+    becomes a top bar with a drawer; every field and button stays inside its card (measured by `check_app.py`).
 
-## 6. Pre-delivery checklist (from the repo, run before every screen ships)
+## 6. Pre-delivery checklist (run before every screen ships)
 
-- [ ] Only relevant searches run; `quick-reference.md` §1–§3 (CRITICAL + HIGH) re-read.
-- [ ] No emoji as icons; one icon family; consistent stroke and sizes.
+- [ ] `make lint` (202/202 contrast) and `make ui-check` (the built app at five widths, both themes) are green.
+- [ ] No emoji as icons; one icon family (Phosphor regular); consistent sizes 16/20/24.
 - [ ] Hover / focus / active / disabled states designed, 150–300 ms, no layout shift.
-- [ ] Light **and** dark checked separately; dividers and states visible in both; `check_contrast.py` green.
-- [ ] 375 px and a laptop width rendered and looked at; no overflow.
-- [ ] Reduced motion and largest text size tried.
-- [ ] Would it pass as a real product screenshot? Four of the ten design-quality qualities present (hierarchy by scale,
-      rhythm, depth, type pairing, semantic colour, designed states, bento composition, motion that clarifies, data
-      viz as part of the system).
+- [ ] Light **and** dark looked at, with at least Blue and one other accent.
+- [ ] 375 px and a laptop width rendered and looked at; the drawer opened and closed by keyboard.
+- [ ] Reduced motion tried; nothing animates when idle.
+- [ ] At least four of the ten design-quality qualities present (§1 names ours).
 
-## 7. Mock and evidence
+## 7. Evidence
 
-`frontend/design-system/mock/index.html` renders Dashboard and Live View from `tokens.css` alone, with theme and font
-switches (preview only; it loads fonts from Google Fonts — the product bundles them). `render_mock.py` writes the
-reference renders in `docs/design/m0-4-*.png` (desktop 1440 and phone 375, light and dark, plus the two font
-candidates) and fails on horizontal overflow at 320 / 375 / 768 / 1024 / 1440 px or an inert font switch.
+- M0.4 (superseded): `docs/design/m0-4-*.png`, 80/80 pairs, kept as the record of the look this replaced.
+- M1.2-UI mock: `docs/design/m1-2ui-{dash,live}-{light,dark}-{blue,teal}-{desktop,phone}.png`, `m1-2ui-drawer-phone.png`
+  from `render_mock.py` (no overflow at 320–1440, fields inside cards, drawer, theme and accent switches, reduced
+  motion asserted).
+- M1.2-UI app: `docs/design/m1-2ui-app-<page>-<theme>-<width>.png` from `check_app.py` against a throwaway server:
+  seven pages, five widths light, two widths dark, all measurements green.
+
+## 8. Themes and accents (general practice: no database entry)
+
+- The choice lives on `<html>`: `data-theme="light|dark"` (absent = follow the OS) and `data-accent="<name>"`.
+- Saved per browser under `localStorage["agentqa.theme"]` as `{mode, accent}`; `public/theme-boot.js` applies it
+  before the first paint (a separate file: the CSP allows no inline script). Team logins (M2.1) move it to the
+  account.
+- The Appearance menu sits in the sidebar foot, the phone top bar and the sign-in page; the five accents are named
+  (Blue, Indigo, Teal, Green, Slate) and chosen by name, never by colour alone.
+- Info stays blue in every accent; Green is an accent, pass is a status: the glyph and the word tell them apart.
+
+## 9. Motion that explains testing
+
+| Name | Trigger | Property | Duration | Reduced motion |
+|---|---|---|---|---|
+| agent-pulse | a running agent card (a loading indicator, so it may repeat) | `::after` ring scale + opacity | 1.2 s, repeats | static ring |
+| tick-in / cross-in | a card whose state became done / failed after it first appeared | clip-path wipe / scale-in | 200 ms, once | glyph shown |
+| bar-fill | a progress bar's value | `transform: scaleX` | 300 ms | jumps |
+| skeleton | placeholders inside an `aria-busy` region | opacity | 1.2 s, repeats while loading | static |
+| drawer | the phone menu opening | translateX | 200 ms | instant |
+| scan-line | a running browser frame (Live View v2, M1.3; recipe ready in `motion.css` and the mock) | `::after` translateY | 1.6 s, repeats | none |

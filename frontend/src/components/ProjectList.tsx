@@ -4,14 +4,28 @@ import type { ProjectSummary } from "../lib/api";
 type Props = {
   projects: ProjectSummary[] | undefined;
   isPending: boolean;
+  isError: boolean;
   /** Where a row leads: the project page, or its Live View from the picker. */
   hrefFor: (slug: string) => string;
   emptyText: string;
 };
 
-/** The project rows, shared by the Projects page and the Live View picker. */
-export function ProjectList({ projects, isPending, hrefFor, emptyText }: Props) {
-  if (isPending) return <p className="muted">Loading…</p>;
+/** The project rows, shared by the Projects page and the Live View picker, with honest loading, error and empty states. */
+export function ProjectList({ projects, isPending, isError, hrefFor, emptyText }: Props) {
+  if (isPending) {
+    return (
+      <p className="muted" role="status">
+        Loading your projects…
+      </p>
+    );
+  }
+  if (isError) {
+    return (
+      <p className="notice bad" role="alert">
+        The projects could not be loaded. Reload the page to try again.
+      </p>
+    );
+  }
   if (!projects?.length) {
     return (
       <p className="muted">

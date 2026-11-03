@@ -5,15 +5,20 @@
   var KEY = "agentqa.theme";
   var MODES = ["light", "dark", "system"];
   var ACCENTS = ["blue", "indigo", "teal", "green", "slate"];
+  var data = null;
   try {
     var raw = window.localStorage.getItem(KEY);
-    var data = raw ? JSON.parse(raw) : null;
+    data = raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    data = null; /* no storage or bad data: the defaults below apply */
+  }
+  try {
     var root = document.documentElement;
     var mode = data && MODES.indexOf(data.mode) >= 0 ? data.mode : "system";
     var accent = data && ACCENTS.indexOf(data.accent) >= 0 ? data.accent : "blue";
     if (mode !== "system") root.setAttribute("data-theme", mode);
     root.setAttribute("data-accent", accent);
   } catch (e) {
-    /* no storage or bad data: the OS theme and Blue apply */
+    /* nothing to do before the document exists */
   }
 })();

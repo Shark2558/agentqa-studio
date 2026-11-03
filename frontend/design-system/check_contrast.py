@@ -50,6 +50,7 @@ PAIRS: list[Pair] = [
     ("--color-primary-ink", "--color-surface", TEXT_MIN, "current nav item on card / drawer"),
     ("--color-primary-ink", "--color-surface-2", TEXT_MIN, "link on hovered row"),
     ("--color-primary-ink", "--color-surface-raised", TEXT_MIN, "selected switch label on raised thumb"),
+    ("--color-ink-2", "--color-primary-soft", TEXT_MIN, "selected choice description on the accent tint"),
     # status text on the surfaces it appears on (cards, sunken panels, hovered rows)
     *[(f"--color-{s}", bg, TEXT_MIN, f"{s} status text on {name}")
       for s in ("ok", "warn", "bad", "info", "visual")

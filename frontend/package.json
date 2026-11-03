@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint src e2e",
+    "lint": "oxlint -c .oxlintrc.json src e2e",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",

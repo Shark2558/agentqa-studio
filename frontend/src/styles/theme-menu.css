@@ -1,22 +1,27 @@
-/* The Appearance menu (ThemeMenu.tsx): a 44 px button and a floating panel of native radios. */
+/* The Appearance menu (ThemeMenu.tsx): a 44 px button and a panel of native radios. In the sidebar foot the panel
+   opens in normal flow (the sidebar scrolls, so a floating panel would be clipped); in a top bar it floats. */
 .appearance { position: relative; }
 .appearance .appear-btn { min-height: var(--target-min); }
-.appearance .panel { position: absolute; left: 0; z-index: 30; width: 264px; max-width: calc(100vw - 2 * var(--space-3)); padding: var(--space-3) var(--space-4) var(--space-4);
-  border: 1px solid var(--color-line); border-radius: var(--radius); background: var(--color-surface-raised); color: var(--color-ink); box-shadow: var(--elev-overlay); }
-.appearance.up .panel { bottom: calc(100% + 8px); }
-.appearance.down .panel { top: calc(100% + 8px); left: auto; right: 0; }
+.appearance .panel { width: 100%; padding: var(--space-3) var(--space-3) var(--space-4); border: 1px solid var(--color-line); border-radius: var(--radius);
+  background: var(--color-surface-raised); color: var(--color-ink); }
+.appearance.up .panel { margin-bottom: var(--space-2); }
+.appearance.down .panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: min(276px, calc(100vw - 2 * var(--space-3))); box-shadow: var(--elev-overlay); }
 .appearance fieldset { border: 0; padding: 0; margin: 0 0 var(--space-3); min-width: 0; }
 .appearance legend { font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); padding: 0; margin-bottom: var(--space-2); }
-.modes { display: flex; gap: var(--space-1); } .modes label { flex: 1; margin: 0; position: relative; }
+.modes { display: flex; gap: var(--space-1); } .modes label { flex: 1; margin: 0; position: relative; min-width: 0; }
 .modes input, .swatches input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
-.modes span { display: grid; place-items: center; min-height: 36px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); font-weight: var(--weight-medium); font-size: var(--text-sm); cursor: pointer; }
+.modes span { display: grid; place-items: center; min-height: var(--target-min); border: 1px solid var(--color-line); border-radius: var(--radius-sm); font-weight: var(--weight-medium); font-size: var(--text-sm); cursor: pointer; }
 .modes input:checked + span { background: var(--color-primary-soft); color: var(--color-primary-ink); border-color: var(--color-primary); }
 .modes input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 2px; }
-.swatches { display: flex; gap: var(--space-2); } .swatches label { margin: 0; position: relative; }
-.swatches > label > span { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm); cursor: pointer; }
-.swatches i { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0, 0, 0, .15); }
+.swatches { display: flex; flex-wrap: wrap; gap: var(--space-1); } .swatches label { margin: 0; position: relative; }
+.swatches > label > span { display: grid; place-items: center; width: var(--target-min); height: var(--target-min); border-radius: var(--radius-sm); cursor: pointer; }
+.swatches i { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); border: 1px solid var(--color-swatch-edge); }
 .swatches input:checked + span { outline: 2px solid var(--color-primary); outline-offset: -2px; background: var(--color-primary-soft); }
 .swatches input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .preview { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-2); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); }
 .preview .btn { margin: 0; cursor: default; } .link-sample { color: var(--color-primary-ink); font-size: var(--text-sm); text-decoration: underline; }
 .sign-in .appearance { position: fixed; top: var(--space-3); right: var(--space-3); }
+@media (max-width: 399px) {   /* the narrowest phones: the icon alone, the name stays for assistive technology */
+  .topnav .appear-btn .label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+  .topnav .appear-btn { min-width: var(--target-min); padding: 0; justify-content: center; }
+}

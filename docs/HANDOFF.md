@@ -53,9 +53,10 @@ Test counts at hand-off: backend **174 passed** (`python -m pytest -q tests` fro
 Keep the v0.8 engine, rebuild the shell · one Docker image for laptop and Google Cloud · v1 = web + API · team
 logins Owner/Tester/Viewer (M2.1) · reports HTML/PDF/Excel/Word/PPT/email digest (+CSV/JSON/JUnit) · scheduler cron
 + webhook · Zoho via CSV both ways + optional API; Slack/Teams/WhatsApp alerts · **per-project AI consent, No-AI
-default, No-AI fallback at the budget cap** · React + TS SPA · name "AgentQA Studio" · design: soft-UI neumorphism
-on surfaces/controls only, SaaS blue #2563EB on #EDF2F8/#F8FAFC, **IBM Plex Sans + JetBrains Mono**, Phosphor icons
-(`frontend/design-system/MASTER.md`, `tokens.css`, 80/80 contrast pairs checked by `make lint`). M1.1 specifics:
+default, No-AI fallback at the budget cap** · React + TS SPA · name "AgentQA Studio" · design: **flat professional blue and white**
+(the M0.4 neumorphism was rejected by the owner on 3 Nov 2026 and replaced in M1.2-UI), Light / Dark / System + five
+accents chosen in the app's Appearance menu, **IBM Plex Sans + JetBrains Mono**, Phosphor icons (`frontend/design-system/
+MASTER.md`, `tokens.css`, 202/202 contrast checks by `make lint`, the built app measured at five widths by `make ui-check`). M1.1 specifics:
 the wizard creates the project at step 1; AI-mode and Schedule steps are shown as "coming in M1.2 / M1.5";
 preflight may fetch the typed URL (link-local/metadata blocked).
 

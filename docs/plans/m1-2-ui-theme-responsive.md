@@ -234,14 +234,80 @@ a phone card layout for the 5-column requirements table (M1.4 rebuilds that page
 4. "Saved per person" means **per browser** until team logins (M2.1); then it follows the account.
 5. Renders shown in Phase 0: Blue + Teal (and Green if decision 1 keeps it).
 
-## Verification
+## Verification (3 Nov 2026)
 
-_(filled in during the build)_
+- **Phase 0, mock:** contrast tests RED (6) → `check_contrast.py` reads accent blocks → GREEN; tokens flat with five
+  accents; the mock rebuilt flat; `render_mock.py` green: no overflow at 320 / 375 / 768 / 1024 / 1440, every field
+  inside its card, the phone drawer opens with Live View and closes on Escape with focus returned, the Teal accent
+  and Dark theme switch, the pulse ring and scan line stop under reduced motion, the opened Appearance panel fits
+  inside the scrolling sidebar. Renders `docs/design/m1-2ui-*.png` (17). **Owner approved the look on the renders
+  and the live mock in the browser pane ("Approved").**
+- **Phase 1–3, app:** `Shell.test.tsx` (RED: the Live View link was never rendered) → GREEN; `theme.test.ts`,
+  `ThemeMenu.test.tsx`, `Live.test.tsx`, `ProgressBar.test.tsx`, `ProjectList.test.tsx`, reducer tests, all RED first.
+  Final counts: **Vitest 62 / 62 in 12 files**, `tsc -b` clean, `oxlint` clean **with the jsx-a11y plugin on**
+  (`.oxlintrc.json`; only its "prefer native tag over role" opinion is off, our roles are deliberate), build 60 kB CSS.
+- **Contrast:** 46 pairs, **212 / 212 checks** (31 theme-only × 2 + 15 accent × 2 × 5), `make lint`.
+- **`check_app.py` (`make ui-check`)** against a throwaway server with a generated owner: seven pages at
+  320 / 375 / 768 / 1024 / 1200 / 1440 in light and 375 / 1440 in dark — no horizontal overflow, no overlap in the
+  top bar, every field and button inside its card, the drawer with Live View **and Sign out**, 44 px targets (nav,
+  icon buttons, Appearance, theme choices, swatches, stepper, drawer), IBM Plex Sans really loaded
+  (`document.fonts`), the Appearance panel inside the sidebar and viewport, `data-accent=teal` recolouring the
+  primary button. Evidence `docs/design/m1-2ui-app-*.png` (28, written with `--shots`).
+- **Backend:** `python -m pytest -q tests` **180 passed**; `check_demo` **19 / 19, 0 extra** on a fresh auto-approved
+  demo run (no engine file changed).
+- **Browser pane:** the Appearance menu switched to Dark + Teal on the sign-in page of the running server.
+- **Not done:** 200 % zoom and a screen-reader walkthrough were not performed by hand (the automated a11y lint,
+  roles, names and focus tests stand in); `frontend/e2e/acceptance.spec.ts` was not run (needs owner credentials).
 
-## Review (fresh context)
 
-_(filled in during the build)_
+## Review (fresh context, 3 Nov 2026) and what changed because of it
+
+Three reviewers read the slice after phase 3: `code-reviewer` (Warning: 0 CRITICAL, 1 HIGH, 9 MEDIUM, 7 LOW),
+`typescript-reviewer` (Block on 1 HIGH, 7 MEDIUM, 10 LOW) and `react-reviewer` with an accessibility pass (Block:
+7 HIGH, 12 MEDIUM, 13 LOW). No security findings. Every HIGH and MEDIUM was fixed test-first (12 new or rewritten
+tests, Vitest 43 → 62):
+
+| # | Finding (merged across the three reviews) | Fix |
+|---|---|---|
+| HIGH | The phone drawer said `aria-modal` but Tab left it and Escape only worked with focus inside. | The header, sidebar and main are `inert` while it is open; Escape is a document listener; the panel is focused on open; the backdrop is `aria-hidden`; it closes on navigation and when the window grows a sidebar. |
+| HIGH | Sign out and the account were unreachable on phones (only in the hidden sidebar). | Both sit in the drawer foot; `check_app` asserts Sign out in the drawer. |
+| HIGH | The Appearance panel (264 px, floating) was clipped by the 248 px scrolling sidebar; the swatch row overflowed. | In the sidebar the panel opens in normal flow and scrolls itself into view; swatches wrap; `check_app` and `render_mock` open it and measure. |
+| HIGH | Failed event rows differed by colour alone. | A glyph and the word "Failed" on the row. |
+| HIGH | `aria-live="polite"` on a stream of hundreds of rows; a role-less `div` ignored its label. | `role="log" aria-live="off"`; one `sr-only` status line announces the last agent state change. |
+| HIGH | Finished wizard steps were 1 × 1 px buttons on phones, focusable but invisible. | The whole number + title is the button (44 px); only the title text is visually hidden on narrow screens. |
+| HIGH | No `onerror` on the stream: a reconnect replayed the whole run (duplicate rows, keys, counts) and nothing said the connection dropped. | `useLiveStream`: frames validated, "Connection lost, retrying…" alert, reconnect from the last cursor; the reducer ignores every event already seen. |
+| MED | `subscribe` in the theme store reloaded storage on every mount (extra renders; the page forgot a choice when storage was blocked); N storage listeners. | Loaded once lazily; one shared storage listener; `resetThemeStoreForTests`; the page's cached choice is the truth. |
+| MED | The boot-script drift test could not catch drift. | The test runs `theme-boot.js` in jsdom for every mode and accent, for junk and for nothing; the script applies defaults even on junk. |
+| MED | `baseline` derived in an effect; reset effects on run change. | "Changed after the first batch" lives in the reducer; `<LiveRun key=…>` restarts per run. |
+| MED | Unvalidated `JSON.parse(...) as …` at the stream boundary. | `parseFrame` checks the shape; bad frames are skipped. |
+| MED | Unknown `?session=` left the select and the stream disagreeing. | Falls back to the newest listed run. |
+| MED | Outside-click on `mousedown` (iOS taps never fire it); Tab out left the panel open. | `pointerdown` + `onBlur`. |
+| MED | The top bar overflowed at 320 px. | Icon-only Appearance button under 400 px (44 px wide); the brand name ellipsises; `check_app` asserts no overlap. |
+| MED | No loading announcement; brand link "current" on every page; no focus cue on wizard step change. | `role="status"` lines; the brand is a plain link; the step heading takes focus. |
+| MED | False empty states when a list fetch failed. | `ProjectList` has `isError`; `role="alert"` error lines. |
+| MED | `--color-muted` on the accent tint failed 4.5:1 in dark for every accent (the selected AI choice text). | Pair added to the checker (212 checks); the text uses `--color-ink-2`. |
+| MED | "No run yet" shown while loading and on error. | Only when the list is really empty. |
+| MED | The wizard rail cramped the form between 1100 and 1300 px. | The rail appears from 1300 px; 1200 added to the measured widths. |
+| MED | `Live`, `Shell`, `ThemeMenu` over 50 lines. | `useLiveStream`, `AgentCard`, `EventRow`, `useDrawer`, `Brand`, `ModeField`, `AccentField` extracted. |
+| MED | The pre-existing e2e spec matched two headings and would pass on skeleton cards. | `exact: true`; `.agent:not(.idle)`. |
+| LOW (done) | `100vh` fallbacks; raw `rgba()` → tokens; dead neumorphic CSS and the app's unused scan-line rule removed; the drawer's nav landmark; `DEFAULT_PREFERENCE` frozen with type guards; the accent named in the legend; `aria-controls` only while open; the generated master marked superseded. |
+
+Left open on purpose (LOW): `@testing-library/user-event` is not a dependency (tests use `fireEvent`); per-route
+`document.title`; a breadcrumb `nav`; Windows forced-colours styling; the `as CSSProperties` casts for custom
+properties; `StepRequirements` is a 140-line M1.1 component (M1.2 phase B touches that step anyway); the Project
+page has no chart yet (design-quality item 10, M1.3/M1.6).
+
 
 ## Record of changes
 
-_(filled in during the build)_
+- Design system: `tokens.css` (flat tokens, five accents, motion tokens, base rules), `check_contrast.py` (accent
+  blocks, 46 pairs / 212 checks), `render_mock.py`, `mock/index.html`, `check_app.py` (new), `MASTER.md` (rewritten),
+  `MASTER.generated.md` (marked superseded); `backend/tests/test_check_contrast.py` (+6).
+- App: `styles.css` → `styles/{base,shell,components,live,wizard,motion,theme-menu}.css`; `components/{Shell,
+  NavLinks,NavDrawer,ThemeMenu,ProjectList,ProgressBar,Skeleton}.tsx`, `components/live/{AgentCard,EventRow}.tsx`;
+  `lib/{theme,live,liveStream}.ts`; `pages/{Live,LivePicker,Projects,SignIn,Project}.tsx`, `pages/wizard/
+  {NewProject,StepRequirements,StepLater}.tsx`; `App.tsx` (`/live`); `public/theme-boot.js`, `index.html`,
+  `vite.config.ts` (`cssTarget` so `light-dark()` survives the minifier), `.oxlintrc.json`, `package.json` (lint),
+  `e2e/acceptance.spec.ts`; tests beside each component.
+- Tooling and docs: `Makefile` (`ui-check`), `docs/HANDOFF.md` (design line), `docs/design/m1-2ui-*.png`.
+- Commits: `2b21608` (phase 0 + 1), `7d2c613` (phase 2), `a6106ea` (phase 3), and the review-fix commit after this.

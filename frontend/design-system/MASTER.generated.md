@@ -1,3 +1,5 @@
+> **Superseded on 3 Nov 2026.** This is the generator's raw M0.4 output (neumorphism), kept as a record. The flat system the app uses is in `MASTER.md`.
+
 # Design System Master File
 
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.

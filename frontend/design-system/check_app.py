@@ -1,17 +1,19 @@
 """Measure the real React app the way render_mock.py measures the mock — against a throwaway server with a throwaway
 owner, so the owner's own sign-in is never read (M1.2-UI; `make ui-check`, needs `make web-build` first).
 
-    python frontend/design-system/check_app.py
+    python frontend/design-system/check_app.py [--shots]
 
 Starts `python -m agentqa ui` on a free port with generated AGENTQA_OWNER_* / AGENTQA_SECRET_KEY environment
 variables (a real variable beats backend/.env), signs in, creates the demo project through the API, then visits
 Sign in, Projects, the project page, Requirements, the wizard, Live View (no run yet) and the Live picker at
-320 / 375 / 768 / 1024 / 1440 px in light (and 375 / 1440 in dark) and asserts:
-  (a) no horizontal overflow;             (b) every field and button sits inside its card / form / section;
-  (c) under 760 px: the menu button shows, the sidebar does not, the drawer opens with Live View, Escape closes it
-      and focus returns to the button;    (d) nav links and icon buttons are at least 44 x 44;
-  (e) the computed font is IBM Plex Sans; (f) data-accent="teal" changes the primary button's colour.
-Writes docs/design/m1-2ui-app-<page>-<theme>-<width>.png for 375 and 1440. Exit 1 on any problem.
+320 / 375 / 768 / 1024 / 1200 / 1440 px in light (and 375 / 1440 in dark) and asserts:
+  (a) no horizontal overflow and no overlap in the top bar;   (b) every field and button sits inside its card / form / section;
+  (c) under 760 px: the menu button shows, the sidebar does not, the drawer opens with Live View and Sign out, its
+      links and buttons are 44 px targets, Escape closes it and focus returns to the button;
+  (d) nav links, icon buttons, the Appearance button, theme choices and stepper buttons are at least 44 x 44;
+  (e) IBM Plex Sans is loaded (document.fonts), the Appearance button exists, and opening it in the sidebar shows a
+      panel whose every control sits inside the sidebar and the viewport;   (f) data-accent="teal" recolours the primary button.
+With --shots, writes docs/design/m1-2ui-app-<page>-<theme>-<width>.png for 375 and 1440. Exit 1 on any problem.
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 OUT = ROOT / "docs" / "design"
 PREFIX = "m1-2ui-app"
-WIDTHS = (320, 375, 768, 1024, 1440)
+WIDTHS = (320, 375, 768, 1024, 1200, 1440)
 SHOT_WIDTHS = (375, 1440)
 DARK_WIDTHS = (375, 1440)
 PHONE_MAX = 759
@@ -40,10 +42,12 @@ PASSWORD = secrets.token_urlsafe(16)
 CSRF = {"X-Requested-With": "AgentQA"}
 STARTUP_S = 60
 PAUSE_S = 0.4                 # stays well under the API's 240 requests per minute
+SETTLE_MS = 400               # longer than any transition in tokens.css
 TOLERANCE = 0.5
 FIELDS = "input:not([type=radio],[type=checkbox]), select, textarea, .btn"
-CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, .next, form, section"
-TARGETS = ".nav a, .icon-btn, .appear-btn"
+CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, form, section"
+TARGETS = ".nav a, .icon-btn, .appear-btn, .modes label > span, .swatches > label > span, .steps .step-link"
+DRAWER_TARGETS = ".drawer a, .drawer button"
 MIN_TARGET = 44
 
 _INSIDE_JS = """({fields, containers, tol}) => {
@@ -62,6 +66,22 @@ _INSIDE_JS = """({fields, containers, tol}) => {
 _TARGET_JS = """({sel, min}) => [...document.querySelectorAll(sel)].filter(el => el.getBoundingClientRect().width > 0)
   .map(el => ({name: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 30), w: el.getBoundingClientRect().width, h: el.getBoundingClientRect().height}))
   .filter(t => t.w < min || t.h < min).map(t => `${t.name}: ${t.w.toFixed(0)}x${t.h.toFixed(0)}`)"""
+_OVERLAP_JS = """() => {
+  const items = [...document.querySelectorAll('.topnav > *')].map(el => el.getBoundingClientRect()).filter(r => r.width > 0);
+  const out = [];
+  for (let i = 1; i < items.length; i++) if (items[i].left < items[i - 1].right - 0.5) out.push(`top bar item ${i} overlaps the one before it by ${(items[i - 1].right - items[i].left).toFixed(0)}px`);
+  return out;
+}"""
+_PANEL_JS = """({tol}) => {
+  const side = document.querySelector('.side').getBoundingClientRect();
+  const out = [];
+  for (const el of document.querySelectorAll('.side .panel, .side .panel label > span')) {
+    const r = el.getBoundingClientRect();
+    if (r.left < side.left - tol || r.right > side.right + tol || r.left < -tol || r.right > innerWidth + tol || r.top < -tol || r.bottom > innerHeight + tol)
+      out.push(`${el.className || el.tagName.toLowerCase()} leaves the sidebar or the viewport (${r.left.toFixed(0)}..${r.right.toFixed(0)}, ${r.top.toFixed(0)}..${r.bottom.toFixed(0)})`);
+  }
+  return out;
+}"""
 
 
 def free_port() -> int:
@@ -114,6 +134,7 @@ def measure(page, label: str, width: int) -> list[str]:
         problems.append(f"{label}: horizontal overflow at {width}px")
     problems += [f"{label} at {width}px: {p}" for p in page.evaluate(_INSIDE_JS, {"fields": FIELDS, "containers": CONTAINERS, "tol": TOLERANCE})]
     problems += [f"{label} at {width}px: target too small: {t}" for t in page.evaluate(_TARGET_JS, {"sel": TARGETS, "min": MIN_TARGET})]
+    problems += [f"{label} at {width}px: {p}" for p in page.evaluate(_OVERLAP_JS)]
     return problems
 
 
@@ -123,11 +144,15 @@ def check_drawer(page, label: str) -> list[str]:
     if not menu.is_visible() or page.locator(".side").is_visible():
         return [f"{label}: on a phone the menu button must show and the sidebar must not"]
     menu.click()
+    page.wait_for_timeout(SETTLE_MS)
     drawer = page.get_by_role("dialog", name="Menu")
     if not drawer.is_visible() or not drawer.get_by_role("link", name="Live View").is_visible():
         problems.append(f"{label}: the drawer did not open with Live View")
+    if not drawer.get_by_role("button", name="Sign out").is_visible():
+        problems.append(f"{label}: the drawer has no Sign out")
+    problems += [f"{label}: drawer target too small: {t}" for t in page.evaluate(_TARGET_JS, {"sel": DRAWER_TARGETS, "min": MIN_TARGET})]
     page.keyboard.press("Escape")
-    page.wait_for_timeout(300)
+    page.wait_for_timeout(SETTLE_MS)
     if drawer.is_visible():
         problems.append(f"{label}: Escape did not close the drawer")
     if page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')") != "Menu":
@@ -135,15 +160,22 @@ def check_drawer(page, label: str) -> list[str]:
     return problems
 
 
-def check_font_and_accent(page, label: str) -> list[str]:
+def check_desktop_extras(page, label: str) -> list[str]:
+    """Font really loaded, the Appearance panel fits its sidebar, the accent recolours the primary button."""
     problems = []
-    if "IBM Plex Sans" not in page.evaluate("getComputedStyle(document.body).fontFamily"):
-        problems.append(f"{label}: body is not IBM Plex Sans")
-    if not page.get_by_role("button", name="Appearance").first.is_visible():
-        problems.append(f"{label}: no Appearance button")
+    if not page.evaluate("document.fonts.check('14px \"IBM Plex Sans\"')"):
+        problems.append(f"{label}: IBM Plex Sans is not loaded")
+    appearance = page.locator(".side .appear-btn")
+    if not appearance.is_visible():
+        return problems + [f"{label}: no Appearance button in the sidebar"]
+    appearance.click()
+    page.wait_for_timeout(SETTLE_MS)
+    problems += [f"{label}: {p}" for p in page.evaluate(_PANEL_JS, {"tol": TOLERANCE})]
+    problems += [f"{label}: Appearance target too small: {t}" for t in page.evaluate(_TARGET_JS, {"sel": ".side .panel label > span", "min": MIN_TARGET})]
+    page.keyboard.press("Escape")
     before = page.evaluate("getComputedStyle(document.querySelector('.btn.primary')).backgroundColor")
     page.evaluate("document.documentElement.setAttribute('data-accent', 'teal')")
-    page.wait_for_timeout(400)                       # the button's 150 ms colour transition must finish first
+    page.wait_for_timeout(SETTLE_MS)                       # the button's 150 ms colour transition must finish first
     after = page.evaluate("getComputedStyle(document.querySelector('.btn.primary')).backgroundColor")
     page.evaluate("document.documentElement.removeAttribute('data-accent')")
     if before == after:
@@ -151,7 +183,7 @@ def check_font_and_accent(page, label: str) -> list[str]:
     return problems
 
 
-def run_pages(browser, base: str, slug: str, theme: str, widths: tuple[int, ...]) -> list[str]:
+def run_pages(browser, base: str, slug: str, theme: str, widths: tuple[int, ...], shots: bool) -> list[str]:
     problems = []
     for width in widths:
         context = browser.new_context(viewport={"width": width, "height": 900}, color_scheme=theme)
@@ -169,16 +201,16 @@ def run_pages(browser, base: str, slug: str, theme: str, widths: tuple[int, ...]
             if name == "projects" and width <= PHONE_MAX:
                 problems += check_drawer(page, label)
             if name == "projects" and width == 1440:
-                problems += check_font_and_accent(page, label)
-            if width in SHOT_WIDTHS:
+                problems += check_desktop_extras(page, label)
+            if shots and width in SHOT_WIDTHS:
                 page.screenshot(path=str(OUT / f"{PREFIX}-{name}-{theme}-{width}.png"), full_page=(width < 760))
             time.sleep(PAUSE_S)
         context.close()
     return problems
 
 
-def main() -> int:
-    OUT.mkdir(parents=True, exist_ok=True)
+def main(argv: list[str]) -> int:
+    shots = "--shots" in argv
     index = ROOT / "frontend" / "dist" / "index.html"
     if not index.is_file():
         print("frontend/dist is missing: run `make web-build` first")
@@ -186,6 +218,8 @@ def main() -> int:
     if 'src="/app/theme-boot.js"' not in index.read_text(encoding="utf-8"):
         print("dist/index.html does not load /app/theme-boot.js: the saved theme would flash on reload")
         return 1
+    if shots:
+        OUT.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:      # Windows may still hold the test db for a moment
         proc, base = start_server(Path(tmp) / "projects")
         try:
@@ -193,19 +227,21 @@ def main() -> int:
                 browser = p.chromium.launch()
                 with browser.new_context() as context:
                     slug = sign_in(context, base)
-                problems = run_pages(browser, base, slug, "light", WIDTHS) + run_pages(browser, base, slug, "dark", DARK_WIDTHS)
+                problems = run_pages(browser, base, slug, "light", WIDTHS, shots) + run_pages(browser, base, slug, "dark", DARK_WIDTHS, shots)
                 browser.close()
         finally:
             proc.kill()
             proc.wait(timeout=10)
-    for png in sorted(OUT.glob(f"{PREFIX}-*.png")):
-        print("wrote", png.relative_to(ROOT))
+    if shots:
+        for png in sorted(OUT.glob(f"{PREFIX}-*.png")):
+            print("wrote", png.relative_to(ROOT))
     if problems:
         print("\nPROBLEMS:\n  " + "\n  ".join(problems))
         return 1
-    print(f"\nthe app passes at {', '.join(map(str, WIDTHS))} px in light and dark: no overflow, fields inside their cards, drawer, targets, font, accent OK")
+    print(f"\nthe app passes at {', '.join(map(str, WIDTHS))} px in light and dark: no overflow or overlap, fields inside their cards, "
+          "drawer (with Sign out), 44 px targets, loaded font, Appearance panel in place, accent OK")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

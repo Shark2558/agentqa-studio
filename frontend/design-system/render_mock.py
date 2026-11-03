@@ -101,9 +101,21 @@ def check_drawer(browser) -> list[str]:
     return problems
 
 
+_PANEL_JS = """({tol}) => {
+  const side = document.querySelector('.side').getBoundingClientRect();
+  return [...document.querySelectorAll('.side .panel, .side .panel label > span')].map(el => el.getBoundingClientRect())
+    .filter(r => r.left < side.left - tol || r.right > side.right + tol || r.top < -tol || r.bottom > innerHeight + tol)
+    .map(r => `a panel part at ${r.left.toFixed(0)}..${r.right.toFixed(0)} leaves the sidebar ${side.left.toFixed(0)}..${side.right.toFixed(0)}`);
+}"""
+
+
 def check_switches(browser) -> list[str]:
     page = _open_page(browser, 1440)
     problems = []
+    page.locator(".side .appear-btn").click()                       # the open panel must fit inside the (scrolling) sidebar
+    page.wait_for_timeout(SETTLE_MS)
+    problems += page.evaluate(_PANEL_JS, {"tol": TOLERANCE})
+    page.keyboard.press("Escape")
     bg = page.evaluate("getComputedStyle(document.body).backgroundColor")
     btn = page.evaluate("getComputedStyle(document.querySelector('.btn.primary')).backgroundColor")
     _pick(page, "light", "teal", "dash")

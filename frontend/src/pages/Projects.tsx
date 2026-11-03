@@ -46,6 +46,7 @@ export function Projects() {
         <ProjectList
           projects={projects.data}
           isPending={projects.isPending}
+          isError={projects.isError}
           hrefFor={(slug) => `/projects/${encodeURIComponent(slug)}`}
           emptyText="No projects yet: the six-step wizard builds one, or try the demo."
         />

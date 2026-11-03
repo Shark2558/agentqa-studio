@@ -67,13 +67,14 @@ export function StepRequirements(p: Props) {
       ),
     onSuccess: p.onConfirm,
   });
-  const chatError = [ask.error, confirm.error].find((e) => e instanceof ApiError) as ApiError | undefined;
+  const chatFailure = [ask.error, confirm.error].find(Boolean);
+  const chatError = chatFailure instanceof ApiError ? chatFailure.message : chatFailure ? "The check did not reach the server; try again" : null;
   const removeError = remove.error instanceof ApiError ? remove.error.message : remove.error ? "The document could not be removed" : null;
 
   return (
     <div className="grid g-two">
       <section aria-labelledby="h-docs">
-        <h2 id="h-docs">Documents</h2>
+        <h3 id="h-docs">Documents</h3>
         <div
           className={`drop ${dragging ? "over" : ""}`}
           onDragOver={(e) => {
@@ -142,7 +143,7 @@ export function StepRequirements(p: Props) {
       </section>
 
       <section aria-labelledby="h-typed">
-        <h2 id="h-typed">Or describe what the application must do</h2>
+        <h3 id="h-typed">Or describe what the application must do</h3>
         <textarea
           id="w-typed"
           aria-label="Typed requirements"
@@ -158,7 +159,7 @@ export function StepRequirements(p: Props) {
         </div>
         {chatError && (
           <p className="notice bad" role="alert">
-            {chatError.message}
+            {chatError}
           </p>
         )}
         {p.chat && (

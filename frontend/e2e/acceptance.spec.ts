@@ -14,7 +14,7 @@ test("sign in, create the demo, start the pipeline and watch it live", async ({ 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Projects", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Try the demo" }).click();
   await expect(page.getByRole("heading", { name: "Demo Certificate Portal" })).toBeVisible();
@@ -23,5 +23,5 @@ test("sign in, create the demo, start the pipeline and watch it live", async ({ 
   if (await run.isEnabled()) await run.click();
   await expect(page.getByRole("heading", { name: "Live View" })).toBeVisible();
   await expect(page.locator(".evt").first()).toBeVisible({ timeout: 120_000 });
-  await expect(page.locator(".agent").first()).toBeVisible();
+  await expect(page.locator(".agent:not(.idle)").first()).toBeVisible();   // not a skeleton card
 });

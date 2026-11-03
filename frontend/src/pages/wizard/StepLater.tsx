@@ -4,7 +4,7 @@ import { CalendarBlank, Robot } from "@phosphor-icons/react";
 export function StepAi() {
   return (
     <div className="choices">
-      <label className="choice selected">
+      <label className="choice selected" aria-label="No AI, selected for this project">
         <input type="radio" name="ai" checked readOnly />
         <span>
           <b>No AI</b>

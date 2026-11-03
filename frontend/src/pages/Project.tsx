@@ -99,7 +99,9 @@ export function Project() {
                 <th>Status</th>
                 <th>Started</th>
                 <th>Finished</th>
-                <th></th>
+                <th>
+                  <span className="sr-only">Watch</span>
+                </th>
               </tr>
             </thead>
             <tbody>

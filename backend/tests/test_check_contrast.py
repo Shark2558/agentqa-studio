@@ -99,7 +99,8 @@ def test_accent_free_pairs_are_checked_once_per_theme_and_accent_pairs_per_accen
              ("--color-on-primary", "--color-primary", 4.5, "button label")]      # resolves through --accent
     plan = cc.plan_checks(ACCENT_CSS, pairs=pairs, accents=("blue", "teal"))
     assert len(plan) == 1 * 2 + 1 * 2 * 2                                         # base once per theme; accent pair per theme per accent
-    assert cc.count_checks(cc.PAIRS, accent_pairs=14, accents=cc.ACCENTS) == 31 * 2 + 14 * 2 * 5 == 202
+    assert cc.count_checks(cc.PAIRS, accent_pairs=15, accents=cc.ACCENTS) == 31 * 2 + 15 * 2 * 5 == 212
+    assert len(cc.plan_checks(cc.DEFAULT_TOKENS.read_text(encoding="utf-8"))) == 212     # the real plan, not just arithmetic
 
 
 def test_the_shipped_tokens_pass_for_every_theme_and_accent():
@@ -108,3 +109,4 @@ def test_the_shipped_tokens_pass_for_every_theme_and_accent():
     assert failures == []
     assert set(cc.ACCENTS) == {"blue", "indigo", "teal", "green", "slate"}
     assert all(a == "blue" or a in cc.parse_accents(css) for a in cc.ACCENTS)
+    assert ("--color-ink-2", "--color-primary-soft", cc.TEXT_MIN, "selected choice description on the accent tint") in cc.PAIRS

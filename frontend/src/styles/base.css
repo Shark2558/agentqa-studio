@@ -24,7 +24,7 @@ input:read-only, select:disabled { color: var(--color-muted); background: var(--
 .notice code { font-family: var(--font-mono); }
 
 /* sign in */
-.sign-in { min-height: 100dvh; display: grid; place-items: center; padding: var(--space-4); }
+.sign-in { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: var(--space-4); }
 .sign-in-card { width: min(420px, 100%); }
 .sign-in-card .brand { padding: 0 0 var(--space-4); }
 .sign-in-card .btn { width: 100%; justify-content: center; }

@@ -10,11 +10,11 @@
 .agent.waiting { border-color: var(--color-warn); box-shadow: 0 0 0 1px var(--color-warn); } .agent.waiting .name svg { color: var(--color-warn); }
 .agent.failed { border-color: var(--color-bad); } .agent.failed .name svg { color: var(--color-bad); }
 .agent.idle { border-style: dashed; border-color: var(--color-line-strong); background: transparent; } .agent.idle .name { color: var(--color-muted); } .agent.idle .name svg { color: var(--color-icon); }
-.stream { display: flex; flex-direction: column; gap: var(--space-2); max-height: 70dvh; overflow: auto; padding-right: 4px; }
+.stream { display: flex; flex-direction: column; gap: var(--space-2); max-height: 70vh; max-height: 70dvh; overflow: auto; padding-right: 4px; }
 .evt { display: grid; grid-template-columns: 80px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-line); min-width: 0; }
 .evt .k { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-info); padding-top: 2px; overflow: hidden; text-overflow: ellipsis; }
 .evt.fail .k { color: var(--color-bad); }
-.evt p { margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; } .evt .t { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+.evt p { margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; } .evt p .pill { margin-left: var(--space-2); vertical-align: 1px; } .evt .t { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
 .empty { display: grid; gap: var(--space-2); justify-items: start; padding: var(--space-4); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); color: var(--color-muted); }
 .empty .btn { margin-top: var(--space-2); }
 @media (min-width: 760px) { .evt { grid-template-columns: 96px 1fr; } }

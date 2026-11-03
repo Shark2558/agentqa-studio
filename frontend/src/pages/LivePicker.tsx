@@ -17,12 +17,12 @@ export function LivePicker() {
           <p className="sub">Live View shows one project's run. Choose the project to watch.</p>
         </div>
       </div>
-      {projects.isError && <p className="notice bad">The projects could not be loaded.</p>}
       <section className="card" aria-labelledby="h-pick">
         <h2 id="h-pick">Which project?</h2>
         <ProjectList
           projects={projects.data}
           isPending={projects.isPending}
+          isError={projects.isError}
           hrefFor={(slug) => `/projects/${encodeURIComponent(slug)}/live`}
           emptyText="There is no project yet, so nothing can run."
         />

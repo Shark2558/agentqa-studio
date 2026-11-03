@@ -66,6 +66,8 @@
 
   /* ---------- elevation: flat everywhere; one soft shadow for the layer that floats (menus, drawer) ---------- */
   --elev-overlay: light-dark(0 8px 24px rgba(15, 23, 42, 0.14), 0 8px 24px rgba(0, 0, 0, 0.5));
+  --color-backdrop: rgba(15, 23, 42, 0.45);          /* behind the phone drawer */
+  --color-swatch-edge: rgba(0, 0, 0, 0.15);          /* the thin edge of an accent swatch */
 
   /* ---------- typography ---------- */
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;

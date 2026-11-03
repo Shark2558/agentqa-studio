@@ -1,4 +1,4 @@
-import { useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Check, Play } from "@phosphor-icons/react";
@@ -17,6 +17,12 @@ export function NewProject() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const step = STEPS[s.step];
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {                                     // a new step: move focus to its heading so the change is announced
+    if (firstStep.current) firstStep.current = false;
+    else heading.current?.focus();
+  }, [s.step]);
 
   const advance = useMutation({
     mutationFn: async () => {
@@ -62,13 +68,18 @@ export function NewProject() {
         <ol className="steps" aria-label="Steps">
           {STEPS.map((st, i) => (
             <li key={st.key} className={i === s.step ? "current" : i < s.step ? "done" : ""} aria-current={i === s.step ? "step" : undefined}>
-              <span className="num">{i < s.step ? <Check aria-hidden="true" /> : i + 1}</span>
               {i < s.step ? (
-                <button type="button" className="linkish title" onClick={() => dispatch({ type: "goto", step: i })}>
-                  {st.title}
+                <button type="button" className="step-link" onClick={() => dispatch({ type: "goto", step: i })}>
+                  <span className="num">
+                    <Check aria-hidden="true" />
+                  </span>
+                  <span className="title">{st.title}</span>
                 </button>
               ) : (
-                <span className="title">{st.title}</span>
+                <span>
+                  <span className="num">{i + 1}</span>
+                  <span className="title">{st.title}</span>
+                </span>
               )}
             </li>
           ))}
@@ -82,7 +93,7 @@ export function NewProject() {
             else advance.mutate();
           }}
         >
-          <h2>
+          <h2 ref={heading} tabIndex={-1}>
             Step {s.step + 1} of {STEPS.length}: {step.title}
           </h2>
           <p className="why">
