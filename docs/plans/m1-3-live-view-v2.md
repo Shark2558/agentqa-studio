@@ -4,7 +4,7 @@
 watched live; its replay matches; a Viewer sees it read-only.**
 **Marker:** the PRD does not mark M1.3 🔒, but it is reviewed as if it were: a WebSocket skips the HTTP middleware
 (sign-in, rate limit, CSRF guard), the AI client gains a cost event, a new dependency arrives, and a role rule is added to
-every write. **Owner approval:** required before building (asked 3 Nov 2026). Planned with the `planner` agent, which
+every write. **Owner approval:** given 3 Nov 2026, all seven decisions as recommended. Planned with the `planner` agent, which
 checked every claim below against the code; the main points were re-checked by hand the same day.
 
 ## Goal
@@ -386,6 +386,13 @@ Step 2 can run beside step 1; step 3 needs 1; step 4 needs 2 and 3; step 5 needs
   scan guards it.
 
 ## Decisions for the owner
+
+**Confirmed by the owner, 3 Nov 2026: all seven as recommended** — the `websockets` package with SSE as fallback; the
+Viewer write rule with tests and a one-off Viewer pass on a throwaway review server; the five event lines and no agent
+change; a finished run opens at its final picture; 15 recordings kept; the old dashboard's Live View left alone until
+M1.4; one Cloud demo run (about $0.34, up to $1 approved) plus the free No-AI run.
+
+The seven as they were put to him:
 
 1. **WebSocket library.** Add one small, widely used package (`websockets`) so Live View uses WebSocket first, with
    today's stream as the fallback. *Recommended:* it meets PRD FR-LIVE-7 and stops several open Live View tabs from
