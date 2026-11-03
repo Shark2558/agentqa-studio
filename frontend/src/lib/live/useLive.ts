@@ -42,6 +42,10 @@ export interface LiveView {
   status: ConnStatus;
   transport: Transport | null;
   runOver: boolean;
+  /** The picture on screen is the end of a finished run. Partway through a replay a stage still at work is running,
+   *  not "did not finish" (M1.3 Phase C), so the pipeline, board, focus and tiles read this; the player reads the
+   *  stream's end reason itself (Final picture, Play from the start). */
+  shownOver: boolean;
 }
 
 const FOLLOWING: Player = { pos: 0, playing: true, speed: 1, follow: true };
@@ -127,5 +131,6 @@ export function useLive(slug: string, session: string, def: BoardDef, running: b
   const model = useMemo(() => modelAt(timeline, stream.events, pos, def), [timeline, stream.events, pos, def]);
   // Only a finished run is over: an hour without news, an ended sign-in or a run that is gone never claim that its
   // stages "did not finish" (TypeScript review).
-  return { stream, model, pos, player, dispatch, status, transport, runOver: stream.ended === "finished" };
+  const runOver = stream.ended === "finished";
+  return { stream, model, pos, player, dispatch, status, transport, runOver, shownOver: runOver && pos >= stream.events.length };
 }

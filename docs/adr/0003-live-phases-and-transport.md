@@ -50,3 +50,20 @@ loop, a crafted cursor raised a 500, and nothing distinguished a person who may 
 - Recordings remain the owner's data and stay out of git; the one exception is the trimmed demo fixture under
   `backend/tests/fixtures/recordings/`, which the tool that writes it and a test that reads it both check for demo
   passwords, unmasked secrets and absolute paths.
+
+## Confirmed in acceptance (Phase C, 4 Nov 2026)
+
+- Both acceptance runs streamed over the WebSocket (`data-transport="websocket"`), the No-AI run started from the
+  app (2 720 events) and the Cloud run from the command line (2 774 events); a reload, Replay from the start, pause,
+  step, scrub, speed and Final picture all ended at the same final picture. Both runs scored 19/19, 0 extra.
+- **"The run is over" has two meanings in the browser**, and Phase C separated them: the recording is finished
+  (`runOver`, which drives the player's Final picture) and the picture on screen is that finish (`shownOver`, which
+  drives every card, gate and tile). Before the split, a replay of a finished run marked the stage at work "did not
+  finish" and the rest "not reached".
+- The one-off Viewer pass (signed with the throwaway server's own secret through `Sessions.issue`, no product code)
+  watched a finished run live and replayed it; the pages offered no run, project or wizard action, and every write
+  tried by hand answered 403 `read_only`.
+- A provider switch during a run is recorded only in the gateway's audit log (`ai_events`) and as the key's last
+  error: the Live View shows the new model on the card, and that card names only the last model used, with no line
+  saying why. Open, with the gateway's classification of Anthropic's "credit balance is too low" (an HTTP 400 read as
+  a refused request, so the key stays "ok" and is tried again before every call).

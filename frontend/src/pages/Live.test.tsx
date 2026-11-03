@@ -77,6 +77,16 @@ describe("Live View: a finished run", () => {
     expect(screen.getByText(/^0 \/ 447/)).toBeInTheDocument();
   });
 
+  it("partway through a replay, a stage still at work reads running, never 'did not finish' (Phase C)", async () => {
+    mount();
+    (await socket()).deliver(FINISHED);
+    await screen.findByText(/447 \/ 447/);
+    fireEvent.change(screen.getByRole("slider", { name: "Position in the run" }), { target: { value: "30" } });
+    expect(screen.getByText(/^30 \/ 447/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Did not finish|Not reached|The run is over/);
+    expect(within(screen.getByRole("region", { name: "Agents" })).getAllByRole("button", { name: /Running/ }).length).toBeGreaterThan(0);
+  });
+
   it("an agent in the address that is not on the board shows the whole run instead", async () => {
     mount("owner", [RUN], "/projects/demo/live?agent=bogus");
     (await socket()).deliver(FINISHED);

@@ -235,8 +235,9 @@ picture with **Replay from the start** (decision 4); a running run follows live.
 `pages/Project.tsx`: no Run button for a Viewer.
 
 **Styles:** `styles/live.css` (board, stream, tiles) and `styles/live-frame.css` (frame, the mock's scan-line moved
-into `motion.css`, timeline, map, player, lightbox), each ≤ 400 lines. Layout per the mock: from 1100 px three columns
-(`300px minmax(0,1fr) 320px`) with Details full width below; under 760 px everything stacks; the timeline and the tab
+into `motion.css`, timeline, map, player, lightbox), each ≤ 400 lines. Layout per the mock: three columns
+(`300px minmax(0,1fr) 320px`) with Details full width below — **from 1400 px since Phase C** (the sidebar and gutters
+take 311 px, so the mock's 1100 px left the middle column 137 px; board + focus from 1024 px, one column below); the timeline and the tab
 list scroll inside their card, never the page; the player bar stays in the flow (a sticky bar could hide the focused
 element). Reduced motion turns off the scan-line and makes the pulse a static ring. `check_contrast.py` gains the
 phase-label pairs if any pair is new.
@@ -484,6 +485,26 @@ Plan-vs-build differences worth knowing:
   marks a stage "did not finish".
 - The 4-per-second cap on frame swaps was not needed: at Instant the player moves 600 events per step and draws once.
 
+**Phase C (acceptance with the owner), 4 Nov 2026, on branch `claude/gifted-ishizaka-972db8`.** A throwaway review
+server (generated owner, `AGENTQA_HOME` and `--projects-dir` in the session's scratchpad, port 52381, the owner's own
+sign-in never touched), the demo portals on 8800 / 8810, the owner watching the browser pane.
+
+| Check | Result |
+|---|---|
+| **Watched live, No-AI** (Run full pipeline from the project page, gates approved automatically) | the cards went Queued → Running → Done in order; the gates marked (Questions for you: 15 · Test plan approval: approved · Defects to confirm: 19); browser frames, the 35-screen site map (with `/help/faq` HTTP 404) and the 214 tiles filled while the Executor ran; `data-transport="websocket"`; 2 720 events, 01:20–01:27 |
+| `tools/check_demo.py` on that run | **19/19 seeded bugs, 0 unexpected** |
+| **Replay matches** | after a reload the same final picture (pipeline, 12 cards, tiles, findings compared as text); Replay from the start, Pause (222 stays 222), Next step (222 → 223), scrub to 1 500, 10× (1 500 → 1 550 in 3 s), Final picture: the same final picture again. Partway through, the board was wrong (C1, fixed) |
+| **Cloud run** (decision 7; the owner said yes in chat right before it spent; project cap $1.00) | `pipeline --policy srs_wins --auto-approve` from the command line on a demo copy in the server's projects folder, the owner's real vault; 2 774 events over WebSocket, 12 / 12 stages, **19/19, 0 unexpected**; each AI card named its model and cost (Analyst claude-sonnet-5-5 $0.0129 · Writer $0.2398 · Test Designer $0.0185 · Triage $0.0017; the rest "no AI"), their sum is the header's **$0.2729 · 20 338 in / 21 969 out tokens**, and the AI page's run row `pl-20261104-014148` reads 35 calls, $0.27 (API $0.2728893, the same tokens). **Spent: $0.27** of the $1 approved |
+| Anthropic credit ran out mid-run | after 5 Sonnet and 3 Opus calls Anthropic answered HTTP 400 "Your credit balance is too low"; the gateway switched each later call to Gemini (gemini-flash-lite-latest) as the policy says, and the run went on. The owner tops up Anthropic himself if he wants it back. Two findings (C4, C5) |
+| **Viewer look** (decision 2; a one-off pass signed with the throwaway server's secret through `Sessions.issue`, role viewer, 1 hour) | Projects and the Live picker: no Try the demo, no New project; the project page: no Run full pipeline and no gate switch; the wizard: "Viewers can watch runs and read results…"; the finished Cloud run watched over WebSocket and replayed; writes sent by hand — start a run, create the demo, change AI, new project — all **403 `read_only`** |
+| B19 (a half-open socket after the computer sleeps) | not observed: the PC did not sleep during the acceptance; stays open |
+| After the fixes and the review fixes: Vitest · typecheck · lint · build | **275 passed in 34 files** (+7: the page test and the player tests RED first; the hook's `shownOver` cases and the live-edge case added as guards after the review) · clean · clean · built |
+| The same replay on the real No-AI recording after the fixes | at 38 / 2 720 "analyze: Running", every later stage "Queued", nothing says "did not finish"; at the end "Final picture" and the Play button reads "Play from the start" |
+| `make lint` (contrast) · pyflakes | 232 / 232 · clean (backend, `check_app.py`, `check_live.py`) |
+| `make ui-check` | passes at 6 widths, light and dark, with a new check that the Live View's middle column exists on the recorded run and is at least 360 px whenever it shares its row: **RED on the old build** (196 px at 768, 252 px at 1200), green after the fix |
+| `make live-check` | 447 / 447 live over WebSocket; the same picture after a reload, after Replay at Instant and over SSE |
+| Backend | no backend change in Phase C (477 passed at Phase B) |
+
 ## Review (fresh context)
 
 **Phase A.** Three reviewers read the uncommitted change set in fresh contexts on 3 Nov 2026: `ecc:code-reviewer`
@@ -548,6 +569,29 @@ Every HIGH and MEDIUM was fixed test-first (Vitest 214 → 268).
 | B21 | LOW · **open** | The browser checks' throwaway server still reads other keys from `backend/.env` (an `AGENTQA_COOKIE_SECURE=1` there would break their sign-in; nothing leaks: the generated owner and key win) (security L4) | a no-dotenv switch for the throwaway server |
 | B22 | LOW · **open** | Agent cards use `aria-pressed` for the followed agent too; the lightbox has no backdrop click; "Approve the gates automatically" defaults on (react) | the default is the M1.2 decision until M1.4 brings the gates into this app; the rest with M1.4's page polish |
 
+**Phase C.** What the acceptance runs found (C1–C7), fixed test-first where it is the Live View's own code; the fixes
+were then read by `ecc:code-reviewer` (Approve: 2 MEDIUM, 6 LOW) and `ecc:typescript-reviewer` with React and
+accessibility in mind (no CRITICAL or HIGH: 3 MEDIUM, 6 LOW) in fresh contexts; overlapping findings are merged in
+C8–C15, and every MEDIUM was fixed test-first.
+
+| # | Severity | Finding (where seen) | Fix |
+|---|---|---|---|
+| C1 | HIGH · fixed | Partway through a replay of a finished run, the stage at work read "Did not finish" and every later stage "Not reached" (No-AI replay at 38 / 2 720): every panel used "the recording is finished" | `useLive` also returns `shownOver` (finished **and** the picture is at the last event); pipeline, board, focus and tiles use it, the player keeps `runOver`; `Live.test.tsx` scrubs the fixture to 30 / 447 |
+| C2 | MEDIUM · fixed | "What it is doing" was 186 px wide in the owner's 1 149 px pane (137 px at 1 100, 196 px at 768): the column breakpoints ignored the 311 px of sidebar and gutters | one column under 1 024 px, board + focus from 1 024, three columns from 1 400 (the middle column ≥ 437 px beside another); `check_app.py` checks ≥ 360 px |
+| C3 | LOW · fixed | At the end of a finished run after Final picture (or a replay played to its end) the screen-reader status said "Playing" and the button offered Pause | "Final picture"; Play is disabled at the end (Replay from the start is the way back); `PlayerBar.test.tsx` |
+| C4 | MEDIUM · **open** | A provider switch leaves no line in the Live View, and a card names only the last model used: the Writer's card read gemini-flash-lite-latest although about $0.23 of its $0.24 was Opus 5.5 (Cloud run) | a "switched" line from the gateway into the live recording and every model on the card; a follow-up (it touches the gateway, 🔒) |
+| C5 | MEDIUM · **open** (M1.2 gateway) | Anthropic's "credit balance is too low" arrives as HTTP 400 and `ai/providers.classify` reads it as `bad_request`, so the empty key stays "ok" and is tried before every call (27 failures in a row in `key_state`) | classify it as `billing` (never retried until the key is edited); a follow-up with its own test and security review |
+| C6 | LOW · **open** | The run picker's time is the run folder's last change, not its start (01:20 became 01:24 while the run went on; the header kept 01:20) | read the start from the run marker or the first event (M1.4) |
+| C7 | LOW · **open** | The site map draws children that share their parent's column (`@department/…`) with short diagonal hatches between stacked boxes | place children one column to the right (M1.4 polish) |
+| C8 | MEDIUM · fixed | C3's first fix disabled Play at the end, under a keyboard user's focus, so focus fell back to the page (ts) | at the end Play reads "Play from the start" and starts the replay again; never disabled there; test |
+| C9 | MEDIUM · fixed | A recording that ended without finishing (idle, signed out, gone) still said "Playing" at its end (ts) | the player takes the stream's end reason: any ended stream at its last event is the end ("End of what was recorded"; "Final picture" when it finished); tests, with the live edge of a run still streaming pinned as "Playing" |
+| C10 | MEDIUM · fixed | `shownOver`'s true side had no test, and the width check passed silently when there was no middle column to measure (code, ts) | hook cases (finished at its end, scrubbed back, still streaming, idle); `check_app.py` requires the column on the recorded run |
+| C11 | LOW · fixed | The "311 px" comment hid a 15 px scrollbar (296 px without one, as in headless checks); who reads `shownOver`; the check's docstring and success line; "at the end" worked out twice in the player (code, ts) | worded out; computed once |
+| C12 | LOW · **open** | The design mock still switches at 1 100 px; 1 400 px is not a measured width; other grids also ignore the sidebar (`.g-dash` gives four ~185 px columns at 1 100 px) and three breakpoint conventions now exist (760 / 1 100, 1 300, 1 024 / 1 400) (code) | M1.4 page polish, with the mock |
+| C13 | LOW · **open** | Under 1 024 px "what it is doing" sits under the board, so choosing an agent changes content out of sight (ts) | scroll it into view on choice when the grid is one column (M1.4) |
+| C14 | LOW · **open** | At the final picture of a run whose stage never ended, the board's spoken status says "X: running" while the card says "Did not finish" (pre-existing) (ts) | `running && !shownOver` (M1.4) |
+| C15 | LOW · **open** | Four panels still name their prop `runOver` while receiving `shownOver`; "Next step" and "Go live" still disable under focus (pre-existing) (ts) | rename and refocus with M1.4's page work |
+
 ## Record of changes
 
 **Phase A — one commit on `claude/exciting-margulis-b91a03`, 3 Nov 2026.**
@@ -589,3 +633,11 @@ three-column layout from 1 100 px, the scan line), `vite.config.ts` (the dev pro
 
 Left for Phase C: the acceptance runs with the owner (a No-AI run watched live and replayed in the browser pane, one
 Cloud run up to $1, a look as a Viewer on a throwaway review server), then HANDOFF, MASTER §6/§7/§9 and ADR 0003.
+
+**Phase C — one commit on `claude/gifted-ishizaka-972db8`, 4 Nov 2026.** Acceptance with the owner (above) and its
+fixes. Changed: `lib/live/useLive.ts` (`shownOver`), `pages/LiveRun.tsx` (the panels read it), `components/live/
+PlayerBar.tsx` (takes the stream's end reason; the end of a recording, Play from the start), `styles/components.css`
+and `styles/live.css` (the Live View columns from 1 024 / 1 400 px), `design-system/check_app.py` (the middle-column
+check), tests `Live.test.tsx`, `PlayerBar.test.tsx` and `useLive.test.tsx`; this plan, `docs/HANDOFF.md`,
+`frontend/design-system/MASTER.md` §6/§7/§9 and ADR 0003. No
+engine, agent or backend code changed. Spent: $0.27 (the Cloud run). Not merged into `main`: the owner decides.

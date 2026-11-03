@@ -40,7 +40,7 @@ type Props = { slug: string; session: string; def: BoardDef; running: boolean; o
 export function LiveRun({ slug, session, def, running, onReconnect }: Props) {
   const [params, setParams] = useSearchParams();
   const view = useLive(slug, session, def, running);
-  const { model, stream, pos, runOver } = view;
+  const { model, stream, pos, shownOver } = view;
   const requested = params.get("agent");
   const agent = requested && model.board.cards.has(requested) ? requested : model.board.running;
   const tabParam = params.get("tab");
@@ -61,15 +61,15 @@ export function LiveRun({ slug, session, def, running, onReconnect }: Props) {
     <>
       <ErrorBoundary><RunHeader model={model} status={view.status} ended={stream.ended} transport={view.transport} /></ErrorBoundary>
       <RunNotices stream={stream} status={view.status} skipped={model.skipped} onReconnect={onReconnect} />
-      <ErrorBoundary resetKey={pos}><PipelineCard model={model} def={def} runOver={runOver} onJump={jumpTo} /></ErrorBoundary>
-      <ErrorBoundary><PlayerBar player={view.player} pos={pos} total={stream.events.length} runOver={runOver} dispatch={view.dispatch} /></ErrorBoundary>
+      <ErrorBoundary resetKey={pos}><PipelineCard model={model} def={def} runOver={shownOver} onJump={jumpTo} /></ErrorBoundary>
+      <ErrorBoundary><PlayerBar player={view.player} pos={pos} total={stream.events.length} ended={stream.ended} dispatch={view.dispatch} /></ErrorBoundary>
       <div className="grid g-live mt-4">
-        <ErrorBoundary resetKey={pos}><AgentBoard board={model.board} runOver={runOver} selected={agent} onSelect={select} /></ErrorBoundary>
+        <ErrorBoundary resetKey={pos}><AgentBoard board={model.board} runOver={shownOver} selected={agent} onSelect={select} /></ErrorBoundary>
         <ErrorBoundary resetKey={pos}>
-          <AgentFocus key={agent ?? "all"} slug={slug} session={session} model={model} events={stream.events} pos={pos} agent={agent} runOver={runOver} />
+          <AgentFocus key={agent ?? "all"} slug={slug} session={session} model={model} events={stream.events} pos={pos} agent={agent} runOver={shownOver} />
         </ErrorBoundary>
         <div className="stack">
-          <ErrorBoundary resetKey={pos}><TestTiles panels={model.panels} runOver={runOver} /></ErrorBoundary>
+          <ErrorBoundary resetKey={pos}><TestTiles panels={model.panels} runOver={shownOver} /></ErrorBoundary>
           <ErrorBoundary resetKey={pos}><Findings panels={model.panels} /></ErrorBoundary>
         </div>
       </div>

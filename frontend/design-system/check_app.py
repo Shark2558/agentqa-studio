@@ -13,7 +13,8 @@ the recorded fixture run (a second project holding it as a finished session, M1.
       links and buttons are 44 px targets, Escape closes it and focus returns to the button;
   (d) nav links, icon buttons, the Appearance button, theme choices and stepper buttons are at least 44 x 44;
   (e) IBM Plex Sans is loaded (document.fonts), the Appearance button exists, and opening it in the sidebar shows a
-      panel whose every control sits inside the sidebar and the viewport;   (f) data-accent="teal" recolours the primary button.
+      panel whose every control sits inside the sidebar and the viewport;   (f) data-accent="teal" recolours the primary button;
+  (g) on the recorded run, Live View's middle column exists and is at least 360 px wide whenever it shares its row.
 With --shots, writes docs/design/m1-2ui-app-<page>-<theme>-<width>.png for 375 and 1440. Exit 1 on any problem.
 """
 from __future__ import annotations
@@ -53,6 +54,7 @@ CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, form, section"
 TARGETS = ".nav a, .icon-btn, .appear-btn, .modes label > span, .swatches > label > span, .steps .step-link, .timeline-steps .step, .tabs [role=tab]"
 DRAWER_TARGETS = ".drawer a, .drawer button"
 MIN_TARGET = 44
+MIN_FOCUS = 360               # "what it is doing" must stay readable whenever it shares its row (M1.3 Phase C: 186 px at 1149)
 
 _INSIDE_JS = """({fields, containers, tol}) => {
   const out = [];
@@ -75,6 +77,12 @@ _OVERLAP_JS = """() => {
   const out = [];
   for (let i = 1; i < items.length; i++) if (items[i].left < items[i - 1].right - 0.5) out.push(`top bar item ${i} overlaps the one before it by ${(items[i - 1].right - items[i].left).toFixed(0)}px`);
   return out;
+}"""
+_FOCUS_JS = """({min}) => {
+  const focus = document.querySelector('.g-live > .card.focus'), grid = document.querySelector('.g-live');
+  if (!focus || !grid) return [];
+  const w = focus.getBoundingClientRect().width, row = grid.getBoundingClientRect().width;
+  return w < min && w < row - 1 ? [`the Live View's middle column is ${w.toFixed(0)}px wide beside other columns (at least ${min})`] : [];
 }"""
 _PANEL_JS = """({tol}) => {
   const side = document.querySelector('.side').getBoundingClientRect();
@@ -153,6 +161,7 @@ def measure(page, label: str, width: int) -> list[str]:
     problems += [f"{label} at {width}px: {p}" for p in page.evaluate(_INSIDE_JS, {"fields": FIELDS, "containers": CONTAINERS, "tol": TOLERANCE})]
     problems += [f"{label} at {width}px: target too small: {t}" for t in page.evaluate(_TARGET_JS, {"sel": TARGETS, "min": MIN_TARGET})]
     problems += [f"{label} at {width}px: {p}" for p in page.evaluate(_OVERLAP_JS)]
+    problems += [f"{label} at {width}px: {p}" for p in page.evaluate(_FOCUS_JS, {"min": MIN_FOCUS})]
     return problems
 
 
@@ -216,6 +225,8 @@ def run_pages(browser, base: str, slugs: tuple[str, str], theme: str, widths: tu
             page.wait_for_timeout(200)
             label = f"{name} ({theme})"
             problems += measure(page, label, width)
+            if name == "live-run" and page.locator(".g-live > .card.focus").count() != 1:      # the width check needs it
+                problems.append(f"{label} at {width}px: no Live View middle column to measure")
             if name == "projects" and width <= PHONE_MAX:
                 problems += check_drawer(page, label)
             if name == "projects" and width == 1440:
@@ -257,7 +268,8 @@ def main(argv: list[str]) -> int:
         print("\nPROBLEMS:\n  " + "\n  ".join(problems))
         return 1
     print(f"\nthe app passes at {', '.join(map(str, WIDTHS))} px in light and dark: no overflow or overlap, fields inside their cards, "
-          "drawer (with Sign out), 44 px targets, loaded font, Appearance panel in place, accent OK")
+          "drawer (with Sign out), 44 px targets, loaded font, Appearance panel in place, accent OK, Live View's middle "
+          "column readable")
     return 0
 
 

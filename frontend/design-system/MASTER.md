@@ -114,7 +114,12 @@ missing, and runs in `make lint`; its own tests are `backend/tests/test_check_co
 
 ## 6. Pre-delivery checklist (run before every screen ships)
 
-- [ ] `make lint` (202/202 contrast) and `make ui-check` (the built app at five widths, both themes) are green.
+- [ ] `make lint` (232/232 contrast) and `make ui-check` (the built app at six widths, both themes) are green; a
+      screen with a stream also passes `make live-check` (live, reload, replay and the SSE fallback end at one picture).
+- [ ] Columns are sized by the room left beside the 248 px sidebar, not by the window: the sidebar and gutters take
+      311 px from 760 px up (M1.3 Phase C: the Live View's middle column was 186 px in a 1149 px window).
+      `check_app.py` holds the Live View's middle column at 360 px or more whenever it shares its row.
+- [ ] A replay is checked partway through, not only at its end: what the screen says must be true of the moment shown.
 - [ ] No emoji as icons; one icon family (Phosphor regular); consistent sizes 16/20/24.
 - [ ] Hover / focus / active / disabled states designed, 150–300 ms, no layout shift.
 - [ ] Light **and** dark looked at, with at least Blue and one other accent.
@@ -130,6 +135,11 @@ missing, and runs in `make lint`; its own tests are `backend/tests/test_check_co
   motion asserted).
 - M1.2-UI app: `docs/design/m1-2ui-app-<page>-<theme>-<width>.png` from `check_app.py` against a throwaway server:
   seven pages, five widths light, two widths dark, all measurements green.
+- M1.3 Live View: `check_app.py` measures a `live-run` page (the recorded fixture as a finished run) at six widths in
+  both themes, `check_live.py` streams the fixture live over WebSocket and over SSE and checks reload and replay end
+  at the same picture. Owner acceptance on 4 Nov 2026 (plan `docs/plans/m1-3-live-view-v2.md`, Phase C): a No-AI run
+  watched live and replayed, a Cloud run with each card's model and cost, and a Viewer look; three fixes came from it
+  (replay states, the player's end state, the column breakpoints).
 
 ## 8. Themes and accents (general practice: no database entry)
 
@@ -150,4 +160,4 @@ missing, and runs in `make lint`; its own tests are `backend/tests/test_check_co
 | bar-fill | a progress bar's value | `transform: scaleX` | 300 ms | jumps |
 | skeleton | placeholders inside an `aria-busy` region | opacity | 1.2 s, repeats while loading | static |
 | drawer | the phone menu opening | translateX | 200 ms | instant |
-| scan-line | a running browser frame (Live View v2, M1.3; recipe ready in `motion.css` and the mock) | `::after` translateY | 1.6 s, repeats | none |
+| scan-line | a running browser frame (Live View v2, M1.3; in `motion.css`, only while that agent is running at the moment shown, live or in replay) | `::after` translateY | 1.6 s, repeats | none |

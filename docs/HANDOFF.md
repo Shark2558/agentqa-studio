@@ -1,4 +1,4 @@
-# Handoff — AgentQA Studio v1 (updated 3 Nov 2026, after M1.2)
+# Handoff — AgentQA Studio v1 (updated 4 Nov 2026, after M1.3)
 
 Read this first in a new session, together with `CLAUDE.md`. It says where the build stands, how to run things on
 this machine, what the owner has decided, and what the next milestone must deliver. The PRD is `../01-PRD-AgentQA-Studio-v1.md`
@@ -21,15 +21,17 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2-UI** flat blue-and-white look, five accents, phone layout, Live View reachable (owner-approved mock, reviewed) | done | 2b21608 · 7d2c613 · a6106ea · 2943fbe |
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
-| **M1.3** (PRD §9: next milestone) | **next**: plan it first, owner approves | — |
+| **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **on branch `claude/gifted-ishizaka-972db8`, not merged into `main`** (the owner's call) | `b6711d6` · `b02ec86` · `44ede97` · Phase C commit after them |
+| **M1.4** (PRD §9: next milestone) | **next**: plan it first, owner approves | — |
 
-Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-2-ai-modes.md` for the
-latest patterns (tests first, fresh-context review table, "left open on purpose", what the real Ollama taught).
+Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
+latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
 
-Test counts at hand-off: backend **339 passed**, pyflakes clean; frontend **106 Vitest** in 20 files, `tsc -b` and
-`oxlint` (with jsx-a11y) clean; contrast 212/212 (`make lint`); `make ui-check` green at six widths in both themes for
-seven pages; demo regression 19/19 with 0 extra in **No-AI, Local (qwen3:4b, about 60 min) and Cloud (Anthropic,
-$0.34, about 12 min)**; the $0.50-cap project tripped the warning and the cap mid-run (see the plan's Verification).
+Test counts at hand-off: backend **477 passed**, pyflakes clean; frontend **275 Vitest** in 34 files, `tsc -b` and
+`oxlint` (with jsx-a11y) clean; contrast 232/232 (`make lint`); `make ui-check` green at six widths in both themes for
+nine pages (with a `live-run` page and a middle-column width check); `make live-check` green (live over WebSocket,
+reload, replay, SSE fallback); demo regression 19/19 with 0 extra on 4 Nov 2026 in **No-AI** (started from the app)
+and **Cloud** ($0.27, see below), as in M1.2 for Local and the cap.
 
 ## How to run it here (Windows, Google Drive folder — the gotchas matter)
 
@@ -86,18 +88,39 @@ qwen3:4b** answers at about 8 tokens/s here, so Local runs take about an hour an
 timeout; Visual QA makes no AI call on a first run (no baseline yet); the budget minimum is $0.50. The wizard's
 step 5 (`StepLater.tsx`) is now the only placeholder left ("coming in M1.5").
 
-## M1.3 — next (plan it first, owner approves; 🔒 review if it touches execution or the gateway)
+## M1.3 — what shipped (plan, verification, reviews and acceptance: `docs/plans/m1-3-live-view-v2.md`; ADR 0003)
 
-Take the scope from PRD §9 for M1.3 and write `docs/plans/m1-3-<slice>.md` before any code. The Live View already
-streams every agent's events with reconnect from the last cursor (M1.2-UI); the clarification and approval gates are
-still answered in the old dashboard until M1.4.
+Live View v2 at `/app/projects/{slug}/live`: the pipeline with its three gates, one card per agent (state as border +
+glyph + word, model and cost per card), what the chosen agent is doing (browser frames, the event stream by phase),
+test tiles, findings, and Details (document, site map, rules, code, activity). It streams over a WebSocket and falls
+back to SSE; a finished run opens at its final picture with Replay from the start, pause, step, scrub, speed and Final
+picture. Phases are derived from the 41 existing event kinds (no agent changed); the run shell adds stage skip / fail,
+pipeline end, a running marker for command-line runs and one cost line per billed call. A Viewer may read, never
+write: one rule answers 403 `read_only` to every write, and the pages offer no run, project or wizard action.
+
+Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic account ran out of credit** mid-run
+("credit balance is too low"); the gateway fell back to Gemini and the run still scored 19/19 — he adds Anthropic
+credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
+owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
+
+## M1.4 — next (plan it first, owner approves; 🔒 review if it touches execution or the gateway)
+
+Take the scope from PRD §9 for M1.4 and write `docs/plans/m1-4-<slice>.md` before any code. M1.3's plan names what
+M1.4 brings into the new app: the needs-you box, take-over, pause and resume, answering questions, plan approval,
+defect confirmation, visual review and heals (FR-LIVE-6), and retiring the old dashboard (`web/app.py`).
+Also decide first: whether `claude/gifted-ishizaka-972db8` is merged into `main` (the owner's call).
 
 ## Follow-ups parked (not blockers)
 
 Playwright `e2e/wizard.spec.ts` and a `NewProject` container test (M1.1 review) · CI Docker build cache (M0.2) ·
 old dashboard's `testdata_account` keeps its own copy of the account rules (M1.4 retires the page) · `web/app.py`
 is 1 400 lines (M1.4 replaces it) · `list_requirements` has no LIMIT (M1.4) · proxy-aware client address and a full
-access log (cloud edition, M3) · ErrorBoundary in the React app (M1.3) · a stray `backend/.venv` on Drive for the
+access log (cloud edition, M3) · from M1.3 Phase C: the gateway reads Anthropic's "credit balance is too low" (HTTP
+400) as a refused request, so the empty key stays "ok" and is tried before every call — classify it as billing
+(`ai/providers.classify`, 🔒 gateway) · the Live View shows no line when the gateway switches provider and a card
+names only the last model used · the run picker shows a run folder's last change, not its start · site-map children
+in their parent's column · B19 (a socket half-open after sleep still says "live": not seen, the PC did not sleep) and
+B20–B22 in the M1.3 plan · a stray `backend/.venv` on Drive for the
 owner to delete · **no GitHub remote yet** (commits are local only) · the CLAUDE.md "Environment" section is the
 place for new machine gotchas.
 

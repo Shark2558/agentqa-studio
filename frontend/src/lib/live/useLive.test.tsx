@@ -53,6 +53,24 @@ describe("useLive: only a finished run is over", () => {
     const { result, socket } = open();
     socket.deliver([{ type: "live", events: demoEvents.slice(0, 20), cursor: "c" }, { type: "end", reason, cursor: "c" }]);
     expect(result.current.runOver).toBe(over);
+    expect(result.current.shownOver).toBe(over);                       // following, so the picture is the end
+  });
+
+  it("the picture is the run's end only at its last event: scrubbed back it is not, though the run is over (Phase C)", () => {
+    const { result, socket } = open();
+    socket.deliver([{ type: "live", events: demoEvents.slice(0, 20), cursor: "c" }, { type: "end", reason: "finished", cursor: "c" }]);
+    act(() => result.current.dispatch({ type: "scrub", pos: 5, total: 20 }));
+    expect(result.current.runOver).toBe(true);
+    expect(result.current.shownOver).toBe(false);
+    act(() => result.current.dispatch({ type: "live", total: 20 }));
+    expect(result.current.shownOver).toBe(true);
+  });
+
+  it("a run still streaming is never shown as over, even with the replay at its newest event", () => {
+    const { result, socket } = open();
+    socket.deliver([{ type: "live", events: demoEvents.slice(0, 20), cursor: "c" }]);
+    expect(result.current.pos).toBe(20);
+    expect(result.current.shownOver).toBe(false);
   });
 });
 
