@@ -7,12 +7,15 @@ import logging
 import secrets
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from fastapi import Request
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from starlette.requests import HTTPConnection
 
 from agentqa.api.errors import ApiError
 from agentqa.api.settings import Settings
@@ -21,6 +24,7 @@ log = logging.getLogger("agentqa.api.auth")
 COOKIE = "agentqa_session"
 CSRF_HEADER, CSRF_VALUE = "x-requested-with", "AgentQA"
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+WRITE_ROLES = frozenset({"owner", "tester"})     # a Viewer, or any role not named here, may only read (FR-LIVE-8)
 MAX_TRACKED_CLIENTS = 10_000
 _hasher = PasswordHasher()
 _DECOY_HASH = _hasher.hash(secrets.token_urlsafe(24))    # verified when the email is unknown, so timing tells nothing
@@ -104,8 +108,30 @@ class Sessions:
         response.delete_cookie(COOKIE, path="/", httponly=True, samesite="lax", secure=self.settings.cookie_secure)
 
 
-def client_key(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+def client_key(conn: HTTPConnection) -> str:
+    return conn.client.host if conn.client else "unknown"
+
+
+def origin_matches_host(origin: str, host: str) -> bool:
+    """Whether a page address (an Origin or Referer header) is on this very host *and port*. Another local port is
+    another site: the demo portal at 127.0.0.1:8800 is the application under test, not AgentQA."""
+    try:
+        parts = urlsplit(origin)
+        netloc = parts.netloc
+    except ValueError:                                        # e.g. "http://[" : not an address at all
+        return False
+    return bool(host) and parts.scheme in ("http", "https") and netloc.lower() == host.lower()
+
+
+def read_only_refusal(request: Request) -> ApiError | None:
+    """The refusal for a write by a signed-in user whose role may only read; None otherwise (a signed-out request is
+    left to the route, which answers 401)."""
+    if request.method in SAFE_METHODS:
+        return None
+    user = session_user(request)
+    if user is None or user.role in WRITE_ROLES:
+        return None
+    return ApiError(403, "read_only", "Your account can watch but not change anything")
 
 
 def csrf_check(request: Request) -> None:
@@ -142,7 +168,14 @@ def current_user(request: Request) -> User:
     return user
 
 
-def session_user(request: Request) -> User | None:
-    """The signed-in user from the cookie, or None (no exception: for middleware and optional checks)."""
-    sessions: Sessions = request.app.state.sessions
-    return sessions.load(request.cookies.get(COOKIE))
+def session_user(conn: HTTPConnection) -> User | None:
+    """The signed-in user from the cookie, or None (no exception: for middleware, WebSockets and optional checks)."""
+    sessions: Sessions = conn.app.state.sessions
+    return sessions.load(conn.cookies.get(COOKIE))
+
+
+def signed_in_check(conn: HTTPConnection) -> Callable[[], bool]:
+    """For a long stream: a check that this connection's sign-in has not expired since it opened."""
+    sessions: Sessions = conn.app.state.sessions
+    token = conn.cookies.get(COOKIE)
+    return lambda: sessions.load(token) is not None

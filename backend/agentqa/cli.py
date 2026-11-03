@@ -9,14 +9,16 @@ import sys
 import time
 import traceback
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 from agentqa import live
 from agentqa.config import Project, init_project
+from agentqa.orchestrator import board
 from agentqa.store import Store, now
 from agentqa.util import log
 
-STAGES = ["analyze", "explore", "reconcile", "write", "design", "generate", "run", "exploratory", "security", "triage", "heal",
-          "report"]
+STAGES = board.STAGES
+FINISHED, STOPPED_AT_PLAN_GATE = "finished", "stopped at the plan gate"     # how a pipeline run ends (live view)
 
 
 def _project(args) -> tuple[Project, Store]:
@@ -39,12 +41,26 @@ def _live_session(project: Project, label: str) -> None:
     for old in sessions[:-int(project.cfg.get("live", {}).get("keep_sessions", 15))]:
         import shutil
         shutil.rmtree(old, ignore_errors=True)
+    from agentqa.orchestrator.live import mark_running
+    mark_running(folder)        # "still running" while this process lives, even through a long quiet step; never raises
+
+
+def _end_run_marker() -> None:
+    """Mark this process's run as ended (never another process's: pytest workers share the folder); never raises."""
+    folder = os.environ.get("AGENTQA_LIVE_DIR")
+    if folder:
+        from agentqa.orchestrator.live import mark_ended
+        mark_ended(Path(folder), os.getpid())
+
+
+def _without_userinfo(url: str) -> str:
+    """The address without a `user:password@` part, which must never reach the live view or a recording."""
+    parts = urlsplit(url)
+    return urlunsplit(parts._replace(netloc=parts.netloc.rsplit("@", 1)[-1])) if "@" in parts.netloc else url
 
 
 def stage(name: str, project: Project, store: Store, args) -> dict:
-    agent = {"analyze": "srs", "write": "writer", "explore": "explorer", "reconcile": "reconciler", "design": "designer",
-             "generate": "generator", "run": "executor", "triage": "triage", "heal": "healer",
-             "report": "reporter", "exploratory": "exploratory", "import": "importer", "security": "security"}.get(name, name)
+    agent = board.agent_for(name)
     live.emit(agent, "stage_start", f"{name} started", stage=name)
     started = time.time()
     rid = store.insert("stage_runs", {"pipeline": os.environ.get("AGENTQA_PIPELINE_ID", "single"), "stage": name,
@@ -54,6 +70,9 @@ def stage(name: str, project: Project, store: Store, args) -> dict:
         out = _stage(name, project, store, args)
     except BaseException as exc:
         store.update("stage_runs", "id", rid, {"status": "failed", "finished_at": now(), "error": str(exc)[:800]})
+        # the error text can quote the page under test, so the live view gets its kind only; the log has the rest
+        live.emit(agent, "stage_end", f"{name} failed (see the run log)", stage=name, error=type(exc).__name__,
+                  level="bad")
         raise
     contract = None
     if name in ("analyze", "write", "design", "run", "triage"):
@@ -162,14 +181,38 @@ def resume_point(s: Store) -> tuple[str, str | None, list[str]] | None:
 
 
 def cmd_pipeline(args):
-    from agentqa.agents import designer
     p, s = _project(args)
     _live_session(p, "pipeline")
-    live.emit("pipeline", "stage_start", f"Pipeline started for {p.name}", stage="pipeline", base_url=p.base_url,
-              roles=list(p.roles()))
     job_id = getattr(args, "job_id", None)
-    start = args.start
-    pid = f"pl-{time.strftime('%Y%m%d-%H%M%S')}"
+    found = _pipeline_start(args, s)
+    if found is None:
+        return
+    pid, order = found
+    os.environ["AGENTQA_PIPELINE_ID"] = pid
+    live.emit("pipeline", "stage_start", f"Pipeline started for {p.name}", stage="pipeline",
+              base_url=_without_userinfo(p.base_url), roles=list(p.roles()), stages=list(order), pipeline=pid)
+    try:
+        outcome = _run_stages(p, s, args, pid, order)
+    except Exception as exc:  # noqa: BLE001
+        log(f"[pipeline] FAILED: {exc}")
+        traceback.print_exc()
+        live.emit("pipeline", "stage_end", "Pipeline failed (see the run log)", stage="pipeline", outcome="failed",
+                  error=type(exc).__name__, level="bad")
+        _set_job(s, job_id, "failed", 1)
+        sys.exit(1)
+    live.emit("pipeline", "stage_end", f"Pipeline {outcome}", stage="pipeline", outcome=outcome,
+              level="ok" if outcome == FINISHED else "warn")
+    _set_job(s, job_id, "done", 0)
+
+
+def _set_job(s: Store, job_id: int | None, status: str, code: int) -> None:
+    if job_id:
+        s.update("jobs", "id", job_id, {"status": status, "finished_at": now(), "exit_code": code})
+
+
+def _pipeline_start(args, s: Store) -> tuple[str, tuple[str, ...]] | None:
+    """The pipeline id and the stages to run (a resumed pipeline keeps its id), or None when nothing is left."""
+    start, pid = args.start, f"pl-{time.strftime('%Y%m%d-%H%M%S')}"
     if getattr(args, "resume", False):
         found = resume_point(s)
         if found is None:
@@ -178,50 +221,60 @@ def cmd_pipeline(args):
             pid, start, finished = found
             if start is None:
                 log(f"[pipeline] {pid} already finished every stage; nothing to resume")
-                return
+                return None
             log(f"[pipeline] resuming {pid} at '{start}' ({len(finished)} stage(s) already done: {', '.join(finished)})")
-    os.environ["AGENTQA_PIPELINE_ID"] = pid
-    order = STAGES[STAGES.index(start):]
-    try:
-        for name in order:
-            if name == "generate":
-                plan = s.one("SELECT approved FROM plan WHERE id=1")
-                if args.auto_approve:
-                    n = designer.approve(s)
-                    log(f"[gate] auto-approved {n} case(s) (--auto-approve)")
-                elif not (plan and plan["approved"]):
-                    s.insert("stage_runs", {"pipeline": pid, "stage": "generate", "status": "waiting for plan approval",
-                                            "started_at": now(), "finished_at": None, "outputs": None, "error": None})
-                    live.emit("pipeline", "gate", "Stopped at the plan gate: a QA lead must approve the test plan",
-                              level="warn")
-                    log("[gate] STOP: the test plan needs a QA lead's approval. Review it in the web UI (Plan page) "
-                        "or run 'agentqa approve --all', then continue with 'agentqa pipeline --from generate'.")
-                    break
-            if name == "design":
-                _import_pending(p, s, approve=bool(args.auto_approve))
-            if name == "exploratory" and not p.cfg.get("exploratory", {}).get("enabled", True):
-                log("[exploratory] skipped (exploratory.enabled is false)")
-                s.insert("stage_runs", {"pipeline": pid, "stage": name, "status": "skipped", "started_at": now(),
-                                        "finished_at": now(), "outputs": {"why": "exploratory.enabled is false"}, "error": None})
-                continue
-            started = time.time()
-            log(f"[{name}] starting")
-            out = stage(name, p, s, args)
-            log(f"[{name}] done in {time.time() - started:.0f}s: {json.dumps(out, default=str)[:600]}")
-            if name == "reconcile":
-                q = s.scalar("SELECT COUNT(*) FROM questions WHERE status='open'")
-                if q:
-                    live.emit("pipeline", "gate", f"{q} question(s) wait in the clarification queue", level="warn")
-                    log(f"[gate] {q} question(s) wait in the clarification queue. Rules behind them are not tested "
-                        f"until answered; everything else continues.")
-        if job_id:
-            s.update("jobs", "id", job_id, {"status": "done", "finished_at": now(), "exit_code": 0})
-    except Exception as exc:  # noqa: BLE001
-        log(f"[pipeline] FAILED: {exc}")
-        traceback.print_exc()
-        if job_id:
-            s.update("jobs", "id", job_id, {"status": "failed", "finished_at": now(), "exit_code": 1})
-        sys.exit(1)
+    return pid, STAGES[STAGES.index(start):]
+
+
+def _run_stages(p: Project, s: Store, args, pid: str, order: tuple[str, ...]) -> str:
+    """Run the stages in order: "finished", or why the pipeline stopped early."""
+    for name in order:
+        if name == "generate" and not _plan_gate(s, args, pid):
+            return STOPPED_AT_PLAN_GATE
+        if name == "design":
+            _import_pending(p, s, approve=bool(args.auto_approve))
+        if name == "exploratory" and not p.cfg.get("exploratory", {}).get("enabled", True):
+            _skip_stage(s, pid, name, "exploratory.enabled is false")
+            continue
+        started = time.time()
+        log(f"[{name}] starting")
+        out = stage(name, p, s, args)
+        log(f"[{name}] done in {time.time() - started:.0f}s: {json.dumps(out, default=str)[:600]}")
+        if name == "reconcile":
+            _questions_gate(s)
+    return FINISHED
+
+
+def _plan_gate(s: Store, args, pid: str) -> bool:
+    """True when the tests may be generated: auto-approved (demos only) or approved by a QA lead."""
+    from agentqa.agents import designer
+    if args.auto_approve:
+        log(f"[gate] auto-approved {designer.approve(s)} case(s) (--auto-approve)")
+        return True
+    plan = s.one("SELECT approved FROM plan WHERE id=1")
+    if plan and plan["approved"]:
+        return True
+    s.insert("stage_runs", {"pipeline": pid, "stage": "generate", "status": "waiting for plan approval",
+                            "started_at": now(), "finished_at": None, "outputs": None, "error": None})
+    live.emit("pipeline", "gate", "Stopped at the plan gate: a QA lead must approve the test plan", level="warn")
+    log("[gate] STOP: the test plan needs a QA lead's approval. Review it in the web UI (Plan page) "
+        "or run 'agentqa approve --all', then continue with 'agentqa pipeline --from generate'.")
+    return False
+
+
+def _skip_stage(s: Store, pid: str, name: str, why: str) -> None:
+    log(f"[{name}] skipped ({why})")
+    s.insert("stage_runs", {"pipeline": pid, "stage": name, "status": "skipped", "started_at": now(),
+                            "finished_at": now(), "outputs": {"why": why}, "error": None})
+    live.emit(board.agent_for(name), "stage_skip", f"{name} skipped: {why}", stage=name, why=why)
+
+
+def _questions_gate(s: Store) -> None:
+    q = s.scalar("SELECT COUNT(*) FROM questions WHERE status='open'")
+    if q:
+        live.emit("pipeline", "gate", f"{q} question(s) wait in the clarification queue", level="warn")
+        log(f"[gate] {q} question(s) wait in the clarification queue. Rules behind them are not tested "
+            f"until answered; everything else continues.")
 
 
 def _import_pending(p: Project, s: Store, approve: bool = False) -> None:
@@ -521,7 +574,8 @@ def cmd_ui(args):
     import uvicorn
     os.environ["AGENTQA_PROJECTS"] = str(Path(args.projects_dir).resolve())
     log(f"AgentQA Studio UI on http://{args.host}:{args.port}  (projects folder: {os.environ['AGENTQA_PROJECTS']})")
-    uvicorn.run("agentqa.api.server:app", host=args.host, port=args.port, log_level="warning")
+    # the Live View's WebSocket never needs a message from the browser; refuse anything large at the protocol level
+    uvicorn.run("agentqa.api.server:app", host=args.host, port=args.port, log_level="warning", ws_max_size=65536)
 
 
 def cmd_demo_project(args):
@@ -705,6 +759,8 @@ def main(argv=None):
     except BaseException:
         _finish_job(args, 1)
         raise
+    finally:
+        _end_run_marker()
     _finish_job(args, 0)
 
 

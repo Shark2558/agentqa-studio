@@ -137,7 +137,7 @@ An unknown kind in an old file reads as `note`; a test stops any source file fro
 | `cmd_pipeline`, exploratory skipped | `exploratory stage_skip` | stage, why | Skipped card |
 | `cmd_pipeline` start (emit moved below the resume logic) | `pipeline stage_start` gains `stages` (this run's list) and `pipeline` (the `pl-…` id) | | "Not in this run"; ties a recording to its `ai_usage` rows |
 | `cmd_pipeline` end | `pipeline stage_end`, level ok / warn (stopped at the plan gate) / bad | stage, outcome | Honest finish in replay |
-| `cli._live_session` | `running.json` {pid, started} in the session folder, removed at exit | | CLI runs stay "running" through quiet AI calls |
+| `cli._live_session` | `running.json` {pid, started} in the session folder; at exit the same process adds `ended` (built: the marker is kept, not removed, so a finished run never reads as running; writing it never stops or fails a run) | | CLI runs stay "running" through quiet AI calls |
 | `AiClient._on_usage`, after `usage.record` | `ai cost` per billed call | agent_key, tier, scope, provider, model, input/output tokens, cost_usd, estimated, ms, ok. **Never** the prompt, the answer, the key id or the key label; no `state` (budget alerts keep theirs) | Model and cost per card; the recording carries its own costs |
 
 ## Transport
@@ -145,12 +145,13 @@ An unknown kind in an old file reads as `note`; a test stops any source file fro
 | | SSE (kept) | WebSocket (new) |
 |---|---|---|
 | URL | `GET …/live/{session}/stream?cursor=` | `…/live/{session}/ws?cursor=` (ws: or wss:, following the page) |
-| Feed | one async generator `live_feed(p, d, session, cursor)` in `api/live_feed.py`: reads in a thread every 0.5 s, sends batches, ends when the run is over and nothing new remains or after 1 h idle, re-checks every 60 s that the sign-in has not expired | same generator |
+| Feed | one async generator `live_feed(p, d, session, cursor)` in `api/live_feed.py`: reads in a thread every 0.5 s, sends batches of at most 2 000 events (only the last batch of a read carries the new cursor, so a reconnect mid-read re-reads instead of skipping), re-checks every 60 s that the sign-in has not expired; a passing read or database error is retried at the next poll | same generator |
+| End reasons | `finished` (run over, nothing new) · `idle` (1 h without a word) · `signed-out` · `gone` (the run's folder was pruned) | same |
 | Sign-in | router dependency | cookie read through `HTTPConnection`; any signed-in role may watch |
-| Cross-site | SameSite=Lax cookie; GET only | **Origin must be present and equal the Host** (cross-site WebSocket hijacking: Lax cookies are sent on a cross-site handshake) |
-| Limits | general bucket + stream slots | general bucket on the handshake + stream slots: 4 open streams per address across SSE and WS, 64 in total; client messages read and dropped, one over 1 KB closes the socket; uvicorn `ws_max_size` 64 KB |
-| Messages | `event: live` {events, cursor} · `event: end` {cursor, reason} | `{"type":"live",…}` · `{"type":"end",…}`, then close 1000 |
-| Refusals | HTTP 401 / 404 / 429 | accept, then close with a code, nothing sent first: 4401 signed out · 4403 origin · 4404 no such run · 4429 too many streams |
+| Cross-site | SameSite=Lax cookie; GET only | **Origin must be present and equal the Host, port included** (cross-site WebSocket hijacking: a page on another local port, such as the demo portal, is same-site, so the Lax cookie *is* sent with its handshake) |
+| Limits | general bucket + stream slots | general bucket on the handshake + stream slots: 4 open streams per address across SSE and WS, 64 in total; client messages read and dropped, one over 1 KB closes the socket (1009); uvicorn `ws_max_size` 64 KB |
+| Messages | `event: live` {events, cursor} · `event: end` {cursor, reason} | `{"type":"live",…}` · `{"type":"end",…}`, then close 1000; a fault in the feed closes 1011 (logged) |
+| Refusals | HTTP 401 / 404 / 422 (cursor over 4 096 chars) / 429 | accept, then close with a code, nothing sent first: 4400 cursor too long · 4401 signed out · 4403 origin · 4404 no such run · 4429 too many requests or streams; every refusal is logged with the address and the Origin (never the cookie) |
 
 Client (`lib/liveStream.ts`): WebSocket first; if the socket closes before `open`, SSE for the rest of the tab
 (remembered in `sessionStorage`). 4401 stops with "Your session ended: sign in again"; 4404 says "This run no longer
@@ -428,12 +429,85 @@ The seven as they were put to him:
 
 ## Verification
 
-To fill after the build.
+**Phase A (backend, transport, events), 3 Nov 2026, on branch `claude/exciting-margulis-b91a03`.**
+
+| Check | Result |
+|---|---|
+| `python -m pytest -q tests` (from `backend/`) | **476 passed** (339 at hand-off; 436 before the review fixes); every new test written RED first |
+| `python -m pyflakes agentqa tools tests` | clean |
+| Demo regression in No-AI mode (fresh demo copy, `pipeline --policy srs_wins --auto-approve`, then `tools/check_demo.py`) | **19/19 seeded bugs, 0 unexpected**, twice: before the review fixes (21:52) and after them on a fresh copy (22:36–22:42) |
+| The regression's own recording | the pipeline's start line lists its 12 stages and its `pl-…` id; the questions gate; "Pipeline finished" (level ok) as the last line; no `cost` lines (No-AI makes no billed call); after the fixes the run marker read `{"pid", "started", "ended"}` |
+| Real uvicorn + `websockets` client (`test_live_ws_real_server.py`) | a run streamed over a WebSocket and closed 1000; a signed-out socket closed 4401; a socket dropped without a closing handshake and an SSE stream closed early both freed their slot |
+| `websockets` 17.3 (released 19 Oct 2026; 17.4 was four days old) | BSD-3-Clause; OSV lists no known vulnerability (3 Nov 2026); `pip-audit` runs in CI (`agentqa-selftest.yml`), not installed on this PC |
+| Sizes | new files 46–249 lines; `cli.py` 778 (723 before; ceiling 800); `create_app` now under 50 lines (it was over before Phase A); the only functions over 50 lines are the pre-existing `cli._stage` and `cli.build_parser` |
+
+Plan-vs-build differences worth knowing:
+- The fixture lives in `backend/tests/fixtures/recordings/` (the backend `.gitignore` keeps every `live/` folder,
+  `*.jsonl` and `shots/` out of git; one narrow exception admits only this folder). `expected-summary.json` moves to
+  Phase B: it describes the browser's model, which Phase B builds. The fixture is 447 events in 4 worker files with 12
+  screenshots (330 KB); absolute paths are cut to the part inside the project.
+- The run marker is kept at exit and marked `ended` instead of being removed (a removed marker fell back to the
+  8-second rule, so a finished run read as running for a few seconds); writing it never stops or fails a run.
+- `is_running` reads one row with a bare query; the live routes and the socket open no project store at all
+  (`projects.find_project`).
+- A path that escapes the live folder never reaches the socket's handler (no route matches), so it is refused at the
+  handshake rather than with 4404; the folder guard itself is tested directly. Close codes 4400 (cursor too long),
+  1009 (message too big) and 1011 (fault in the feed) were added; the end reasons are listed in the Transport table.
+- The plan's "`cmd_pipeline` is under 50 lines" check is a review item, not a test.
+- Two pieces are not in the plan and were added for the review: the old dashboard's form guard now compares the port
+  (security review F1), and a project address with `user:password@` is written to the live view without it.
 
 ## Review (fresh context)
 
-To fill after the build.
+**Phase A.** Three reviewers read the uncommitted change set in fresh contexts on 3 Nov 2026: `ecc:code-reviewer`
+(Approve: 3 MEDIUM, 7 LOW), `ecc:python-reviewer` (Block: 1 HIGH, 10 MEDIUM, several LOW) and `ecc:security-reviewer`
+(Approve with warning: 1 MEDIUM, 4 LOW, 2 INFO; it found nothing sensitive in the fixture apart from three absolute
+paths). Every HIGH and MEDIUM was fixed test-first (40 new test cases, 436 → 476, and four rewritten to the new
+behaviour); the LOWs marked "open" are recorded.
+
+| # | Severity | Finding (reviewer) | Fix |
+|---|---|---|---|
+| 1 | HIGH | The run marker's removal sat unguarded in `main()`'s `finally`: on Windows a reader holding `running.json` open makes it raise, masking the real error and leaving a finished job "running"; a failed marker write aborted the run (python, code) | marker writes are atomic (temp file + replace, retried) and never raise; at exit the marker is marked `ended`, never removed; tests for both failures |
+| 2 | MEDIUM | The old dashboard's cross-site check compared the host only: a page on another local port (the demo portal under test) could post its forms while the owner is signed in (security F1) | one `origin_matches_host` (host and port; a malformed address is refused) for the dashboard and the socket; test with another port, a Referer and a broken Origin |
+| 3 | MEDIUM | `is_running` and every screenshot / socket opened the full project store (schema set-up each time) on the half-second poll (code, python) | one bare query for the job row; `find_project` for folders only; tests that the store is never opened |
+| 4 | MEDIUM | No test proved a slot is freed when a stream ends badly (code) | a failing feed (SSE and socket), a socket left mid-run, and on real uvicorn a dropped socket and an early-closed SSE stream |
+| 5 | MEDIUM | Any read error ended a stream as "gone"; any other error while checking killed it (python, code) | only a missing folder is "gone"; a busy file or a locked database is logged and retried; tests |
+| 6 | MEDIUM | The socket swallowed feed faults as if the browser had left; the slot release came after two awaits; the final close could raise (python, code) | release in the outermost `finally`; a feed fault is logged and closes 1011; the close is guarded; test |
+| 7 | MEDIUM | A marker with an impossible pid (2^40) raised out of the Windows pid check, breaking the session list (python, security) | pids outside 1…2^31−1 are not alive, in the marker reader and in `pid_alive`; tests |
+| 8 | MEDIUM | `json.dumps` of big batches ran on the event loop; one read could become one huge frame (python) | at most 2 000 events per message (only the last carries the new cursor); encoding in a worker thread; test |
+| 9 | MEDIUM | The fixture tool could delete its own source (`--out` = the recording), found passwords by pattern (fail-open) and scanned top-level fields only (python) | it only replaces a folder that is itself a fixture; passwords parsed from YAML (refuses when none); nested fields and absolute paths scanned; a test reads the committed fixture every run |
+| 10 | MEDIUM | A malformed Origin raised in the socket's check (python, code) | refused as another site; test |
+| 11 | LOW | Absolute paths of the owner's folders in the fixture (security F3) | cut to the part inside the project; regenerated |
+| 12 | LOW | `base_url` with `user:password@` would reach the live view (security F4) | stripped before the start line; test |
+| 13 | LOW | Socket refusals left no log line (security F5) | logged with the address and the Origin, never the cookie |
+| 14 | LOW | Idle time counted polls, not time; symlinks followed; a folder pruned mid-listing broke the list; outcome strings; `GATES` mutable; `create_app` over 50 lines; the docstring's "Lax cookies on a cross-site handshake" was wrong (python, code, security) | monotonic clock; symlinks refused; pruned folders skipped; constants; read-only gates; guard extracted; wording corrected (same-site, another port) |
+| 15 | LOW · **open** | After a hard crash, a stale marker whose pid Windows has reused reads "running" until the 1-hour idle limit (python, security) | no heartbeat yet; revisit with the scheduler (M1.5) |
+| 16 | LOW · **open** | `routes_projects` / `open_or_404` callers and some older tests never close their store (python; pre-existing) | the new live routes and tests use `find_project`; the rest when M1.4 rewrites those pages |
+| 17 | LOW · **open** | The old dashboard's own `live_events` keeps an unvalidated cursor (security F6) | retired with the dashboard in M1.4 |
+| 18 | LOW · **open** | Sessions are stateless: an open stream outlives a sign-out by up to 60 s, and a stolen cookie works after logout (security F7) | M2.1 session table |
+| 19 | LOW · **open** | Project creation still accepts `user:password@` in the address (security F4) | the live view strips it now; refuse it at creation in M1.4 |
+| 20 | LOW · **open** | `cli.py` is 778 lines: the pipeline runner's helpers stay there until the orchestrator becomes a service (code) | moving them now would need `cli.stage` passed in; M1.5 |
+| 21 | LOW · **open** | Test set-up repeated across files; the fixture's 447 is a literal in several tests; a check-then-update race in `jobs._still_alive` (code, python; the race pre-dates M1.3) | consolidate in `conftest` with Phase B; the race with the scheduler (M1.5) |
+| 22 | LOW · **open** | `frontend/src/lib/api.ts` still types `LiveSession.shots` (code) | Phase B |
 
 ## Record of changes
 
-To fill after the build.
+**Phase A — one commit on `claude/exciting-margulis-b91a03`, 3 Nov 2026.**
+
+New: `backend/agentqa/orchestrator/{board,phases}.py`, `backend/agentqa/api/{live_feed,routes_live_ws}.py`,
+`backend/tools/make_live_fixture.py`, `backend/tests/fixtures/recordings/cli-fixture-pipeline/` (4 event files,
+12 screenshots), `frontend/src/test-fixtures/live-demo.json`, `docs/adr/0003-live-phases-and-transport.md`, tests
+`test_live_board`, `test_live_phases`, `test_live_running`, `test_live_cursor`, `test_live_run_events`,
+`test_live_feed`, `test_api_live_ws`, `test_live_ws_real_server`, `test_api_roles`, `test_live_fixture`.
+
+Changed: `orchestrator/live.py` (phase on read, checked cursor, one-run `is_running`, run marker, robust listing),
+`orchestrator/jobs.py` (`job_running`, `peek`, `process_alive`, possible pids only), `orchestrator/projects.py`
+(`find_project`), `api/routes_live.py` (board, shared feed, slots, no store), `api/__init__.py` (guards extracted,
+screenshot bucket, Viewer rule, socket router, dashboard origin with port), `api/auth.py` (`HTTPConnection`,
+`WRITE_ROLES`, `read_only_refusal`, `signed_in_check`, `origin_matches_host`), `api/settings.py` (three limits),
+`ai/client.py` (per-call `cost` line), `cli.py` (board, run-shell events, `cmd_pipeline` split, marker, `ws_max_size`,
+no userinfo), `backend/requirements.txt` and `deploy/constraints.txt` (`websockets`), `backend/.gitignore` (the fixture
+exception), tests `test_ai_client.py` and `test_api_hardening.py` (added to, nothing weakened). No agent changed.
+
+Left for Phase B: the React Live View itself (the page, components, model, player, WebSocket-then-SSE client,
+`expected-summary.json`, `check_app.py` and `check_live.py`); Phase C: the acceptance runs with the owner.

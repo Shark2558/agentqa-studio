@@ -28,12 +28,17 @@ def slug_for(name: str) -> str:
     return "".join(ch if ch.isalnum() else "-" for ch in name.lower()).strip("-")[:SLUG_MAX] or "project"
 
 
-def open_project(slug: str) -> tuple[Project, Store]:
+def find_project(slug: str) -> Project:
+    """The project, without opening its store (for routes that only need its folders, such as the Live View's)."""
     base = projects_dir()
     d = (base / slug).resolve()
     if d.parent != base or not (d / "project.yaml").exists():
         raise NotFound("No such project")
-    p = Project(d)
+    return Project(d)
+
+
+def open_project(slug: str) -> tuple[Project, Store]:
+    p = find_project(slug)
     return p, Store(p.db_path)
 
 

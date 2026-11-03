@@ -46,6 +46,9 @@ class Settings:
     login_attempts: int = 5          # failed sign-ins per IP before a lock
     login_window_s: int = 900        # the lock lasts this long
     rate_limit_per_min: int = 240    # requests per IP per minute on every endpoint
+    shot_rate_per_min: int = 1200    # Live View screenshots per IP per minute, a bucket of their own (fast replay)
+    streams_per_client: int = 4      # open live streams (SSE + WebSocket) per IP
+    streams_total: int = 64          # open live streams in all
     cookie_secure: bool = False      # True behind HTTPS (the cloud edition)
 
     @classmethod

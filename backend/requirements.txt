@@ -16,3 +16,4 @@ Pillow>=10.0
 cryptography>=42.0
 argon2-cffi>=23
 sse-starlette>=2
+websockets>=17.3

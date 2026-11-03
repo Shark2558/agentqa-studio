@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import os
 import shutil
+import sqlite3
 import subprocess
 import sys
+from contextlib import closing
+from pathlib import Path
 
 from agentqa.config import Project
 from agentqa.orchestrator import Busy
@@ -16,9 +19,13 @@ KEEP_LIVE_SESSIONS = 15
 API_SECRET_PREFIXES = ("AGENTQA_SECRET_KEY", "AGENTQA_OWNER_")   # the API's secrets; a stage never needs them
 STILL_ACTIVE = 259
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+MAX_PID = 2 ** 31 - 1
+PEEK_TIMEOUT_S = 2
 
 
 def pid_alive(pid: int) -> bool:
+    if type(pid) is not int or not 0 < pid <= MAX_PID:      # a pid no system can have (a corrupt or planted marker)
+        return False
     if os.name == "nt":  # os.kill(pid, 0) would terminate the process on Windows
         import ctypes
         handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
@@ -35,19 +42,44 @@ def pid_alive(pid: int) -> bool:
         return False
 
 
+def peek(db_path: Path, job_id: int) -> dict | None:
+    """A job's status and pid from one bare query, without the store's set-up (the Live View asks every half
+    second). None when the project has no database yet or it cannot be read just now."""
+    if not db_path.is_file():
+        return None
+    try:
+        with closing(sqlite3.connect(str(db_path), timeout=PEEK_TIMEOUT_S)) as conn:
+            row = conn.execute("SELECT status, pid FROM jobs WHERE id=?", [job_id]).fetchone()
+    except sqlite3.Error:
+        return None
+    return {"status": row[0], "pid": row[1]} if row else None
+
+
+def process_alive(job_id: int, pid: int | None) -> bool:
+    """Whether a job's process lives: the handle when this server started it, else its pid."""
+    proc = PROCS.get(job_id)
+    return (proc.poll() is None) if proc else (bool(pid) and pid_alive(pid))
+
+
 def running(store: Store) -> dict | None:
     """The job marked running, after checking its process is really alive (a dead one is marked failed)."""
     job = store.one("SELECT * FROM jobs WHERE status='running' ORDER BY id DESC LIMIT 1")
-    if not job:
-        return None
-    proc = PROCS.get(job["id"])
-    alive = (proc.poll() is None) if proc else (bool(job.get("pid")) and pid_alive(job["pid"]))
+    return job if job and _still_alive(store, job) else None
+
+
+def job_running(store: Store, job_id: int) -> bool:
+    """Whether this one job is running: its row says so and its process lives (a dead one is marked failed)."""
+    job = store.one("SELECT id, status, pid FROM jobs WHERE id=?", [job_id])
+    return bool(job and job["status"] == "running" and _still_alive(store, job))
+
+
+def _still_alive(store: Store, job: dict) -> bool:
+    alive = process_alive(job["id"], job.get("pid"))
     if not alive:
         fresh = store.one("SELECT status FROM jobs WHERE id=?", [job["id"]])
         if fresh and fresh["status"] == "running":
             store.update("jobs", "id", job["id"], {"status": "failed", "finished_at": now(), "exit_code": -1})
-        return None
-    return job
+    return alive
 
 
 def prune_live(p: Project) -> None:

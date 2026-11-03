@@ -4,6 +4,7 @@
 the old dashboard mounted at /, behind the same sign-in)."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
@@ -13,11 +14,14 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from agentqa import __version__
 from agentqa.api import auth as _auth
 from agentqa.api.errors import ApiError, fail, install_handlers, ok
+from agentqa.api.live_feed import StreamSlots
 from agentqa.api.ratelimit import RateLimiter
 from agentqa.api.schemas import LoginIn
 from agentqa.api.settings import Settings
 
 API_PREFIX = "/api/v1"
+SHOT_PATH = re.compile(rf"^{API_PREFIX}/projects/[^/]+/live/[^/]+/shots/[^/]+$")   # their own rate bucket
+OPEN_WRITES = frozenset({f"{API_PREFIX}/auth/login", f"{API_PREFIX}/auth/logout"})   # any role may sign in or out
 APP_PREFIX = "/app"
 SIGN_IN_PAGE = f"{APP_PREFIX}/sign-in"
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist"
@@ -39,23 +43,10 @@ def create_app(settings: Settings | None = None, legacy: bool = False, frontend_
     app.state.sessions = _auth.Sessions(settings)
     app.state.login_limiter = _auth.LoginLimiter(settings.login_attempts, settings.login_window_s)
     app.state.rate_limiter = RateLimiter(settings.rate_limit_per_min)
+    app.state.shot_limiter = RateLimiter(settings.shot_rate_per_min)
+    app.state.stream_slots = StreamSlots(settings.streams_per_client, settings.streams_total)
     install_handlers(app)
-
-    @app.middleware("http")
-    async def guards(request: Request, call_next):
-        path = request.url.path
-        if path.startswith(API_PREFIX):
-            if not app.state.rate_limiter.allow(_auth.client_key(request)):
-                return _secured(fail(429, "rate_limited", "Too many requests; slow down", {"Retry-After": "1"}))
-            try:
-                _auth.csrf_check(request)
-            except ApiError as exc:
-                return _secured(fail(exc.status, exc.code, exc.message))
-        elif legacy and not (path == APP_PREFIX or path.startswith(APP_PREFIX + "/")):
-            refused = _legacy_gate(request)                      # the old dashboard needs the same sign-in
-            if refused is not None:
-                return _secured(refused)
-        return _secured(await call_next(request))
+    _install_guards(app, legacy)
 
     @app.get(f"{API_PREFIX}/health")
     def health():
@@ -83,15 +74,44 @@ def create_app(settings: Settings | None = None, legacy: bool = False, frontend_
     def docs(user: _auth.User = Depends(_auth.current_user)):
         return get_swagger_ui_html(openapi_url=f"{API_PREFIX}/openapi.json", title="AgentQA Studio API")
 
-    from agentqa.api import routes_ai, routes_live, routes_projects, routes_runs, routes_wizard
-    for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_wizard.router, routes_wizard.tools,
-                   routes_ai.router, routes_ai.projects):
+    from agentqa.api import routes_ai, routes_live, routes_live_ws, routes_projects, routes_runs, routes_wizard
+    for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_live_ws.router,
+                   routes_wizard.router, routes_wizard.tools, routes_ai.router, routes_ai.projects):
         app.include_router(router, prefix=API_PREFIX)
 
     _serve_frontend(app, frontend_dist)
     if legacy:
         _mount_dashboard(app)
     return app
+
+
+def _install_guards(app: FastAPI, legacy: bool) -> None:
+    """Every HTTP request passes here first (WebSockets do not: `routes_live_ws` checks for itself)."""
+
+    @app.middleware("http")
+    async def guards(request: Request, call_next):
+        path = request.url.path
+        if path.startswith(API_PREFIX):
+            refused = _api_gate(app, request, path)
+        elif legacy and not (path == APP_PREFIX or path.startswith(APP_PREFIX + "/")):
+            refused = _legacy_gate(request)                      # the old dashboard needs the same sign-in
+        else:
+            refused = None
+        return _secured(refused if refused is not None else await call_next(request))
+
+
+def _api_gate(app: FastAPI, request: Request, path: str):
+    """None when an API request may go on; otherwise the refusal: rate limit (screenshots have their own bucket),
+    the CSRF header on writes, and the read-only rule for a role that may not write."""
+    limiter = app.state.shot_limiter if SHOT_PATH.match(path) else app.state.rate_limiter
+    if not limiter.allow(_auth.client_key(request)):
+        return fail(429, "rate_limited", "Too many requests; slow down", {"Retry-After": "1"})
+    try:
+        _auth.csrf_check(request)
+    except ApiError as exc:
+        return fail(exc.status, exc.code, exc.message)
+    read_only = None if path in OPEN_WRITES else _auth.read_only_refusal(request)
+    return None if read_only is None else fail(read_only.status, read_only.code, read_only.message)
 
 
 def _secured(response):
@@ -102,22 +122,26 @@ def _secured(response):
 
 def _legacy_gate(request: Request):
     """None when the request may reach the old dashboard; otherwise the refusal (a redirect to the sign-in page for
-    a page load, 401 for anything else, 403 for a state change without the CSRF header)."""
+    a page load, 401 for anything else, 403 for a state change by a read-only role or from another site)."""
     if _auth.session_user(request) is None:
         if request.method in ("GET", "HEAD"):
             return RedirectResponse(SIGN_IN_PAGE, status_code=303)
         return fail(401, "unauthenticated", "Sign in first")
+    read_only = _auth.read_only_refusal(request)
+    if read_only is not None:
+        return fail(read_only.status, read_only.code, read_only.message)
     if request.method not in _auth.SAFE_METHODS and not _same_origin(request):
         return fail(403, "csrf", "Cross-site request refused")
     return None
 
 
 def _same_origin(request: Request) -> bool:
-    """The old dashboard posts plain HTML forms, so its CSRF guard is the browser's Origin / Referer header."""
+    """The old dashboard posts plain HTML forms, so its CSRF guard is the browser's Origin / Referer header, compared
+    with the host *and port* (a page on another local port, such as the demo portal under test, is another site)."""
     origin = request.headers.get("origin") or request.headers.get("referer") or ""
     if not origin:
         return True                                              # a non-browser client (TestClient, curl) sends neither
-    return origin.split("/", 3)[2].split(":")[0] == request.url.hostname if origin.count("/") >= 2 else False
+    return _auth.origin_matches_host(origin, request.headers.get("host", ""))
 
 
 def _serve_frontend(app: FastAPI, dist: Path) -> None:

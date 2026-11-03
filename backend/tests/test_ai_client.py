@@ -220,3 +220,45 @@ def test_ocr_goes_through_the_documents_client_only_with_consent(demo, ai, monke
     assert text == "Section 1 | Fees" and how == "AI vision model" and FakeAi.calls[0]["image"] == b"\xff\xd8jpeg"
     configure(demo, "cloud", send_screenshots=False)
     assert AC.model_for(demo[0], "documents") is None                     # no consent: OCR never gets a client
+
+
+# ---- M1.3: one `cost` line per billed call, for the Live View's cards -------------------------------------------
+
+COST_FIELDS = {"t", "seq", "w", "agent", "kind", "title", "agent_key", "tier", "scope", "provider", "model",
+               "input_tokens", "output_tokens", "cost_usd", "estimated", "ms", "ok"}
+
+
+def test_every_billed_call_writes_one_cost_line_with_figures_but_no_text_or_key(demo, ai, events):
+    configure(demo, "cloud")
+    llm = AC.model_for(demo[0], "casegen")
+    llm.chat_json("SYSTEM-MARKER-7f3", "USER-MARKER-9c1", 50)
+    costs = [e for e in events() if e["kind"] == "cost"]
+    assert len(costs) == 1
+    c = costs[0]
+    assert set(c) <= COST_FIELDS and "state" not in c                   # never the prompt, the answer or the key
+    assert c["agent"] == "ai" and c["agent_key"] == "casegen" and c["tier"] == "balanced" and c["scope"] == "cloud"
+    assert c["provider"] == "openai" and c["model"] == "gpt-4o-mini" and c["ok"] is True and c["estimated"] is False
+    assert c["input_tokens"] == 1 and c["output_tokens"] == 1
+    assert c["cost_usd"] == pytest.approx((0.15 + 0.60) / 1_000_000)
+    assert c["title"].startswith(f"{AC.modes.AGENTS['casegen']['label']}: gpt-4o-mini")
+    blob = json.dumps(events())
+    assert "MARKER" not in blob and CLOUD_KEY not in blob
+
+
+def test_a_local_call_is_a_free_cost_line(demo, ai, events):
+    configure(demo, "local")
+    AC.model_for(demo[0], "casegen").chat_json("s", "u")
+    [c] = [e for e in events() if e["kind"] == "cost"]
+    assert c["scope"] == "local" and c["cost_usd"] == 0 and c["model"] == "qwen3:4b"
+
+
+def test_the_usage_row_is_kept_and_the_answer_returned_when_the_live_line_cannot_be_written(demo, ai, monkeypatch):
+    configure(demo, "cloud")
+    llm = AC.model_for(demo[0], "casegen")
+
+    def broken(agent, kind, title, **fields):
+        if kind == "cost":
+            raise RuntimeError("disk full")
+    monkeypatch.setattr(AC.live, "emit", broken)
+    assert llm.chat_json("s", "u")["ok"] is True
+    assert len(Store(demo[0].db_path).all("SELECT * FROM ai_usage")) == 1

@@ -60,3 +60,8 @@ Thumbs.db
 # Installer output
 installer/Output/
 installer/*.exe
+
+# The one exception: the Live View tests' fixture, a trimmed demo-portal recording (demo data only;
+# tools/make_live_fixture.py refuses to write it if a demo password, OTP or token appears). M1.3.
+!tests/fixtures/recordings/*/events-*.jsonl
+!tests/fixtures/recordings/*/shots/

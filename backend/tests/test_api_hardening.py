@@ -189,3 +189,56 @@ def test_lockout_tells_the_client_when_to_retry(tmp_path, monkeypatch):
     c.post("/api/v1/auth/login", json={"email": OWNER, "password": "nope"}, headers=CSRF)
     r = c.post("/api/v1/auth/login", json={"email": OWNER, "password": PASSWORD}, headers=CSRF)
     assert r.status_code == 429 and int(r.headers["retry-after"]) > 0
+
+
+# ---- M1.3: screenshots get their own rate bucket, so a fast replay cannot lock the API out ------------------
+
+def _shot_client(tmp_path, monkeypatch, **over) -> tuple[TestClient, str]:
+    import shutil
+    from pathlib import Path
+    monkeypatch.setenv("AGENTQA_PROJECTS", str(tmp_path / "projects"))
+    c = TestClient(create_app(settings(**over)))
+    login(c)
+    c.post("/api/v1/projects/demo", headers=CSRF)
+    from agentqa.orchestrator.projects import find_project
+    p = find_project("demo")
+    fixture = Path(__file__).resolve().parent / "fixtures" / "recordings" / "cli-fixture-pipeline"
+    shutil.copytree(fixture, p.state / "live" / "cli-fixture-pipeline")
+    name = sorted((fixture / "shots").iterdir())[0].name
+    return c, f"/api/v1/projects/demo/live/cli-fixture-pipeline/shots/{name}"
+
+
+def test_many_screenshots_pass_without_using_the_general_bucket(tmp_path, monkeypatch):
+    c, shot = _shot_client(tmp_path, monkeypatch, rate_limit_per_min=20)
+    assert all(c.get(shot).status_code == 200 for _ in range(60))
+    assert c.get("/api/v1/projects").status_code == 200       # the general bucket still has tokens
+
+
+def test_the_screenshot_bucket_has_its_own_cap(tmp_path, monkeypatch):
+    c, shot = _shot_client(tmp_path, monkeypatch, shot_rate_per_min=5)
+    codes = [c.get(shot).status_code for _ in range(8)]
+    assert codes[:5] == [200] * 5 and codes[-1] == 429
+
+
+def test_screenshots_never_open_the_project_store(tmp_path, monkeypatch):
+    c, shot = _shot_client(tmp_path, monkeypatch)
+    from agentqa import store as store_module
+
+    def no_store(self, *a, **k):
+        raise AssertionError("opened the project store for a screenshot")
+    monkeypatch.setattr(store_module.Store, "__init__", no_store)
+    assert c.get(shot).status_code == 200
+
+
+# ---- M1.3 security review F1: the old dashboard's cross-site check compares the port too -------------------
+
+def test_the_old_dashboard_refuses_a_form_posted_from_another_local_port(tmp_path, monkeypatch):
+    monkeypatch.setenv("AGENTQA_PROJECTS", str(tmp_path / "projects"))
+    c = TestClient(create_app(settings(), legacy=True), follow_redirects=False)
+    login(c)
+    form = {"name": "x", "url": "https://x.example"}
+    for header in ({"origin": "http://testserver:8800"}, {"referer": "http://testserver:8800/apply"},
+                   {"origin": "http://[broken"}):
+        r = c.post("/new", data=form, headers=header)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "csrf", header
+    assert c.post("/new", data=form, headers={"origin": "http://testserver"}).status_code != 403

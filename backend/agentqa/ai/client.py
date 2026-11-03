@@ -11,6 +11,7 @@ withholds images the project has not consented to; and records each answer's usa
 """
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from typing import TYPE_CHECKING
@@ -24,6 +25,7 @@ if TYPE_CHECKING:                                     # the router pulls in the 
     from agentqa.ai.router import Gateway
     from agentqa.config import Project
 
+log = logging.getLogger("agentqa.ai.client")
 PIPELINE_ENV = "AGENTQA_PIPELINE_ID"
 MAX_ANNOUNCED = 10_000
 _ANNOUNCED: set[tuple[str, str, str]] = set()        # (pipeline, project root, agent): the `model` event, once per stage
@@ -97,8 +99,22 @@ class AiClient:
     def _on_usage(self, info: dict) -> None:
         if info.get("ok"):
             self._last = {k: info.get(k) for k in ("provider", "label", "model")}
-        usage.record(self.store, info, agent=self.route.agent, pipeline=os.environ.get(PIPELINE_ENV),
-                     prices=self.gw.store.policy().get("prices"))
+        row = usage.record(self.store, info, agent=self.route.agent, pipeline=os.environ.get(PIPELINE_ENV),
+                           prices=self.gw.store.policy().get("prices"))
+        _emit_cost(self.route.agent, row, ok=bool(info.get("ok")))
+
+
+def _emit_cost(agent: str, row: dict, ok: bool) -> None:
+    """One `cost` line per billed call for the Live View's cards (M1.3): the figures of the usage row, never the
+    prompt, the answer or which key answered. A failed write loses the line, never the usage row or the answer."""
+    label = modes.AGENTS[agent]["label"] if agent in modes.AGENTS else agent
+    try:
+        live.emit("ai", "cost", f"{label}: {row['model']} · ${row['cost_usd']:.4f}", agent_key=agent, tier=row["tier"],
+                  scope=row["scope"], provider=row["provider"], model=row["model"], input_tokens=row["input_tokens"],
+                  output_tokens=row["output_tokens"], cost_usd=row["cost_usd"], estimated=bool(row["estimated"]),
+                  ms=row["ms"], ok=ok)
+    except Exception as exc:  # noqa: BLE001 - the live view is a convenience; the usage table is the record
+        log.warning("live cost line not written for %s: %s", agent, type(exc).__name__)
 
 
 def _keys_at_hand(gw: "Gateway") -> dict:
