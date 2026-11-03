@@ -22,7 +22,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4** (PRD §9: next milestone) | **next**: plan it first, owner approves | — |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | **plan approved 4 Nov 2026** (all seven decisions as recommended); **next: Phase A** | plan `35acae8` + approval |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
@@ -103,11 +103,15 @@ Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic acc
 credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
 owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
 
-## M1.4 — next (plan it first, owner approves; 🔒 review if it touches execution or the gateway)
+## M1.4 — next: build Phase A of the approved plan (`docs/plans/m1-4-gates.md`)
 
-Take the scope from PRD §9 for M1.4 and write `docs/plans/m1-4-<slice>.md` before any code. M1.3's plan names what
-M1.4 brings into the new app: the needs-you box, take-over, pause and resume, answering questions, plan approval,
-defect confirmation, visual review and heals (FR-LIVE-6), and retiring the old dashboard (`web/app.py`).
+The plan was approved on 4 Nov 2026 with all seven decisions as recommended. Four phases, each a commit: **A** the three
+gates' API (questions, test plan, defects, requirements dispositions), who/why in the change log, one store per
+request, formula-safe exports, the `replan` command; **B** the three gates in the React app, then **acceptance sitting
+1** (the PRD acceptance); **C** visual review, heals, the needs-you box, take-over and pause (reviewed as 🔒);
+**D** retire the replaced old pages, the M1.3 carry-overs, **acceptance sitting 2**. Both sittings run in No-AI mode.
+The follow-up branch `claude/nervous-sutherland-913fae` (`482c887`, M1.3 C4/C5) touches `AgentBoard.tsx` and
+`board.ts`: Phase D waits for it to merge before the `AgentBoard` items.
 M1.3 is in `main` (the owner said merge on 4 Nov 2026); start M1.4 from `main`. A follow-up session was started the
 same day for the gateway's "credit balance is too low" handling and provider switches in the Live View (C4, C5).
 

@@ -19,7 +19,7 @@
 
 Phases A and B get `security-reviewer` for the exports and the file routes.
 
-**Owner approval:** pending (seven decisions below). Planned with the `planner` agent at `5d85b63`, 4 Nov 2026; every
+**Owner approval:** **given 4 Nov 2026, all seven decisions as recommended.** Planned with the `planner` agent at `5d85b63`, 4 Nov 2026; every
 "the code does X" below names its file and line. Re-checked by hand the same day: facts 2 (the change-log writers and
 their `by`), 3, 4, 5, 6 (`check_demo.py:45`), 9 (the "Typed '…'" echo and the stored command), 12 and 13.
 
@@ -555,6 +555,15 @@ Dependencies: needs Phases B and C.
 - **The follow-up branch:** files are disjoint until Phase D; rebase before the `AgentBoard` items.
 
 ## Decisions for the owner
+
+**Confirmed by the owner, 4 Nov 2026: all seven as recommended** — one milestone in four phases with two acceptance
+sittings; the small engine changes (who in the log, formula-safe exports, relative CSV paths, `replan`, the "approved
+earlier" line, typed secrets wiped); per-case / per-type / all approval with the auto-approve switch off by default and
+logged (case editing later); a reason required to reject, undo or accept changed screens; downloads hold confirmed
+defects only, with "Include drafts"; take-over on production behind a warning and a one-time tick; the replaced old
+pages redirect and are removed, the rest stay with a "moving" banner.
+
+The seven as they were put to him:
 
 1. **One milestone or two.**
    - *Recommended:* one milestone in four steps, and you check it twice: first the three gates (questions, test plan, defects) and the change log, then visual review, heals, the "AgentQA needs you" box and taking over the browser. You can merge the gates after the first check.
