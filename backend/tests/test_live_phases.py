@@ -59,6 +59,7 @@ def test_the_phase_names_are_the_six_the_ui_draws_plus_note():
 
 @pytest.mark.parametrize("agent,kind,phase", [
     ("srs", "rule", "thought"), ("srs", "model", "thought"), ("ai", "model", "meta"), ("ai", "cost", "meta"),
+    ("ai", "switched", "result"),
     ("srs", "requirement", "thought"), ("writer", "requirement", "result"),
     ("executor", "navigate", "action"), ("executor", "verdict", "result"), ("executor", "test_start", "thought"),
     ("explorer", "observe", "result"), ("reconciler", "question", "result"), ("pipeline", "gate", "waiting"),

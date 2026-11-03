@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { XCircle } from "@phosphor-icons/react";
 import { api } from "../../lib/api";
 import { displayState } from "../../lib/live/board";
-import { safeBox, safeShot, severity, type Box, type LiveEvent, type Phase } from "../../lib/live/event";
+import { eventKey, safeBox, safeShot, severity, type Box, type LiveEvent, type Phase } from "../../lib/live/event";
 import type { Lane } from "../../lib/live/lanes";
 import type { Model } from "../../lib/live/model";
 
@@ -140,6 +140,10 @@ function useFollowNewest(rows: unknown) {
   return { box, onScroll };
 }
 
+/** An AI switch line the board credited to the chosen agent's card (no key is built for any other line). */
+const isCredited = (e: LiveEvent, lines: ReadonlySet<string> | undefined): boolean =>
+  e.kind === "switched" && lines !== undefined && lines.size > 0 && lines.has(eventKey(e));
+
 type FocusProps = { slug: string; session: string; model: Model; events: readonly LiveEvent[]; pos: number; agent: string | null; runOver: boolean };
 
 /** "<agent> · what it is doing": its browser frame (when it uses one) and its thought → action → result stream. */
@@ -154,7 +158,9 @@ export function AgentFocus({ slug, session, model, events, pos, agent, runOver }
   }, []);
   const card = agent ? model.board.cards.get(agent) : undefined;
   const lanes = [...model.lanes.lanes.values()].filter((l) => !agent || l.agent === agent).sort((a, b) => b.lastT - a.lastT);
-  const rows = useMemo(() => events.slice(0, pos).filter((e) => e.phase !== "meta" && (!agent || e.agent === agent)), [events, pos, agent]);
+  const credited = card?.switchLines;                      // the AI switches made while this agent's stage ran
+  const rows = useMemo(() => events.slice(0, pos).filter((e) => e.phase !== "meta" && (!agent || e.agent === agent || isCredited(e, credited))),
+                       [events, pos, agent, credited]);
   const visible = useMemo(() => rows.slice(-limit), [rows, limit]);
   const { box, onScroll } = useFollowNewest(visible);
   const state = card ? displayState(card, model.board, runOver) : null;

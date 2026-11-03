@@ -7,7 +7,8 @@
 The client keeps the old per-project interface (available, chat_json, model, enabled) and the gateway's
 (complete_json), so agents change one import. It asks the router for a scope order and a tier, never a model id;
 checks the monthly budget before every cloud attempt (Cloud drops to no AI at the cap, Hybrid to local only);
-withholds images the project has not consented to; and records each answer's usage in the project store.
+withholds images the project has not consented to; records each answer's usage in the project store; and tells the
+Live View when a call moves to another provider.
 """
 from __future__ import annotations
 
@@ -94,7 +95,11 @@ class AiClient:
             image = None                                       # no consent, or no model that can see: text only
         return self.gw.complete_json(system, user, task=task or self.route.agent, max_tokens=max_tokens, image=image,
                                      need_vision=self.route.need_vision, scopes=scopes, tier=self.route.tier,
-                                     on_usage=self._on_usage, cloud_image=self.settings.send_screenshots)
+                                     on_usage=self._on_usage, cloud_image=self.settings.send_screenshots,
+                                     on_switch=self._on_switch)
+
+    def _on_switch(self, info: dict) -> None:
+        _emit_switch(self.route.agent, self.route.tier, info)
 
     def _on_usage(self, info: dict) -> None:
         if info.get("ok"):
@@ -104,17 +109,37 @@ class AiClient:
         _emit_cost(self.route.agent, row, ok=bool(info.get("ok")))
 
 
+def _label(agent: str) -> str:
+    return str(modes.AGENTS[agent]["label"]) if agent in modes.AGENTS else agent
+
+
 def _emit_cost(agent: str, row: dict, ok: bool) -> None:
     """One `cost` line per billed call for the Live View's cards (M1.3): the figures of the usage row, never the
     prompt, the answer or which key answered. A failed write loses the line, never the usage row or the answer."""
-    label = modes.AGENTS[agent]["label"] if agent in modes.AGENTS else agent
     try:
-        live.emit("ai", "cost", f"{label}: {row['model']} · ${row['cost_usd']:.4f}", agent_key=agent, tier=row["tier"],
+        live.emit("ai", "cost", f"{_label(agent)}: {row['model']} · ${row['cost_usd']:.4f}", agent_key=agent, tier=row["tier"],
                   scope=row["scope"], provider=row["provider"], model=row["model"], input_tokens=row["input_tokens"],
                   output_tokens=row["output_tokens"], cost_usd=row["cost_usd"], estimated=bool(row["estimated"]),
                   ms=row["ms"], ok=ok)
     except Exception as exc:  # noqa: BLE001 - the live view is a convenience; the usage table is the record
         log.warning("live cost line not written for %s: %s", agent, type(exc).__name__)
+
+
+def _provider_name(provider: str) -> str:
+    return str(C.CATALOG.get(provider, {}).get("name") or provider)
+
+
+def _emit_switch(agent: str, tier: str, info: dict) -> None:
+    """One `switched` line when a call moves to another AI provider (M1.3 C4): the two providers, the reason in the
+    gateway's fixed words, the agent and its tier; never the key, its label, the error text or the prompt. A failed
+    write loses the line, never the answer (the audit log keeps every switch)."""
+    src, dst = str(info.get("from_provider") or "?"), str(info.get("to_provider") or "?")
+    why = info.get("reason") or info.get("kind") or "no reason given"
+    try:
+        live.emit("ai", "switched", f"{_label(agent)}: switched from {_provider_name(src)} to {_provider_name(dst)} "
+                  f"({why})", agent_key=agent, tier=tier, from_provider=src, to_provider=dst, failure=info.get("kind"))
+    except Exception as exc:  # noqa: BLE001 - the live view is a convenience; ai_events is the record
+        log.warning("live switch line not written for %s: %s", agent, type(exc).__name__)
 
 
 def _keys_at_hand(gw: "Gateway") -> dict:

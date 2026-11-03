@@ -141,6 +141,31 @@ def test_a_reason_is_announced_when_there_is_no_model(demo, ai, events):
     assert len(ev) == 1 and "not allowed text" in ev[0]["reason"]
 
 
+NO_CREDIT_KEY = "sk-ant-nocredit-000000000001"
+
+
+def add_out_of_credit_key(gw, *, only_cloud_key: bool) -> None:
+    """An Anthropic key whose credit is used up (the stand-in's `nocredit`), asked before the fixture's OpenAI key,
+    or instead of it."""
+    cloud = next(k for k in gw.store.keys() if k["provider"] == "openai")
+    if only_cloud_key:
+        gw.store.delete_key(cloud["id"])
+    gw.store.set_policy({"order": ["anthropic", "openai", "ollama"]})
+    gw.store.upsert_key({"provider": "anthropic", "label": "claude-label-5e2", "key": NO_CREDIT_KEY, "priority": 1,
+                         "base_url": cloud["base_url"].replace("/openai/v1", "/anthropic/v1"), "model": "claude-opus-5-5"})
+
+
+def test_a_cloud_key_out_of_credit_is_not_planned_for_the_next_agents(demo, ai, events):
+    # C5: the empty key answers once; the next agent says why there is no model instead of asking it again
+    configure(demo, "cloud")
+    add_out_of_credit_key(ai, only_cloud_key=True)
+    assert AC.model_for(demo[0], "casegen").chat_json("s", "u") is None
+    assert AC.model_for(demo[0], "triage") is None
+    assert mock_ai.CALLS[NO_CREDIT_KEY] == 1
+    [triage] = [e for e in events() if e["kind"] == "model" and e["agent_key"] == "triage"]
+    assert triage["reason"] == AC.modes.NO_CLOUD
+
+
 def spend(store: Store, usd: float) -> None:
     U.record(store, {"provider": "openai", "model": "unit", "scope": "cloud", "input_tokens": int(usd * 1_000_000),
                      "output_tokens": 0, "ms": 1}, agent="casegen", pipeline="old", prices={"openai": {"unit": [1, 1]}})
@@ -250,6 +275,50 @@ def test_a_local_call_is_a_free_cost_line(demo, ai, events):
     AC.model_for(demo[0], "casegen").chat_json("s", "u")
     [c] = [e for e in events() if e["kind"] == "cost"]
     assert c["scope"] == "local" and c["cost_usd"] == 0 and c["model"] == "qwen3:4b"
+
+
+# ---- C4 (M1.3 Phase C): one `switched` line when a call moves to another provider -----------------------------
+
+SWITCH_FIELDS = {"t", "seq", "w", "agent", "kind", "title", "agent_key", "tier", "from_provider", "to_provider",
+                 "failure"}
+
+
+def test_a_switch_to_another_provider_writes_one_live_line_without_key_label_or_prompt(demo, ai, events):
+    configure(demo, "cloud")
+    add_out_of_credit_key(ai, only_cloud_key=False)
+    llm = AC.model_for(demo[0], "casegen")
+    assert llm.chat_json("SYSTEM-MARKER-7f3", "USER-MARKER-9c1")["ok"] is True
+    assert llm.chat_json("s", "u")["ok"] is True                   # the empty key is dead now: no second switch
+    [s] = [e for e in events() if e["kind"] == "switched"]
+    assert set(s) <= SWITCH_FIELDS
+    assert (s["agent"], s["agent_key"], s["tier"]) == ("ai", "casegen", "balanced")
+    assert (s["from_provider"], s["to_provider"], s["failure"]) == ("anthropic", "openai", "billing")
+    label = AC.modes.AGENTS["casegen"]["label"]
+    assert s["title"] == f"{label}: switched from Anthropic Claude to OpenAI (Billing or credit exhausted)"
+    blob = json.dumps(events())
+    assert not any(secret in blob for secret in ("MARKER", "nocredit", "claude-label-5e2", CLOUD_KEY))
+
+
+def test_the_answer_is_kept_when_the_switch_line_cannot_be_written(demo, ai, monkeypatch):
+    configure(demo, "cloud")
+    add_out_of_credit_key(ai, only_cloud_key=False)
+    llm = AC.model_for(demo[0], "casegen")
+    tried: list[str] = []
+
+    def broken(agent, kind, title, **fields):
+        if kind == "switched":
+            tried.append(title)
+            raise RuntimeError("disk full")
+    monkeypatch.setattr(AC.live, "emit", broken)
+    assert llm.chat_json("s", "u")["ok"] is True
+    assert len(tried) == 1
+
+
+def test_the_switch_line_still_reads_for_an_unknown_agent_or_provider(events):
+    AC._emit_switch("made-up-agent", "cheap", {"to_provider": "acme-ai", "kind": "timeout"})
+    [s] = events()
+    assert s["title"] == "made-up-agent: switched from ? to acme-ai (timeout)"
+    assert (s["from_provider"], s["to_provider"], s["failure"]) == ("?", "acme-ai", "timeout")
 
 
 def test_the_usage_row_is_kept_and_the_answer_returned_when_the_live_line_cannot_be_written(demo, ai, monkeypatch):

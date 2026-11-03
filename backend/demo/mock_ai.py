@@ -7,6 +7,8 @@ Paths: /openai/v1 (OpenAI and every OpenAI-compatible provider), /anthropic/v1, 
 /lmstudio/v1/{models,chat/completions} (an empty key is fine there). What happens depends on the key's text:
   ...ratelimit...  429 rate limit (Retry-After: 30)     ...quota...    429 daily quota used up
   ...billing...    429 insufficient_quota (billing)      ...invalid...  401 key rejected
+  ...nocredit...   400 "credit balance is too low" on a chat (Anthropic's answer; the model list still works)
+  ...hardlimit...  400 billing_hard_limit_reached on a chat (OpenAI's answer)
   ...down...       503 service unavailable              ...slow...     answers after 5 s (times out)
   ...garbage...    200 but not JSON                      ...nousage...  a valid answer without usage figures
   anything else    a valid JSON answer
@@ -40,6 +42,8 @@ KEYLESS_PATHS = ("/ollama/", "/lmstudio/")
 SLOW_S = 5
 USAGE_OPENAI = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
 USAGE_GEMINI = {"promptTokenCount": 1, "candidatesTokenCount": 1, "thoughtsTokenCount": 1, "totalTokenCount": 3}
+ANTHROPIC_NO_CREDIT = ("Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to "
+                       "upgrade or purchase credits.")          # the real message, 4 Nov 2026
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -82,6 +86,11 @@ class Handler(BaseHTTPRequestHandler):
         elif "quota" in key:
             self._send(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
                                        "message": "Quota exceeded for metric: requests per day"}})
+        elif "nocredit" in key and self.command == "POST":
+            self._send(400, {"type": "error", "error": {"type": "invalid_request_error", "message": ANTHROPIC_NO_CREDIT}})
+        elif "hardlimit" in key and self.command == "POST":
+            self._send(400, {"error": {"message": "Billing hard limit has been reached", "type": "invalid_request_error",
+                                       "param": None, "code": "billing_hard_limit_reached"}})
         elif "invalid" in key or not key:
             self._send(401, {"error": {"type": "invalid_api_key", "message": "Incorrect API key provided"}})
         elif "down" in key:

@@ -100,8 +100,17 @@ write: one rule answers 403 `read_only` to every write, and the pages offer no r
 
 Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic account ran out of credit** mid-run
 ("credit balance is too low"); the gateway fell back to Gemini and the run still scored 19/19 — he adds Anthropic
-credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
-owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
+credit himself if he wants it back. Two follow-ups came from it, now built (next section). The browser pane's width
+is whatever the owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
+
+## M1.3 follow-up — empty credit and AI switches (plan `docs/plans/m1-3-ai-switch-and-credit.md`, 🔒)
+
+Branch `claude/nervous-sutherland-913fae`, cut from the M1.3 branch (so merging it brings M1.3 too); not pushed, not
+merged. A 400 in which Anthropic, OpenAI or Gemini says (in its own error fields) that the account cannot pay is now
+`billing`: the key is asked once, shows "Billing problem" on the AI page, and is skipped until edited or re-tested.
+When a call moves to another AI company the Live View says so in the stream of the agent whose stage was running
+("Requirement Writer: switched from Anthropic Claude to Google Gemini (Billing or credit exhausted)"), and each card
+lists every model it used. No real Cloud run was made for it (the owner chose not to; the stand-in covers it).
 
 ## M1.4 — next (plan it first, owner approves; 🔒 review if it touches execution or the gateway)
 
@@ -115,10 +124,11 @@ Also decide first: whether `claude/gifted-ishizaka-972db8` is merged into `main`
 Playwright `e2e/wizard.spec.ts` and a `NewProject` container test (M1.1 review) · CI Docker build cache (M0.2) ·
 old dashboard's `testdata_account` keeps its own copy of the account rules (M1.4 retires the page) · `web/app.py`
 is 1 400 lines (M1.4 replaces it) · `list_requirements` has no LIMIT (M1.4) · proxy-aware client address and a full
-access log (cloud edition, M3) · from M1.3 Phase C: the gateway reads Anthropic's "credit balance is too low" (HTTP
-400) as a refused request, so the empty key stays "ok" and is tried before every call — classify it as billing
-(`ai/providers.classify`, 🔒 gateway) · the Live View shows no line when the gateway switches provider and a card
-names only the last model used · the run picker shows a run folder's last change, not its start · site-map children
+access log (cloud edition, M3) · 🔒 gateway, found by the follow-up's planner check (not yet seen on this PC): Gemini
+answers a wrong key with HTTP 400 `API_KEY_INVALID`, read as a refused request (so it is tried before every call), and
+its free-tier rate-limit text is reported to say "check your plan and billing details", which the 429 rule reads as
+billing (a per-minute limit would kill the key for the run) — both in `ai/providers.classify` · cost per model on a
+card · the run picker shows a run folder's last change, not its start · site-map children
 in their parent's column · B19 (a socket half-open after sleep still says "live": not seen, the PC did not sleep) and
 B20–B22 in the M1.3 plan · a stray `backend/.venv` on Drive for the
 owner to delete · **no GitHub remote yet** (commits are local only) · the CLAUDE.md "Environment" section is the

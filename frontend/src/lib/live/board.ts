@@ -1,8 +1,8 @@
 /** The agent board: one card per stage in pipeline order (from the server's board, `GET /live/board`), plus a card for
- *  any other agent that speaks. Helper agents, model choices and model costs are credited to the stage running at the
- *  time. A card keeps its raw state; what it shows once the run is over ("not reached", "did not finish") is worked out
- *  when drawn, so a live run and its replay fold to the same model. */
-import { num, text, texts, type LiveEvent } from "./event";
+ *  any other agent that speaks. Helper agents, model choices, model costs and provider switches are credited to the
+ *  stage running at the time. A card keeps its raw state; what it shows once the run is over ("not reached", "did not
+ *  finish") is worked out when drawn, so a live run and its replay fold to the same model. */
+import { eventKey, num, text, texts, type LiveEvent } from "./event";
 
 export interface BoardDef {
   stages: readonly { stage: string; agent: string; label: string }[];
@@ -35,6 +35,8 @@ export interface Card {
   readonly tokensIn: number;
   readonly tokensOut: number;
   readonly actualModel: string | null;
+  readonly models: readonly string[];
+  readonly switchLines: ReadonlySet<string>;
   readonly planned: ReadonlyMap<string, string>;
   readonly reasons: ReadonlyMap<string, string>;
   readonly skipWhy: string | null;
@@ -71,6 +73,10 @@ const own = <T>(rec: Readonly<Record<string, T>>, key: string): T | undefined =>
 const MAX_CARDS = 40;
 const MAX_ASSISTS = 200;
 const MAX_MODEL_KEYS = 20;
+const MAX_MODELS = 20;
+const MAX_SWITCH_LINES = 50;
+const SHOWN_MODELS = 2;                    // the cards are narrow: two names, then "and N more"
+const MAX_MODEL_NAME = 60;                 // a name from a provider's model list is cut to fit a card
 const atLeastZero = (n: number | undefined): number => Math.max(0, n ?? 0);
 
 function context(def: BoardDef): Ctx {
@@ -89,8 +95,8 @@ function context(def: BoardDef): Ctx {
 function newCard(agent: string, label: string, stage: string | null, extra: boolean): Card {
   return {
     agent, label, stage, extra, state: "queued", startedAt: null, endedAt: null, waitingSince: null, counters: {},
-    events: 0, last: "", helpers: [], cost: 0, tokensIn: 0, tokensOut: 0, actualModel: null, planned: new Map(),
-    reasons: new Map(), skipWhy: null, error: null,
+    events: 0, last: "", helpers: [], cost: 0, tokensIn: 0, tokensOut: 0, actualModel: null, models: [],
+    switchLines: new Set(), planned: new Map(), reasons: new Map(), skipWhy: null, error: null,
   };
 }
 
@@ -122,6 +128,14 @@ function update(d: Draft, agent: string, ctx: Ctx, change: (c: Card) => Partial<
 /** `map` with `key` set, unless it would grow past 20 keys. */
 const keyed = (map: ReadonlyMap<string, string>, key: string, value: string): ReadonlyMap<string, string> =>
   map.has(key) || map.size < MAX_MODEL_KEYS ? new Map(map).set(key, value) : map;
+
+/** `models` with `model` at the end, unless it is there already or the list holds 20. */
+const withModel = (models: readonly string[], model: string | undefined): readonly string[] =>
+  !model || models.includes(model) || models.length >= MAX_MODELS ? models : [...models, model];
+
+/** `lines` with `key` added, unless it would hold more than 50. */
+const withLine = (lines: ReadonlySet<string>, key: string): ReadonlySet<string> =>
+  lines.has(key) || lines.size >= MAX_SWITCH_LINES ? lines : new Set(lines).add(key);
 
 /** The card an event counts for: a helper (Analyst, Test Case Generator, Importer) works for the stage running now. */
 function targetOf(d: Draft, agent: string, ctx: Ctx): string {
@@ -167,8 +181,11 @@ function onAi(d: Draft, e: LiveEvent, ctx: Ctx): void {
     const tin = atLeastZero(num(e, "input_tokens"));
     const tout = atLeastZero(num(e, "output_tokens"));
     d.ai = { calls: d.ai.calls + 1, cost: d.ai.cost + cost, tokensIn: d.ai.tokensIn + tin, tokensOut: d.ai.tokensOut + tout };
+    const model = text(e, "model");
     if (d.running) update(d, d.running, ctx, (c) => ({ cost: c.cost + cost, tokensIn: c.tokensIn + tin, tokensOut: c.tokensOut + tout,
-                                                      actualModel: text(e, "model") ?? c.actualModel }));
+                                                      actualModel: model ?? c.actualModel, models: withModel(c.models, model) }));
+  } else if (e.kind === "switched" && d.running) {
+    update(d, d.running, ctx, (c) => ({ switchLines: withLine(c.switchLines, eventKey(e)) }));
   } else if (e.kind === "model" && d.running) {
     const reason = text(e, "reason");
     const planned = e.title.includes(": ") ? e.title.slice(e.title.indexOf(": ") + 2) : e.title;
@@ -275,9 +292,15 @@ export function counterText(card: Card): string {
   return card.events ? `${card.events} event${card.events === 1 ? "" : "s"}` : "";
 }
 
-/** The model line: the one that answered, else the one planned, else why there is none. */
+/** The model line: the models that answered (two by name, then how many more), else the one planned, else why there
+ *  is none. */
 export function cardModel(card: Card): string {
-  if (card.actualModel) return card.actualModel;
+  if (card.models.length) {
+    const short = (m: string) => (m.length > MAX_MODEL_NAME ? `${m.slice(0, MAX_MODEL_NAME - 1)}…` : m);
+    const named = card.models.slice(0, SHOWN_MODELS).map(short).join(", ");
+    const more = card.models.length - SHOWN_MODELS;
+    return more > 0 ? `${named} and ${more} more` : named;
+  }
   const planned = [...card.planned.values()][0];
   if (planned) return planned;
   const reason = [...card.reasons.values()][0];
