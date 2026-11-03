@@ -304,14 +304,21 @@ Every expected result says where it came from:
 - **workflow**: you described the flow;
 - **baseline**: rules every portal should meet, such as pages loading without HTTP errors, login enforced, links working and basic accessibility.
 
-## Optional local model
+## Optional AI (No-AI, Local, Cloud or Hybrid)
 
-1. Install Ollama from https://ollama.com.
-2. Run `ollama pull qwen3:4b`.
-3. In project.yaml set `llm: {enabled: true, model: qwen3:4b}`.
-4. Check it with `.venv\Scripts\python -m agentqa llm-check -p projects\<name>`.
+Every project chooses an AI mode on its AI page (`/app/projects/<slug>/ai`); the default is **No AI**, where every
+agent works with rules only. Agents ask for a *tier* (cheap, balanced, strong or vision), never a model.
 
-The model only sees SRS sentences the rules could not interpret, and its readings appear as Proposed rules with a confirmation question. Set `llm.polish_defects: true` to let it rewrite defect titles. A faster machine or a GPU server can serve a larger model: point `llm.base_url` at it, and nothing else changes.
+- **Local**: a model on this computer, nothing leaves it. Install Ollama from https://ollama.com, run
+  `ollama pull qwen3:4b`, and the AI page detects it (LM Studio on port 1234 works too).
+- **Cloud**: provider keys (Anthropic, Gemini, OpenAI and friends) entered on the AI page, used only after you allow
+  text (and separately screenshots) to be sent. Personal data is masked first. Each project has a monthly budget
+  (default $10, warning at 80 %); at the cap the project drops back to No AI for the rest of the month and you are told.
+- **Hybrid**: cheap work on the local model, demanding work in the cloud; at the cap it keeps the local model.
+
+Check the keys with `python -m agentqa ai-test` (one tiny call per key); `python -m agentqa doctor -p projects\<name>`
+shows which agent would use which model and why an agent has none. The model only sees what the rules could not
+interpret, and its readings appear as Proposed rules with a confirmation question.
 
 ## Command line
 

@@ -153,20 +153,8 @@
   </form>
 </details>
 
-<details class="card" id="model" style="margin-bottom:12px">
-  <summary><b>{{ ui.icon('spark', 'sm') }} Project model fallback</b> <span class="tiny muted">· {{ ('Gemini' if llm.provider == 'gemini' else 'Local (Ollama)') if llm.enabled else 'Off' }} · keys for all providers live on the <a href="/p/{{ slug }}/ai">AI providers</a> page</span></summary>
-  <form method="post" action="/p/{{ slug }}/testdata/model" style="margin-top:10px">
-    <div class="row">
-      <label class="check"><input type="radio" name="provider" value="off" {{ 'checked' if not llm.enabled }}> Off (rules only)</label>
-      <label class="check"><input type="radio" name="provider" value="ollama" {{ 'checked' if llm.enabled and llm.provider != 'gemini' }}> Local model (Ollama)</label>
-      <label class="check"><input type="radio" name="provider" value="gemini" {{ 'checked' if llm.enabled and llm.provider == 'gemini' }}> Google Gemini</label>
-    </div>
-    <div class="row" style="margin-top:8px">
-      <label class="check"><input type="checkbox" name="redact" value="1" {{ 'checked' if llm.redact is not defined or llm.redact }}> Mask mobile numbers, emails and 12-digit numbers before sending</label>
-      <label class="check"><input type="checkbox" name="send_screenshots" value="1" {{ 'checked' if llm.send_screenshots }}> Send screenshots</label>
-      <label class="small">Gemini model <input type="text" name="gemini_model" value="{{ llm.gemini_model or 'auto' }}" style="width:160px"></label><button class="ghost">Save</button>
-    </div>
-  </form>
+<details class="card" id="keys" style="margin-bottom:12px">
+  <summary><b>{{ ui.icon('spark', 'sm') }} Project keys</b> <span class="tiny muted">· secrets this project's data steps may use · AI providers and the project's AI mode live on the <a href="/p/{{ slug }}/ai">AI page</a></span></summary>
   <form method="post" action="/p/{{ slug }}/testdata/secret" id="secrets" style="margin-top:12px">
     <div class="row small" style="margin-bottom:6px"><b>Project keys</b> {% for k, v in secrets.items() %}<span class="mono">{{ k }}</span> <span class="muted mono">{{ v }}</span>{% endfor %}</div>
     <div class="row"><input type="text" name="name" value="GOOGLE_API_KEY" aria-label="Key name" style="width:190px">

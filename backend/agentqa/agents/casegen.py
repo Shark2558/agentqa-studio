@@ -94,8 +94,8 @@ def generate(project: Project, store: Store, existing: list[dict]) -> list[dict]
     cases: list[dict] = []
     by_model: set[str] = set()
     if todo and (project.cfg.get("functional") or {}).get("llm_cases", True):
-        from agentqa.llm import get_llm
-        llm = get_llm(project, "test-design")
+        from agentqa.ai.client import model_for
+        llm = model_for(project, "casegen")
         if llm is not None and llm.available():
             lines = [{"path": p, "title": e["title"], "roles": sorted(e["roles"]), "clicks": sorted(e["clicks"])[:20],
                       "fields": dict(list(e["fields"].items())[:15])} for p, e in list(cat.items())[:40]]

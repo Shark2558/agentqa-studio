@@ -1,8 +1,9 @@
 """Provider adapters: one JSON chat call, a model list and an error classifier per API family.
 
-Families: OpenAI chat completions (OpenAI, DeepSeek, Groq, Mistral, OpenRouter and any OpenAI-compatible
+Families: OpenAI chat completions (OpenAI, DeepSeek, Groq, Mistral, OpenRouter, LM Studio and any OpenAI-compatible
 service), Azure OpenAI, Anthropic Messages, Google Gemini generateContent, and Ollama. Adding a provider
-that speaks one of these families is one entry in CATALOG; a new family is one adapter class.
+that speaks one of these families is one entry in agentqa/ai/catalog.py; a new family is one adapter class.
+Every adapter fills `last_usage` ({input_tokens, output_tokens}) after a successful chat when the provider reports it.
 """
 from __future__ import annotations
 
@@ -11,35 +12,16 @@ import json
 import re
 import time
 from typing import Callable, TypeVar
+from urllib.parse import quote, urlsplit
 
 import anthropic
 import httpx
 
+from agentqa.ai.catalog import LOOPBACK_HOSTS
+
 T = TypeVar("T")
 
-CATALOG: dict[str, dict] = {
-    "openai": {"name": "OpenAI", "family": "openai", "base_url": "https://api.openai.com/v1",
-               "prefer": [r"^gpt-4o-mini$", r"^gpt-4\.1-mini", r"^gpt-4o$", r"mini"], "vision": True},
-    "anthropic": {"name": "Anthropic Claude", "family": "anthropic", "base_url": "https://api.anthropic.com/v1",
-                  "prefer": [r"^claude-sonnet-5-5$", r"^claude-haiku-5-5$", r"^claude-opus-5-5$", r"sonnet", r"haiku", r"claude"],
-                  "vision": True},
-    "gemini": {"name": "Google Gemini", "family": "gemini", "base_url": "https://generativelanguage.googleapis.com/v1beta",
-               "prefer": [], "vision": True},
-    "deepseek": {"name": "DeepSeek", "family": "openai", "base_url": "https://api.deepseek.com/v1",
-                 "prefer": [r"^deepseek-chat$", r"chat"], "vision": False},
-    "groq": {"name": "Groq", "family": "openai", "base_url": "https://api.groq.com/openai/v1",
-             "prefer": [r"llama-3\.3-70b", r"llama", r"qwen"], "vision": False},
-    "mistral": {"name": "Mistral AI", "family": "openai", "base_url": "https://api.mistral.ai/v1",
-                "prefer": [r"^mistral-small-latest$", r"mistral-small", r"mistral-medium", r"latest"], "vision": False},
-    "openrouter": {"name": "OpenRouter", "family": "openai", "base_url": "https://openrouter.ai/api/v1",
-                   "prefer": [], "vision": True},
-    "azure_openai": {"name": "Azure OpenAI", "family": "azure", "base_url": "https://<resource>.openai.azure.com",
-                     "prefer": [], "vision": True},
-    "openai_compatible": {"name": "OpenAI-compatible (custom URL)", "family": "openai", "base_url": "",
-                          "prefer": [], "vision": False},
-    "ollama": {"name": "Ollama (local)", "family": "ollama", "base_url": "http://127.0.0.1:11434",
-               "prefer": [r"qwen3", r"qwen2\.5", r"llama3"], "vision": False, "keyless": True},
-}
+from agentqa.ai.catalog import CATALOG, gemini_pick, prefer_pick  # noqa: F401  (CATALOG re-exported for older imports)
 
 # failure kinds and what the router does with them
 RETRY_SAME = {"timeout", "connection", "unavailable", "bad_output"}    # retry this key a little, then cool it down
@@ -94,14 +76,20 @@ def _retry_after(r) -> float | None:
         return None
 
 
+MAX_ANSWER_CHARS = 400_000         # a model answer longer than this is not a JSON object we asked for
+
+
 def parse_json(text: str) -> dict | None:
+    """The JSON object in a model's answer (fenced or bare), or None. Model output is untrusted: a crash here must
+    not escape the router, so nesting bombs and oversized answers are just \"not JSON\"."""
+    text = (text or "")[:MAX_ANSWER_CHARS]
     try:
         data = json.loads(text)
-    except (json.JSONDecodeError, TypeError):
-        m = re.search(r"[\[{].*[\]}]", text or "", flags=re.S)
+    except (json.JSONDecodeError, TypeError, RecursionError):
+        m = re.search(r"[\[{].*[\]}]", text, flags=re.S)
         try:
             data = json.loads(m.group(0)) if m else None
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             data = None
     if isinstance(data, list):
         data = {"items": data}
@@ -116,6 +104,7 @@ class Adapter:
         self.base = (key.get("base_url") or CATALOG.get(key["provider"], {}).get("base_url") or "").rstrip("/")
         self.secret = key.get("key") or ""
         self.timeout = timeout
+        self.local_host = (urlsplit(self.base).hostname or "").lower() in LOOPBACK_HOSTS
         self.last_usage: dict | None = None     # {"input_tokens", "output_tokens"} of the last chat, when the provider reports it
 
     # -- to implement ------------------------------------------------------------------------
@@ -127,8 +116,9 @@ class Adapter:
 
     # -- shared ------------------------------------------------------------------------------
     def _send(self, method: str, url: str, **kw) -> httpx.Response:
+        """One HTTP call. A loopback address ignores proxy settings: nothing local may leave through HTTP_PROXY."""
         try:
-            r = httpx.request(method, url, timeout=kw.pop("timeout", self.timeout), **kw)
+            r = httpx.request(method, url, timeout=kw.pop("timeout", self.timeout), trust_env=not self.local_host, **kw)
         except httpx.TimeoutException as exc:
             raise ProviderError("timeout", f"no answer within {self.timeout:.0f} s") from exc
         except httpx.HTTPError as exc:
@@ -139,11 +129,23 @@ class Adapter:
         return r
 
     def pick(self, names: list[str]) -> str | None:
-        for pat in CATALOG.get(self.k["provider"], {}).get("prefer", []):
-            hits = sorted(n for n in names if re.search(pat, n))
-            if hits:
-                return hits[0]
-        return names[0] if names else None
+        return prefer_pick(self.k["provider"], names)
+
+    @staticmethod
+    def _json(r: httpx.Response) -> dict:
+        """The response body as a JSON object, or ProviderError (a proxy page or an empty body is not an answer)."""
+        try:
+            data = r.json()
+        except ValueError as exc:
+            raise ProviderError("bad_output", f"answer was not JSON: {r.text[:160]}") from exc
+        if not isinstance(data, dict):
+            raise ProviderError("bad_output", f"answer was not a JSON object: {str(data)[:160]}")
+        return data
+
+    def _usage(self, prompt, completion) -> None:
+        """Keep the token counts of the last answer (None when the provider sent none) for the cost record."""
+        self.last_usage = None if prompt is None and completion is None else {"input_tokens": int(prompt or 0),
+                                                                              "output_tokens": int(completion or 0)}
 
 
 class OpenAIAdapter(Adapter):
@@ -157,7 +159,7 @@ class OpenAIAdapter(Adapter):
 
     def models(self) -> list[str]:
         r = self._send("GET", f"{self.base}/models", headers=self._h(), timeout=20)
-        return sorted(m.get("id", "") for m in (r.json().get("data") or []) if m.get("id"))
+        return sorted(m.get("id", "") for m in (self._json(r).get("data") or []) if isinstance(m, dict) and m.get("id"))
 
     def _url(self, model: str) -> str:
         return f"{self.base}/chat/completions"
@@ -173,6 +175,7 @@ class OpenAIAdapter(Adapter):
         return body
 
     def chat(self, model, system, user, max_tokens, image) -> str:
+        self.last_usage = None
         try:
             r = self._send("POST", self._url(model), headers=self._h(), json=self._body(model, system, user, max_tokens, image))
         except ProviderError as exc:
@@ -181,7 +184,10 @@ class OpenAIAdapter(Adapter):
                                json=self._body(model, system, user, max_tokens, image, json_mode=False))
             else:
                 raise
-        ch = (r.json().get("choices") or [{}])[0]
+        data = self._json(r)
+        usage = data.get("usage") or {}
+        self._usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+        ch = (data.get("choices") or [{}])[0]
         return ((ch.get("message") or {}).get("content")) or ""
 
 
@@ -194,7 +200,7 @@ class AzureAdapter(OpenAIAdapter):
     def _url(self, model: str) -> str:
         dep = self.k.get("deployment") or model
         ver = self.k.get("api_version") or "2024-10-21"
-        return f"{self.base}/openai/deployments/{dep}/chat/completions?api-version={ver}"
+        return f"{self.base}/openai/deployments/{quote(dep, safe='')}/chat/completions?api-version={quote(ver, safe='')}"
 
     def models(self) -> list[str]:
         return [self.k.get("deployment") or self.k.get("model") or ""]
@@ -278,10 +284,6 @@ class AnthropicAdapter(Adapter):
         return "".join(getattr(b, "text", "") for b in msg.content if getattr(b, "type", "") == "text")
 
 
-_SKIP_GEMINI = re.compile(r"(lite|tts|image|live|audio|embed|vision|aqa|imagen|veo|transcribe|omni|nano|banana|learnlm|gemma|"
-                          r"thinking|exp|computer|robotics)", re.I)
-
-
 class GeminiAdapter(Adapter):
     family = "gemini"
 
@@ -290,26 +292,25 @@ class GeminiAdapter(Adapter):
 
     def models(self) -> list[str]:
         r = self._send("GET", f"{self.base}/models", headers=self._h(), params={"pageSize": 200}, timeout=20)
-        return [m["name"].split("/", 1)[-1] for m in r.json().get("models", [])
-                if "generateContent" in (m.get("supportedGenerationMethods") or [])]
+        return [str(m.get("name", "")).split("/", 1)[-1] for m in self._json(r).get("models", []) if isinstance(m, dict)
+                and "generateContent" in (m.get("supportedGenerationMethods") or [])]
 
     def pick(self, names: list[str]) -> str | None:
-        def ver(n):
-            m = re.search(r"gemini-(\d+(?:\.\d+)?)", n)
-            return float(m.group(1)) if m else 0.0
-        flash = [n for n in names if "flash" in n and not _SKIP_GEMINI.search(n) and "preview" not in n]
-        flash = flash or [n for n in names if "flash" in n and not _SKIP_GEMINI.search(n)]
-        pool = flash or [n for n in names if n.startswith("gemini") and not _SKIP_GEMINI.search(n)]
-        return max(pool, key=lambda n: (ver(n), -len(n))) if pool else None
+        return gemini_pick(names)                 # -latest aliases first; never by highest version (M0.3 gap a)
 
     def chat(self, model, system, user, max_tokens, image) -> str:
+        self.last_usage = None
         parts: list[dict] = [{"text": user}]
         if image is not None:
             parts.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(image).decode()}})
         body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": [{"role": "user", "parts": parts}],
                 "generationConfig": {"temperature": 0, "maxOutputTokens": max_tokens, "responseMimeType": "application/json"}}
-        r = self._send("POST", f"{self.base}/models/{model}:generateContent", headers=self._h(), json=body)
-        cands = r.json().get("candidates") or []
+        r = self._send("POST", f"{self.base}/models/{quote(model, safe='')}:generateContent", headers=self._h(), json=body)
+        data = self._json(r)
+        meta = data.get("usageMetadata") or {}
+        if meta:                                 # thinking tokens are billed as output, in their own field
+            self._usage(meta.get("promptTokenCount"), int(meta.get("candidatesTokenCount") or 0) + int(meta.get("thoughtsTokenCount") or 0))
+        cands = data.get("candidates") or []
         return "".join(p.get("text", "") for p in ((cands[0].get("content") or {}).get("parts") or [])) if cands else ""
 
 
@@ -318,17 +319,25 @@ class OllamaAdapter(Adapter):
 
     def models(self) -> list[str]:
         r = self._send("GET", f"{self.base}/api/tags", timeout=5)
-        return [m.get("name", "") for m in r.json().get("models", [])]
+        return [str(m.get("name", "")) for m in self._json(r).get("models", []) if isinstance(m, dict)]
 
     def chat(self, model, system, user, max_tokens, image) -> str:
+        self.last_usage = None
         msg = {"role": "user", "content": user}
         if image is not None:
             msg["images"] = [base64.b64encode(image).decode()]
-        r = self._send("POST", f"{self.base}/api/chat", json={
-            "model": model, "stream": False, "format": "json", "think": False,
-            "options": {"temperature": 0, "num_ctx": 8192, "num_predict": max_tokens},
-            "messages": [{"role": "system", "content": system}, msg]})
-        return (r.json().get("message") or {}).get("content", "")
+        body = {"model": model, "stream": False, "format": "json", "think": False,
+                "options": {"temperature": 0, "num_ctx": 8192, "num_predict": max_tokens},
+                "messages": [{"role": "system", "content": system}, msg]}
+        try:
+            r = self._send("POST", f"{self.base}/api/chat", json=body)
+        except ProviderError as exc:
+            if exc.kind != "bad_request" or "think" not in str(exc):
+                raise
+            r = self._send("POST", f"{self.base}/api/chat", json={k: v for k, v in body.items() if k != "think"})
+        data = self._json(r)
+        self._usage(data.get("prompt_eval_count"), data.get("eval_count"))
+        return (data.get("message") or {}).get("content", "")
 
 
 FAMILIES = {"openai": OpenAIAdapter, "azure": AzureAdapter, "anthropic": AnthropicAdapter, "gemini": GeminiAdapter,

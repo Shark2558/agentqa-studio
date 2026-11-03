@@ -204,8 +204,8 @@ only what the requirement and the screens say. Reply with JSON:
 def _enrich(project: Project, store: Store, use_llm: bool | None) -> None:
     if use_llm is False:
         return
-    from agentqa.llm import get_llm
-    llm = get_llm(project, "requirements")
+    from agentqa.ai.client import model_for
+    llm = model_for(project, "requirements")
     if not llm or not llm.available():
         return
     reqs = store.all("SELECT id, text, std FROM requirements ORDER BY seq")

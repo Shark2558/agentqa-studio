@@ -85,8 +85,8 @@
     {% for k, v in policy.cooldown_s.items() %}<label>Cool-down after {{ kinds.get(k, k)|lower }} (s)<input type="number" name="cd_{{ k }}" min="0" value="{{ v|int }}"></label>{% endfor %}
   </div>
   <div class="row" style="margin-top:8px">
-    <label class="check"><input type="checkbox" name="redact" value="1" {{ 'checked' if policy.redact }}> Mask mobile numbers, emails and 12-digit numbers</label>
-    <label class="check"><input type="checkbox" name="send_screenshots" value="1" {{ 'checked' if policy.send_screenshots }}> Allow screenshots (Visual QA agent)</label></div>
+    <label class="check"><input type="checkbox" name="redact" value="1" {{ 'checked' if policy.redact }}> Mask mobile numbers, emails and 12-digit numbers before sending to the cloud</label>
+    <span class="tiny muted">Screenshots and document text leave the computer only with each project's consent (its AI page).</span></div>
   <div class="row" style="margin-top:12px"><button class="ghost">Save policy</button></div>
 </form>
 </div>
@@ -94,8 +94,9 @@
 <section class="card" id="project" style="margin-bottom:16px">
   <div class="card-head"><h3>{{ ui.icon('spark') }} This project</h3></div>
   <form method="post" action="/p/{{ slug }}/ai/project" class="row">
-    <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if project_on }}> Use AI in {{ project.name }}</label><button class="ghost">Save</button>
-    <span class="tiny muted">Off: every agent works with rules only. On: the agents use the keys above, in this order.</span></form>
+    <label class="check"><input type="checkbox" name="enabled" value="1" {{ 'checked' if project_on }}> Use AI in {{ project.name }} (mode: {{ project_mode }})</label><button class="ghost">Save</button>
+    <span class="tiny muted">Off: every agent works with rules only. Mode (local, cloud or hybrid), consent, budget and per-agent tiers are set on the
+      <a href="/app/projects/{{ slug }}/ai">project's AI page</a>.</span></form>
 </section>
 
 <section class="card flush" id="audit">

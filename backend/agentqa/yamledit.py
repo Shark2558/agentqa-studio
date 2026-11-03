@@ -95,6 +95,19 @@ def replace_top_block(path: Path, key: str, new_block: str) -> None:
         raise ValueError(f"could not update '{key}' in {path}")
 
 
+def remove_top_block(path: Path, key: str) -> bool:
+    """Remove a whole top-level section (e.g. `llm:`) and the blank lines after it; True when something was removed.
+    Nothing is written unless the file still parses and the key is gone."""
+    text = Path(path).read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    start = next((i for i, ln in enumerate(lines) if re.match(rf"^{re.escape(key)}\s*:", ln)), None)
+    if start is None:
+        return False
+    end = next((i for i in range(start + 1, len(lines)) if re.match(r"^[A-Za-z_#]", lines[i])), len(lines))
+    out = "".join(lines[:start]) + "".join(lines[end:])
+    return _commit(path, out, lambda cfg: key not in cfg)
+
+
 def _contains(obj, value: str) -> bool:
     if isinstance(obj, dict):
         return any(_contains(v, value) for v in obj.values())

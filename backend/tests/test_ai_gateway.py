@@ -68,7 +68,7 @@ def test_provider_fallback_model_fallback_and_billing(gw):
     billing = next(k for k in gw.store.keys() if k["label"] == "OpenAI billing")
     assert st[billing["id"]]["state"] == "billing"                         # insufficient_quota is billing, not a rate limit
     assert mock_ai.CALLS["sk-x-down-0000000000000000002"] == 2            # outages: tried attempts_per_key times
-    assert st[ant]["dead_model"] == "retired-model"
+    assert st[ant]["dead_model"] == ["retired-model"]                       # M1.2: one list per key, a model per tier
     gw.complete_json("s", "u")
     assert mock_ai.CALLS["sk-ant-good-0000000000000003"] == 3             # the dead model is not asked again
 
@@ -107,5 +107,5 @@ def test_edit_gives_a_dead_key_a_fresh_chance(gw):
 def test_test_connection_lists_models_and_picks_one(gw):
     kid = add(gw, "gemini", "G", "AIzaGood00000000000000000000001", "/gemini/v1beta", "auto")
     res = gw.test(kid)
-    assert res["ok"] and res["model"] == "gemini-2.5-flash" and "gemini-2.5-pro" in res["models"]
+    assert res["ok"] and res["model"] == "gemini-flash-latest" and "gemini-2.5-pro" in res["models"]   # M1.2: -latest alias first
     assert gw.store.state(kid)["state"] == "ok"

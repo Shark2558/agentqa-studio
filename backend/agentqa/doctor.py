@@ -46,6 +46,20 @@ DETECT_JS = r"""() => {
 }"""
 
 
+def _ai_check(project: Project, mode: str) -> dict:
+    """The effective AI table in one line: which agent gets which model, and the reason for every agent without one."""
+    try:
+        from agentqa.ai.client import effective
+        rows = effective(project)
+    except Exception as exc:  # noqa: BLE001 - a broken key store must not stop the readiness check
+        return _c(f"AI mode: {mode}", "warn", str(exc)[:200], "Open the project's AI page and check the keys")
+    routed = [r for r in rows if r["model"]]
+    missing = [r for r in rows if not r["model"]]
+    detail = "; ".join(f"{r['label']}: {r['provider']} {r['model']} ({r['tier']})" for r in routed) or "no agent has a model"
+    fix = "; ".join(f"{r['label']}: {r['reason']}" for r in missing)
+    return _c(f"AI mode: {mode}", "ok" if routed and not missing else "warn", detail[:600], fix[:600])
+
+
 def _c(name: str, status: str, detail: str, fix: str = "") -> dict:
     return {"name": name, "status": status, "detail": detail, "fix": fix}
 
@@ -192,21 +206,9 @@ def run(project: Project, store: Store, apply: bool = False) -> dict:
     for r in trackers.test_connection(cfg):
         add(_c(f"Issue tracker ({r['system']})", "ok" if r["ok"] else "fail", r["detail"],
                "" if r["ok"] else "Check the URL, project and token environment variable"))
-    if cfg["llm"].get("enabled"):
-        try:
-            from agentqa.llm import get_llm
-            llm = get_llm(project, "check")
-            ok = bool(llm and llm.available())
-            if str(cfg["llm"].get("provider", "ollama")).lower() == "gemini":
-                add(_c("AI model (Google Gemini)", "ok" if ok else "warn",
-                       f"{llm.model if llm else 'no key'}; personal data is masked before sending" if ok
-                       else "no Google API key, or the key does not work",
-                       "" if ok else "Add the key on the Test data page (Secrets), or set llm.enabled: false"))
-            else:
-                add(_c("Local model", "ok" if ok else "warn", f"{cfg['llm']['model']} at {cfg['llm']['base_url']}",
-                       "" if ok else "Start Ollama and pull the model, or set llm.enabled: false"))
-        except Exception as exc:  # noqa: BLE001
-            add(_c("Local model", "warn", str(exc)[:200]))
+    mode = str((cfg.get("ai") or {}).get("mode") or "none")
+    if mode != "none":
+        add(_ai_check(project, mode))
 
     n = {k: sum(1 for c in checks if c["status"] == k) for k in ("ok", "warn", "fail")}
     verdict = "Ready for a pilot" if not n["fail"] else f"Fix {n['fail']} blocking issue(s) first"

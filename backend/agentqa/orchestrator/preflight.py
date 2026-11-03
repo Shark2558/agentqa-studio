@@ -56,7 +56,20 @@ def validate(url: str) -> str:
     return urlunsplit((parts.scheme, parts.netloc, parts.path or "/", parts.query, ""))
 
 
-def _check_host(url: str) -> None:
+def check_base_url(url: str) -> str:
+    """A provider address the owner typed: http(s) only, a real host, never link-local or cloud metadata. Returns the
+    cleaned address or raises ValueError with the plain-English fix. One choke point for the API and the old form."""
+    clean = validate(url)
+    try:
+        check_host(clean)
+    except Blocked as exc:
+        raise ValueError(FIXES["blocked"]) from exc
+    except httpx.HTTPError as exc:
+        raise ValueError(FIXES["dns"]) from exc
+    return clean.rstrip("/")
+
+
+def check_host(url: str) -> None:
     """Blocked for link-local, multicast, unspecified, reserved and the well-known metadata addresses."""
     host = (urlsplit(url).hostname or "").lower()
     if not host:
@@ -122,7 +135,7 @@ def _fetch(url: str, started: float) -> tuple[int, str, bytes]:
     """GET with redirects followed by hand (each hop host-checked and deadline-checked)."""
     with httpx.Client(follow_redirects=False, timeout=TIMEOUT_S, headers={"User-Agent": "AgentQA-Studio preflight"}) as client:
         for _ in range(MAX_REDIRECTS + 1):
-            _check_host(url)
+            check_host(url)
             if time.monotonic() - started > DEADLINE_S:
                 raise httpx.ReadTimeout("deadline")
             with client.stream("GET", url) as r:

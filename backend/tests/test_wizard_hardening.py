@@ -56,7 +56,7 @@ def test_a_docx_whose_members_unpack_far_beyond_the_cap_is_refused(project, monk
 def test_uploads_are_probed_in_a_worker_thread(client, monkeypatch):
     seen = {}
 
-    def probe(path, folder="srs"):
+    def probe(path, folder="srs", ai=None):              # M1.2: the project's OCR client rides along
         seen["thread"] = threading.current_thread().name
         return {"name": path.name, "folder": folder, "size": 1, "kind": "txt", "status": "read", "detail": "", "segments": 1}
 
