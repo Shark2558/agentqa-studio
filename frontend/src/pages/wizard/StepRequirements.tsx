@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { CheckCircle, FileText, Trash, UploadSimple, Warning, XCircle } from "@phosphor-icons/react";
 import { ApiError, api, upload, type ChatResult, type DocumentInfo } from "../../lib/api";
+import { ProgressBar } from "../../components/ProgressBar";
 import { RequirementChat } from "./RequirementChat";
 
 const ACCEPT = ".docx,.doc,.pdf,.xlsx,.xlsm,.xls,.csv,.html,.htm,.json,.md,.txt,.png,.jpg,.jpeg";
@@ -95,9 +96,10 @@ export function StepRequirements(p: Props) {
           <input ref={picker} type="file" multiple accept={ACCEPT} hidden onChange={(e) => void send(e.target.files, "documents")} />
         </div>
         {progress !== null && (
-          <progress className="upload" value={progress} max={1} aria-label="Upload progress">
-            {Math.round(progress * 100)}%
-          </progress>
+          <div className="mt-4">
+            <ProgressBar value={progress} label="Upload progress" />
+            <span className="muted small">{Math.round(progress * 100)}% sent</span>
+          </div>
         )}
         {(uploadError ?? removeError) && (
           <p className="notice bad" role="alert">
