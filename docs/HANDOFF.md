@@ -21,7 +21,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2-UI** flat blue-and-white look, five accents, phone layout, Live View reachable (owner-approved mock, reviewed) | done | 2b21608 · 7d2c613 · a6106ea · 2943fbe |
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
-| **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **on branch `claude/gifted-ishizaka-972db8`, not merged into `main`** (the owner's call) | `b6711d6` · `b02ec86` · `44ede97` · Phase C commit after them |
+| **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
 | **M1.4** (PRD §9: next milestone) | **next**: plan it first, owner approves | — |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
@@ -108,7 +108,8 @@ owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses 
 Take the scope from PRD §9 for M1.4 and write `docs/plans/m1-4-<slice>.md` before any code. M1.3's plan names what
 M1.4 brings into the new app: the needs-you box, take-over, pause and resume, answering questions, plan approval,
 defect confirmation, visual review and heals (FR-LIVE-6), and retiring the old dashboard (`web/app.py`).
-Also decide first: whether `claude/gifted-ishizaka-972db8` is merged into `main` (the owner's call).
+M1.3 is in `main` (the owner said merge on 4 Nov 2026); start M1.4 from `main`. A follow-up session was started the
+same day for the gateway's "credit balance is too low" handling and provider switches in the Live View (C4, C5).
 
 ## Follow-ups parked (not blockers)
 

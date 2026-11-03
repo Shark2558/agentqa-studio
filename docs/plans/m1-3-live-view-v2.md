@@ -640,4 +640,5 @@ PlayerBar.tsx` (takes the stream's end reason; the end of a recording, Play from
 and `styles/live.css` (the Live View columns from 1 024 / 1 400 px), `design-system/check_app.py` (the middle-column
 check), tests `Live.test.tsx`, `PlayerBar.test.tsx` and `useLive.test.tsx`; this plan, `docs/HANDOFF.md`,
 `frontend/design-system/MASTER.md` §6/§7/§9 and ADR 0003. No
-engine, agent or backend code changed. Spent: $0.27 (the Cloud run). Not merged into `main`: the owner decides.
+engine, agent or backend code changed. Spent: $0.27 (the Cloud run). **Merged into `main`** by fast-forward on the
+owner's word, 4 Nov 2026 (`main` = `8ff58c0`; the main folder's built app rebuilt from it).
