@@ -61,11 +61,11 @@ def test_an_ollama_on_another_machine_is_cloud_not_local(gw):
     assert not gw.ordered(scopes=("local",)) and gw.ordered(scopes=("cloud",))
 
 
-def test_each_key_has_its_own_timeout_and_local_defaults_to_240s(gw):
+def test_each_key_has_its_own_timeout_and_local_defaults_to_600s(gw):
     both(gw)
     pol = gw.store.policy()
     keys = {k["label"]: k for k in gw.store.keys()}
-    assert gw.timeout_for(keys["Ollama"], pol) == 240 and gw.timeout_for(keys["OpenAI"], pol) == 5
+    assert gw.timeout_for(keys["Ollama"], pol) == 600 and gw.timeout_for(keys["OpenAI"], pol) == 5
     gw.store.upsert_key({"id": keys["OpenAI"]["id"], "timeout_s": 1, "model": "slow-model"})
     gw.store.set_policy({"attempts_per_key": 1})                    # one try: this PC adds ~1.5 s of client set-up per request
     started = time.time()

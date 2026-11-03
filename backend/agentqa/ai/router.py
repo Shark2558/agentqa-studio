@@ -30,7 +30,7 @@ from agentqa.ai.store import AIStore, agentqa_home
 from agentqa.util import log, warn
 
 ALL_SCOPES = ("local", "cloud")
-LOCAL_TIMEOUT_S = 240.0            # a cold local model needs minutes, not the cloud policy's seconds
+LOCAL_TIMEOUT_S = 600.0            # a 4B model on a 4 GB GPU writes ~8 tokens/s: a Writer chunk can take minutes (measured 3 Nov 2026)
 CHARS_PER_TOKEN = 4                # for the estimate when a provider reports no usage
 UsageCallback = Callable[[dict], None]
 

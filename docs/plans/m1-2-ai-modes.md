@@ -274,6 +274,33 @@ Plan-vs-build differences worth knowing:
 - This PC adds about 1.5 s of HTTP-client set-up per request (the Drive certificate issue of ADR 0001 in a milder form),
   so the per-key-timeout test uses one attempt.
 
+### Phase B (frontend and acceptance), 3 Nov 2026, on `main`
+
+| Check | Result |
+|---|---|
+| Frontend tests (Vitest, RED first for every behaviour) | **106 / 106 in 20 files** (62 before Phase B) |
+| `tsc -b` · `oxlint` with jsx-a11y | clean (the agents table's explicit roles are documented as deliberate) |
+| `check_contrast.py` | 212 / 212 (no new colour pairs) |
+| `check_app.py --shots` (seven pages incl. `/projects/{slug}/ai`, six widths, light and dark) | green after one fix: the agents table's `<select>`s scrolled out of their card at 320 / 375 px, so rows stack into blocks under 760 px |
+| Backend `pytest -q tests` · pyflakes | **339 passed**, pyflakes clean (every new backend test RED first) |
+| Browser pane, throwaway server (generated owner, sandbox vault and projects) | AI page at desktop and 375 px; wizard steps 1-6 with Local AI chosen and saved; "Use it" stores the loopback Ollama key; the effective table shows `Ollama (local) · qwen3:4b` for every text agent |
+| **Acceptance, No-AI** (`backend/projects/demo`, merged engine) | **19 / 19 seeded bugs, 0 unexpected** |
+| **Acceptance, Local** (sandbox copy of the demo, Ollama 0.40.13 + qwen3:4b, `AGENTQA_HOME` = sandbox vault) | ACCEPT_LOCAL |
+| **Acceptance, Cloud** (fresh demo copy, Anthropic first in the order, text + screenshot consent, cap $4) | ACCEPT_CLOUD |
+| **Acceptance, cap** (fresh demo copy, cap $0.50: the backend minimum, not the plan's $0.05) | ACCEPT_CAP |
+
+What the real Ollama taught the engine (fixed test-first in this phase, see `tests/test_ai_real_ollama.py`):
+- The connection test's toy prompt `Return {"ok": true}` made qwen3:4b emit a hallucinated error object and loop until
+  `num_predict`; a question with its JSON answer in it answers in about 2 s. A loop ends in HTTP 500 "prediction
+  aborted, token repeat limit reached", which is now `bad_output` (retry / skip), not an outage that cools the key.
+- Generation runs at about 8 tokens/s on the 4 GB GPU (prompt reading about 270 tokens/s), so a Requirement Writer
+  chunk (up to 3 500 output tokens) can take minutes: the local-key default timeout is 600 s (was 240 s). The first
+  Local run timed out once in the Writer and fell back to No-AI honestly ("continuing without a model"); it still
+  scored 19 / 19.
+- `modes.NO_LOCAL` now says what to do ("not set up yet: press Use it on the AI page"): a running server is not a
+  key, and only stored keys count.
+- Not done by hand: a screen-reader walkthrough; `frontend/e2e/acceptance.spec.ts` (needs the owner's sign-in).
+
 ## Review (fresh context)
 
 Three reviewers in fresh contexts on the uncommitted change set (`ecc:code-reviewer`, `ecc:python-reviewer`,
@@ -305,6 +332,32 @@ test-first in the same commit; the LOWs below marked "open" are recorded for Pha
 | 21 | LOW · **open** | Mock-server fixtures duplicated across test files (python) | consolidate in `conftest` when Phase B adds more |
 | 22 | INFO · **open** | `current_user` has no role check (security) | M2.1 adds roles; key / policy / test endpoints then need `role == "owner"` |
 
+### Phase B review (fresh context, 3 Nov 2026) and what changed because of it
+
+Three reviewers read the uncommitted Phase B change set: `typescript-reviewer` (Block: 2 HIGH, 7 MEDIUM, 6 LOW),
+`react-reviewer` with an accessibility pass (Block: 3 HIGH, 10 MEDIUM, 11 LOW) and `security-reviewer` (Warning:
+0 HIGH, 2 MEDIUM, 5 LOW; the key never reaches the DOM, logs, URL or query cache; CSRF on every write; no vendor SDK).
+Every HIGH and MEDIUM was fixed test-first (16 new or rewritten tests, Vitest 90 → 106):
+
+| # | Finding (merged) | Fix |
+|---|---|---|
+| HIGH | Every key state other than `ok` was a red pill with the raw word, so a key just added said "untested" in red. | `HEALTH` map in `KeyRow`: Not tested yet / Working / Resting after an error / Model not available / Key rejected / Billing problem; test per state. |
+| HIGH | Disable and Delete had no `onError`: a failure after the confirm dialog did nothing. | `role="alert"` line per row; the stale Test result is dropped on any later action; focus moves to the section heading after a delete. |
+| HIGH | The wizard's AI step (probe → add key → PUT) was untested and a failed probe blocked "Continue". | `saveAiStep` in `lib/ai.ts`, unit-tested for Local / Cloud / existing key / failed probe / refused key; a failed probe no longer blocks. |
+| HIGH | Loading and error were confused: a failed catalogue, keys or policy fetch said "Loading…" forever; `keys ?? []` let "Use it" add a server twice. | Error branches per query; `LocalDetect` holds "Use it" until the keys are loaded. |
+| MED | The page kept one draft across projects; `dirty` meant "touched", not "differs"; edits made while saving were discarded; any project error read "does not exist". | `<AiSettingsPage key={slug}>`; `dirty` is a deep comparison; the draft is cleared only when it equals the saved body; "does not exist" only for a 404; a failed refetch keeps the page with a banner. |
+| MED | The key box kept the secret after a failed save and when switching to a keyless provider; browsers may offer to save it. | Emptied on every settled save; a provider change clears it; `key` is never sent for a keyless provider; `autoComplete="new-password"`, no spell-check; `autoComplete="off"` on the other boxes. |
+| MED | Clearing a budget box sent `0`; `step=0.5` refused $7.25; consent stayed ticked (hidden) after leaving the cloud. | An emptied box changes nothing; `step=0.01`; leaving Cloud / Hybrid resets consent to off. |
+| MED | The Project card read the raw `settings.mode` and showed a budget line for a project without an `ai:` block. | `settingsFrom(...)` for the card; test. |
+| MED | "AI providers" left the wizard and its state. | Opens in a new tab (`noopener`), says so. |
+| MED | `AiSettings` was one 120-line component. | `AiForm` and `LocalCard` extracted; the page composes them. |
+| MED | Tests: a vacuous secret-absence check, a provider-order check that could not fail, no failure paths. | `test-fetch.fail()`; the order test renders through a cache-backed host; failed save / disable / delete / keyless / cleared-on-error tests; `Project.test.tsx`. |
+| LOW (done) | Radio names carried the whole blurb (now title + `aria-describedby`); a "routing policy" clause pointed at a control that does not exist; `isTier` / `trimSlash` / `errorText` were duplicated; every key action refetched all seven queries; `localKeyToAdd` now refuses any non-loopback host; the test secret no longer looks like a key. |
+
+Left open on purpose (LOW): persistent `role="status"` containers with a "moved to position n" announcement; the
+Review step's Local line does not consult the probe; `aria-busy` skeletons on the AI page's loading text; native
+`<select>`s in the agents table are 40 px tall; a `prices` editor for the policy (the API has it, the page does not).
+
 ## Record of changes
 
 **Phase A — one commit on `claude/silly-dewdney-918bf5`, 3 Nov 2026.** Full suite after the review fixes: **330 passed**
@@ -330,3 +383,14 @@ defaults, `migrate_llm`), `yamledit.py` (`remove_top_block`), `documents.py` / `
 Left open on purpose (Phase B): the React AI page and wizard step; acceptance runs in Local (Ollama qwen3:4b) and
 Cloud (Anthropic first in the order) modes with the owner watching; the cap demo with a $0.05 project. Not in this
 phase: items 18–22 above; `docs/HANDOFF.md` (another session owns it).
+
+### Phase B record (one commit on `main` after the merge commit `0c68c9f`)
+
+Frontend: `lib/ai.ts` (+ `ai.test.ts`), `lib/wizard.ts` (`ai` state), `test-fetch.ts`, `components/ai/{ModeForm,
+LocalDetect,UsageMeter,Assignments,Providers,KeyRow,KeyForm,ProviderOrder,AiForm,LocalCard}.tsx` with tests,
+`pages/wizard/StepAi.tsx` (+ test), `pages/ai/AiSettings.tsx` (+ test), `pages/wizard/{NewProject,StepReview,
+StepLater}.tsx`, `pages/Project.tsx` (+ test), `components/NavLinks.tsx`, `App.tsx`, `styles/ai.css`, `styles.css`,
+`components/Shell.test.tsx`; `frontend/design-system/check_app.py` (the AI page).
+Backend: `agentqa/ai/providers.py` (connection-test prompt, Ollama loop → `bad_output`), `agentqa/ai/router.py`
+(`LOCAL_TIMEOUT_S` 600), `agentqa/ai/modes.py` (`NO_LOCAL` wording), `tests/test_ai_real_ollama.py` (new),
+`tests/test_ai_router_scope.py` (600 s). Docs: this plan, `docs/HANDOFF.md`.

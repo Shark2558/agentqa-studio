@@ -29,7 +29,7 @@ AGENTS: dict[str, dict] = {
     "assistant": {"tier": "cheap", "image": "none", "label": "Assistant"},
     "login": {"tier": "cheap", "image": "none", "label": "Login navigation"},
 }
-NO_LOCAL = "no local AI is running on this computer (Ollama or LM Studio): see the AI page"
+NO_LOCAL = "no local AI is set up for this computer yet: on the AI page press Use it next to the running Ollama or LM Studio"
 NO_CLOUD = "no cloud AI key is enabled: add one on the AI page"
 NO_TEXT_CONSENT = "you have not allowed text to be sent to a cloud provider (AI page, consent)"
 NO_IMAGE_CONSENT = "you have not allowed images to be sent to a cloud provider (AI page, consent)"

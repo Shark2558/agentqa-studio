@@ -125,7 +125,8 @@ def sign_in(context, base: str) -> str:
 
 def pages_for(slug: str) -> list[tuple[str, str]]:
     return [("projects", "/app/"), ("project", f"/app/projects/{slug}"), ("requirements", f"/app/projects/{slug}/requirements"),
-            ("wizard", "/app/projects/new"), ("live", f"/app/projects/{slug}/live"), ("live-picker", "/app/live")]
+            ("wizard", "/app/projects/new"), ("live", f"/app/projects/{slug}/live"), ("live-picker", "/app/live"),
+            ("ai", f"/app/projects/{slug}/ai")]
 
 
 def measure(page, label: str, width: int) -> list[str]:

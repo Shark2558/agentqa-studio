@@ -321,6 +321,15 @@ class OllamaAdapter(Adapter):
         r = self._send("GET", f"{self.base}/api/tags", timeout=5)
         return [str(m.get("name", "")) for m in self._json(r).get("models", []) if isinstance(m, dict)]
 
+    def _post_chat(self, body: dict) -> httpx.Response:
+        """A looping model ("prediction aborted, token repeat limit reached") is a bad answer, not an outage to cool down."""
+        try:
+            return self._send("POST", f"{self.base}/api/chat", json=body)
+        except ProviderError as exc:
+            if exc.kind == "unavailable" and "prediction aborted" in str(exc):
+                raise ProviderError("bad_output", f"the model looped and Ollama stopped it: {exc}") from exc
+            raise
+
     def chat(self, model, system, user, max_tokens, image) -> str:
         self.last_usage = None
         msg = {"role": "user", "content": user}
@@ -330,11 +339,11 @@ class OllamaAdapter(Adapter):
                 "options": {"temperature": 0, "num_ctx": 8192, "num_predict": max_tokens},
                 "messages": [{"role": "system", "content": system}, msg]}
         try:
-            r = self._send("POST", f"{self.base}/api/chat", json=body)
+            r = self._post_chat(body)
         except ProviderError as exc:
             if exc.kind != "bad_request" or "think" not in str(exc):
                 raise
-            r = self._send("POST", f"{self.base}/api/chat", json={k: v for k, v in body.items() if k != "think"})
+            r = self._post_chat({k: v for k, v in body.items() if k != "think"})
         data = self._json(r)
         self._usage(data.get("prompt_eval_count"), data.get("eval_count"))
         return (data.get("message") or {}).get("content", "")
@@ -347,6 +356,12 @@ FAMILIES = {"openai": OpenAIAdapter, "azure": AzureAdapter, "anthropic": Anthrop
 def adapter(key: dict, timeout: float = 60) -> Adapter:
     fam = CATALOG.get(key["provider"], {}).get("family", "openai")
     return FAMILIES[fam](key, timeout)
+
+
+# The connection test: a question with its JSON answer in it; the toy 'Return {"ok": true}' made qwen3:4b loop (3 Nov 2026).
+TEST_SYSTEM = "You check that a service answers. Reply with one JSON object and nothing else."
+TEST_USER = 'Is the service reachable? Answer with the JSON object {"ok": true}.'
+TEST_TOKENS = 40
 
 
 def test_key(key: dict, timeout: float = 30) -> dict:
@@ -370,7 +385,7 @@ def test_key(key: dict, timeout: float = 30) -> dict:
         out["model"] = m
         started = time.time()
         try:
-            text = a.chat(m, "Reply with JSON only.", 'Return {"ok": true}', 30, None)
+            text = a.chat(m, TEST_SYSTEM, TEST_USER, TEST_TOKENS, None)
             out["ms"] = int((time.time() - started) * 1000)
             if parse_json(text) is None:
                 out.update(kind="bad_output", detail=f"answered, but not with JSON: {text[:120]}")

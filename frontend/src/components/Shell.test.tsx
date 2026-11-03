@@ -97,3 +97,10 @@ describe("Shell phone drawer", () => {
     expect(screen.queryByRole("dialog", { name: "Menu" })).toBeNull();
   });
 });
+
+describe("Shell: the AI page", () => {
+  it("inside a project, the sidebar links to that project's AI page", () => {
+    mount("/projects/demo");
+    expect(within(sidebar()).getByRole("link", { name: "AI" })).toHaveAttribute("href", "/projects/demo/ai");
+  });
+});

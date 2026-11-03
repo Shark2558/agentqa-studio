@@ -1,5 +1,6 @@
 /** The new-project wizard's state: six steps, what each needs before "Continue", derived purely from actions. */
 import type { ChatResult, DocumentInfo, RoleInput } from "./api";
+import { DEFAULT_AI, type AiSettingsInput } from "./ai";
 
 export const STEPS = [
   { key: "basics", title: "Name and address", why: "AgentQA needs to know what to test and whether it may change data there." },
@@ -26,6 +27,7 @@ export interface WizardState {
   confirmed: boolean;
   noLogin: boolean;
   roles: RoleInput[];
+  ai: AiSettingsInput;
 }
 
 export type WizardAction =
@@ -41,6 +43,7 @@ export type WizardAction =
   | { type: "addRole" }
   | { type: "role"; index: number; role: RoleInput }
   | { type: "removeRole"; index: number }
+  | { type: "ai"; ai: AiSettingsInput }
   | { type: "next" }
   | { type: "back" }
   | { type: "goto"; step: number };
@@ -53,7 +56,7 @@ export function newRole(): RoleInput {
 
 export const initialWizard: WizardState = {
   step: 0, name: "", url: "", environment: "Test / QA", slug: null, documents: [], typed: "", chat: null,
-  answers: {}, confirmed: false, noLogin: false, roles: [newRole()],
+  answers: {}, confirmed: false, noLogin: false, roles: [newRole()], ai: DEFAULT_AI,
 };
 
 /** What the API receives: the rows the owner filled, without the wizard's own row keys. */
@@ -107,6 +110,8 @@ export function reduceWizard(s: WizardState, a: WizardAction): WizardState {
       return { ...s, roles: s.roles.map((r, i) => (i === a.index ? a.role : r)) };
     case "removeRole":
       return { ...s, roles: s.roles.filter((_, i) => i !== a.index) };
+    case "ai":
+      return { ...s, ai: a.ai };
     case "next":
       return { ...s, step: clamp(s.step + 1) };
     case "back":

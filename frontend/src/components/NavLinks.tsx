@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { FolderOpen, ListChecks, Pulse, SquaresFour } from "@phosphor-icons/react";
+import { FolderOpen, ListChecks, Pulse, Robot, SquaresFour } from "@phosphor-icons/react";
 
 type Props = {
   /** The project the person is inside, if any (never the wizard's `new`). */
@@ -32,6 +32,10 @@ export function NavLinks({ slug, onNavigate }: Props) {
           <NavLink to={`${project}/requirements`} onClick={onNavigate}>
             <ListChecks aria-hidden="true" />
             Requirements
+          </NavLink>
+          <NavLink to={`${project}/ai`} onClick={onNavigate}>
+            <Robot aria-hidden="true" />
+            AI
           </NavLink>
         </>
       )}

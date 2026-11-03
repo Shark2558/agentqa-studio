@@ -98,3 +98,15 @@ describe("wizard reducer", () => {
     expect(s.step).toBe(5);
   });
 });
+
+describe("wizard: the AI step", () => {
+  it("starts at No AI with the default budget and keeps the owner's choice immutably", () => {
+    expect(initialWizard.ai.mode).toBe("none");
+    expect(initialWizard.ai.budget).toEqual({ monthly_usd: 10, alert_at_pct: 80 });
+    const s = reduceWizard(withProject(), { type: "ai", ai: { ...initialWizard.ai, mode: "cloud", consent: { send_text: true, send_screenshots: false } } });
+    expect(s.ai.mode).toBe("cloud");
+    expect(s.ai.consent.send_text).toBe(true);
+    expect(initialWizard.ai.mode).toBe("none");
+    expect(canContinue({ ...s, step: 3 })).toBe(true);
+  });
+});

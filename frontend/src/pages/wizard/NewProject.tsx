@@ -7,7 +7,9 @@ import { STEPS, answersForApi, canContinue, initialWizard, reduceWizard, rolesFo
 import { StepBasics } from "./StepBasics";
 import { StepRequirements } from "./StepRequirements";
 import { StepAccounts } from "./StepAccounts";
-import { StepAi, StepSchedule } from "./StepLater";
+import { StepSchedule } from "./StepLater";
+import { StepAi } from "./StepAi";
+import { saveAiStep } from "../../lib/ai";
 import { StepReview } from "./StepReview";
 
 /** The six-step new-project wizard (PRD §4). The project exists from step 1 on, so every later step saves into it. */
@@ -36,6 +38,10 @@ export function NewProject() {
       }
       if (step.key === "accounts" && s.slug) {
         await api.saveAccounts(s.slug, { no_login: s.noLogin, roles: rolesForApi(s) });
+      }
+      if (step.key === "ai" && s.slug) {
+        await saveAiStep(s.slug, s.ai);                              // may store the running local server as a key first
+        queryClient.invalidateQueries({ queryKey: ["ai"] });
       }
     },
     onSuccess: () => {
@@ -136,7 +142,7 @@ export function NewProject() {
               onRemove={(index) => dispatch({ type: "removeRole", index })}
             />
           )}
-          {step.key === "ai" && <StepAi />}
+          {step.key === "ai" && s.slug && <StepAi slug={s.slug} ai={s.ai} onChange={(ai) => dispatch({ type: "ai", ai })} />}
           {step.key === "schedule" && <StepSchedule />}
           {step.key === "review" && <StepReview s={s} />}
 

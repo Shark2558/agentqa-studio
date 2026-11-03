@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListChecks, Play, Pulse } from "@phosphor-icons/react";
+import { ListChecks, Play, Pulse, Robot } from "@phosphor-icons/react";
 import { ApiError, api } from "../lib/api";
+import { MODES, aiApi, capState, settingsFrom } from "../lib/ai";
 
 const RUNNING_POLL_MS = 3000;
 
@@ -26,7 +27,11 @@ export function Project() {
       navigate(`/projects/${encodeURIComponent(slug)}/live?session=job-${run.id}-${run.stage}`);
     },
   });
+  const ai = useQuery({ queryKey: ["ai", "project", slug], queryFn: () => aiApi.project(slug) });
   const running = runs.data?.find((r) => r.status === "running");
+  const aiMode = ai.data ? settingsFrom(ai.data.settings).mode : null;
+  const aiTitle = aiMode ? MODES.find((m) => m.id === aiMode)?.title ?? "No AI" : null;
+  const aiLine = ai.data ? (aiMode === "none" || aiMode === "local" ? "nothing is spent" : capState(ai.data.budget).text) : ai.isError ? "could not be loaded" : "loading…";
   const error = start.error instanceof ApiError ? start.error : null;
 
   if (project.isError) return <p className="notice bad page-pad">That project does not exist.</p>;
@@ -85,6 +90,13 @@ export function Project() {
           <div className="label">Last run</div>
           <div className="value small-value">{p.last ?? "—"}</div>
         </div>
+        <Link className="card kpi kpi-link" to={`/projects/${encodeURIComponent(slug)}/ai`} aria-label={aiTitle ? `AI: ${aiTitle}; ${aiLine}. Open the AI settings` : "AI settings"}>
+          <div className="label">
+            <Robot aria-hidden="true" /> AI
+          </div>
+          <div className="value small-value">{aiTitle ?? "…"}</div>
+          <div className="muted small">{aiLine}</div>
+        </Link>
       </div>
 
       <section className="card flat mt-4" aria-labelledby="h-runs">
