@@ -27,7 +27,9 @@ export type PlayerAction =
   | { type: "live"; total: number }
   | { type: "scrub"; pos: number; total: number }
   | { type: "speed"; speed: Speed }
-  | { type: "advance"; by: number; total: number };
+  | { type: "advance"; by: number; total: number }
+  | { type: "settle"; total: number; saved: { pos: number; follow: boolean } | null }   // a finished run, once its events are in
+  | { type: "shift"; by: number };                                                        // the oldest `by` events were dropped
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
@@ -42,6 +44,8 @@ export function playerReducer(p: Player, a: PlayerAction): Player {
     case "scrub": return { ...p, pos: clamp(Math.round(a.pos), 0, a.total), playing: false, follow: false };
     case "speed": return { ...p, speed: a.speed };
     case "advance": return { ...p, pos: clamp(p.pos + a.by, 0, a.total) };
+    case "settle": return initialPlayer(a.total, false, a.saved);
+    case "shift": return { ...p, pos: Math.max(0, p.pos - a.by) };
   }
 }
 

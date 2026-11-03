@@ -8,7 +8,7 @@ export default defineConfig({
   base: "/app/",
   server: {
     port: 5173,
-    proxy: { "/api": { target: "http://127.0.0.1:8700", changeOrigin: false } },
+    proxy: { "/api": { target: "http://127.0.0.1:8700", changeOrigin: false, ws: true } },   // ws: the Live View socket (M1.3)
   },
   // Current browsers understand light-dark() and nested selectors; without these targets the CSS minifier lowers
   // light-dark() into a variable trick that stops following the data-accent attribute (M1.2-UI).

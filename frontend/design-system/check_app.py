@@ -5,7 +5,8 @@ owner, so the owner's own sign-in is never read (M1.2-UI; `make ui-check`, needs
 
 Starts `python -m agentqa ui` on a free port with generated AGENTQA_OWNER_* / AGENTQA_SECRET_KEY environment
 variables (a real variable beats backend/.env), signs in, creates the demo project through the API, then visits
-Sign in, Projects, the project page, Requirements, the wizard, Live View (no run yet) and the Live picker at
+Sign in, Projects, the project page, Requirements, the wizard, Live View (no run yet), the Live picker and Live View on
+the recorded fixture run (a second project holding it as a finished session, M1.3) at
 320 / 375 / 768 / 1024 / 1200 / 1440 px in light (and 375 / 1440 in dark) and asserts:
   (a) no horizontal overflow and no overlap in the top bar;   (b) every field and button sits inside its card / form / section;
   (c) under 760 px: the menu button shows, the sidebar does not, the drawer opens with Live View and Sign out, its
@@ -19,6 +20,7 @@ from __future__ import annotations
 
 import os
 import secrets
+import shutil
 import socket
 import subprocess
 import sys
@@ -32,6 +34,8 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 OUT = ROOT / "docs" / "design"
+FIXTURE = BACKEND / "tests" / "fixtures" / "recordings" / "cli-fixture-pipeline"
+LIVE_RUN = "cli-20261103-133600-pipeline"     # shaped like a real command-line run, so it gets a real label
 PREFIX = "m1-2ui-app"
 WIDTHS = (320, 375, 768, 1024, 1200, 1440)
 SHOT_WIDTHS = (375, 1440)
@@ -46,7 +50,7 @@ SETTLE_MS = 400               # longer than any transition in tokens.css
 TOLERANCE = 0.5
 FIELDS = "input:not([type=radio],[type=checkbox]), select, textarea, .btn"
 CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, form, section"
-TARGETS = ".nav a, .icon-btn, .appear-btn, .modes label > span, .swatches > label > span, .steps .step-link"
+TARGETS = ".nav a, .icon-btn, .appear-btn, .modes label > span, .swatches > label > span, .steps .step-link, .timeline-steps .step, .tabs [role=tab]"
 DRAWER_TARGETS = ".drawer a, .drawer button"
 MIN_TARGET = 44
 
@@ -123,10 +127,23 @@ def sign_in(context, base: str) -> str:
     return slug
 
 
-def pages_for(slug: str) -> list[tuple[str, str]]:
+def seed_live_run(context, base: str, projects: Path) -> str:
+    """A second project holding the recorded fixture run as a finished command-line session (its marker says it
+    ended), so the demo project keeps its "No run yet" Live View; returns that project's slug."""
+    from agentqa.orchestrator.live import mark_ended, mark_running
+    r = context.request.post(f"{base}/api/v1/projects", headers=CSRF, data={"name": "Recorded run", "url": "http://127.0.0.1:8800"})
+    slug = r.json()["data"]["slug"]
+    folder = projects / slug / ".agentqa" / "live" / LIVE_RUN
+    shutil.copytree(FIXTURE, folder)
+    mark_running(folder)
+    mark_ended(folder, os.getpid())
+    return slug
+
+
+def pages_for(slug: str, run_slug: str) -> list[tuple[str, str]]:
     return [("projects", "/app/"), ("project", f"/app/projects/{slug}"), ("requirements", f"/app/projects/{slug}/requirements"),
             ("wizard", "/app/projects/new"), ("live", f"/app/projects/{slug}/live"), ("live-picker", "/app/live"),
-            ("ai", f"/app/projects/{slug}/ai")]
+            ("live-run", f"/app/projects/{run_slug}/live?session={LIVE_RUN}"), ("ai", f"/app/projects/{slug}/ai")]
 
 
 def measure(page, label: str, width: int) -> list[str]:
@@ -184,13 +201,13 @@ def check_desktop_extras(page, label: str) -> list[str]:
     return problems
 
 
-def run_pages(browser, base: str, slug: str, theme: str, widths: tuple[int, ...], shots: bool) -> list[str]:
+def run_pages(browser, base: str, slugs: tuple[str, str], theme: str, widths: tuple[int, ...], shots: bool) -> list[str]:
     problems = []
     for width in widths:
         context = browser.new_context(viewport={"width": width, "height": 900}, color_scheme=theme)
         page = context.new_page()
         signed_in = False
-        for name, path in [("sign-in", "/app/sign-in")] + pages_for(slug):
+        for name, path in [("sign-in", "/app/sign-in")] + pages_for(*slugs):
             if name != "sign-in" and not signed_in:
                 sign_in(context, base)
                 signed_in = True
@@ -227,8 +244,8 @@ def main(argv: list[str]) -> int:
             with sync_playwright() as p:
                 browser = p.chromium.launch()
                 with browser.new_context() as context:
-                    slug = sign_in(context, base)
-                problems = run_pages(browser, base, slug, "light", WIDTHS, shots) + run_pages(browser, base, slug, "dark", DARK_WIDTHS, shots)
+                    slugs = (sign_in(context, base), seed_live_run(context, base, Path(tmp) / "projects"))
+                problems = run_pages(browser, base, slugs, "light", WIDTHS, shots) + run_pages(browser, base, slugs, "dark", DARK_WIDTHS, shots)
                 browser.close()
         finally:
             proc.kill()

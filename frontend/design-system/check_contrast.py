@@ -58,6 +58,11 @@ PAIRS: list[Pair] = [
     # badges: ink on tint
     *[(f"--color-{s}-ink", f"--color-{s}-soft", TEXT_MIN, f"{s} badge text on its tint")
       for s in ("ok", "warn", "bad", "info", "visual", "neutral")],
+    # Live View (M1.3): event labels and verdicts in status ink on cards and sunken frames; ids and headings on sunken panels
+    *[(f"--color-{s}-ink", bg, TEXT_MIN, f"{s} ink text on {name}")
+      for s in ("ok", "warn", "bad", "info")
+      for bg, name in (("--color-surface", "card"), ("--color-surface-2", "sunken panel"))],
+    ("--color-ink-2", "--color-surface-2", TEXT_MIN, "pipeline heading / requirement id on a sunken panel"),
     # non-text: focus, boundaries, icons, chart marks
     ("--color-focus", "--color-surface", NON_TEXT_MIN, "focus ring on card"),
     ("--color-focus", "--color-bg", NON_TEXT_MIN, "focus ring on page background"),
@@ -66,6 +71,7 @@ PAIRS: list[Pair] = [
     ("--color-line-strong", "--color-bg", NON_TEXT_MIN, "control boundary on page background"),
     ("--color-icon", "--color-surface", NON_TEXT_MIN, "icon on card"),
     ("--color-icon", "--color-bg", NON_TEXT_MIN, "icon on page background"),
+    ("--color-icon", "--color-surface-2", NON_TEXT_MIN, "icon on a test tile that has not run (Live View)"),
     ("--color-track", "--color-bg", NON_TEXT_MIN, "pending pipeline bar in a sunken well"),
     ("--color-primary", "--color-bad-soft", NON_TEXT_MIN, "bullet-chart bar over the 'not ready' band"),
     ("--color-primary", "--color-primary-soft", NON_TEXT_MIN, "selected accent swatch ring on its tint"),

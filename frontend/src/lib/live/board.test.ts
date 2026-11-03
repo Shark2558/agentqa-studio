@@ -168,3 +168,16 @@ describe("board: honest endings", () => {
     expect(JSON.stringify([...before.cards.entries()])).toBe(copy);
   });
 });
+
+describe("board: numbers from the run are kept in range (security review)", () => {
+  it("a negative cost or token count never lowers the spend shown", () => {
+    const b = run([ev(1, "srs", "stage_start"), ev(2, "ai", "cost", { cost_usd: 0.5, input_tokens: 10 }), ev(3, "ai", "cost", { cost_usd: -9, input_tokens: -100 })]);
+    expect(b.ai.cost).toBe(0.5);
+    expect(b.ai.tokensIn).toBe(10);
+  });
+
+  it("makes at most 40 cards, however many agent names the stream invents", () => {
+    const b = run(Array.from({ length: 300 }, (_, i) => ev(i, "made-up-" + i, "note")));
+    expect(b.cards.size).toBeLessThanOrEqual(40);
+  });
+});

@@ -457,6 +457,33 @@ Plan-vs-build differences worth knowing:
 - Two pieces are not in the plan and were added for the review: the old dashboard's form guard now compares the port
   (security review F1), and a project address with `user:password@` is written to the live view without it.
 
+**Phase B (the React Live View), 3–4 Nov 2026, on branch `claude/gifted-ishizaka-972db8`** (B1, the pure model, was
+committed first as `b02ec86`; B2 and the review fixes are the Phase B commit).
+
+| Check | Result |
+|---|---|
+| Vitest (`bash frontend/local-node.sh test -- --run`) | **268 passed in 34 files**; every new test written RED first (the v1 page's tests went with the v1 files) |
+| `run typecheck` · `run lint` (oxlint) | clean · clean |
+| `run build` | JS 528 kB (**153.6 kB gzip**, budget 300 kB; Vite's 500 kB-unzipped note only), CSS 75 kB (23.7 kB gzip) |
+| `make lint` (contrast) | **232 of 232** (56 pairs × 2 themes × 5 accents): the Live View's status ink on cards and sunken frames, ids and headings on sunken panels and the empty tile's icon were added as pairs |
+| `make ui-check` | passes at 320 / 375 / 768 / 1024 / 1200 / 1440 px, light and dark, with a new `live-run` page (the fixture as a finished session of a second throwaway project, so "No run yet" stays measured); the timeline, tabs and wide tables stay inside their cards |
+| `make live-check` (new, `check_live.py`) | the fixture appended in 40 timed chunks to a new command-line session with a run marker: **447 / 447 watched live over WebSocket**, the expected final picture (12 cards Done, 14 / 10 / 3 tiles, $0.1249, gates 15 / approved / 19), and the same picture after a reload, after Replay from the start at Instant, and with WebSocket refused before it opens (→ `data-transport="sse"`) |
+| Backend `python -m pytest -q tests` · `pyflakes` | **477 passed** · clean (Phase B touches no engine code; one contrast-count test follows the new pairs) |
+| A look in a real browser (screenshots of the live-run page at 1440 / 900 / 375, light and dark) | three things fixed from it: the Findings column made the page 6 240 px tall (now it scrolls in its card: 3 233 px), an empty screen was a full 16:9 blank, and "finished" wrapped onto its own line on a phone |
+| Sizes | every Phase B file 7–285 lines (`board.ts` the largest); no function over 50 lines (`connectLive`, `Live` and `useLive` were split for the review) |
+
+Plan-vs-build differences worth knowing:
+- `liveStream.ts` became `lib/live/connect.ts` (the v1 file stayed until the v1 page went), and the hook is
+  `useLive.ts`; the "new-run banner" became something simpler: the run list is invalidated when a run starts, re-read
+  every 3 s for a minute while the address names a run not listed yet (a notice says so; another run is never shown
+  in its place), and every 15 s while a run is going.
+- Past 50 000 events the oldest go in whole blocks of 500 and the checkpoint at that boundary becomes the new start,
+  so every total stays exact (a 52 000-event test checks calls and cost); the replay keeps the newest 50 000.
+- Only an end that says "finished" makes the run over. "No news for an hour" (a run waiting at a gate, or one that
+  died) shows a notice with **Check again**; a sign-in that ended or a run that is gone shows an alert; none of them
+  marks a stage "did not finish".
+- The 4-per-second cap on frame swaps was not needed: at Instant the player moves 600 events per step and draws once.
+
 ## Review (fresh context)
 
 **Phase A.** Three reviewers read the uncommitted change set in fresh contexts on 3 Nov 2026: `ecc:code-reviewer`
@@ -488,7 +515,38 @@ behaviour); the LOWs marked "open" are recorded.
 | 19 | LOW · **open** | Project creation still accepts `user:password@` in the address (security F4) | the live view strips it now; refuse it at creation in M1.4 |
 | 20 | LOW · **open** | `cli.py` is 778 lines: the pipeline runner's helpers stay there until the orchestrator becomes a service (code) | moving them now would need `cli.stage` passed in; M1.5 |
 | 21 | LOW · **open** | Test set-up repeated across files; the fixture's 447 is a literal in several tests; a check-then-update race in `jobs._still_alive` (code, python; the race pre-dates M1.3) | consolidate in `conftest` with Phase B; the race with the scheduler (M1.5) |
-| 22 | LOW · **open** | `frontend/src/lib/api.ts` still types `LiveSession.shots` (code) | Phase B |
+| 22 | LOW · fixed in B | `frontend/src/lib/api.ts` still types `LiveSession.shots` (code) | `shots` optional, `has_events` added |
+
+**Phase B.** Three reviewers read the whole Phase B change set (B1's model and B2's page) in fresh contexts on 3–4 Nov
+2026: `ecc:typescript-reviewer` (Block: 2 HIGH, 7 MEDIUM, LOWs), `ecc:react-reviewer` with an accessibility pass
+(Block: 5 HIGH, 9 MEDIUM, LOWs) and `ecc:security-reviewer` (no CRITICAL; 1 HIGH, 3 MEDIUM, 4 LOW; text-only rendering,
+screenshot names, prototype keys and the Viewer gating all verified clean). Overlapping findings are merged below.
+Every HIGH and MEDIUM was fixed test-first (Vitest 214 → 268).
+
+| # | Severity | Finding (reviewer) | Fix |
+|---|---|---|---|
+| B1 | HIGH | Past 50 000 events the oldest were cut and everything refolded from empty on every batch: finished stages read "not reached", cost and tokens were undercounted, the replay position drifted (ts) | eviction in blocks of 500 with the boundary checkpoint as the new start; the position shifts with it; a 52 000-event test |
+| B2 | HIGH | Any end counted as "run over": an hour without news (a run waiting at the plan gate), a sign-in that ended, a run that is gone or an unknown reason marked running stages "did not finish"; 4401 / 4404 showed no alert (ts) | only "finished" is over; an unknown reason reads "idle"; notices and alerts for each; **Check again** reconnects; tests |
+| B3 | HIGH | Replay froze while a run was still streaming: each batch restarted the pause (react, ts) | the step waits on the event shown and on whether a next one exists; the pause follows the event just shown, as in the v0.8 player; test |
+| B4 | HIGH | The enlarged screenshot pulled focus back and forth on every batch; focus did not return in Safari; the page behind was not inert (react, ts) | it mounts once per opening with its handlers in a ref; the opener comes from the click; a portal and `inert` on the page; tests |
+| B5 | HIGH | The `pos / total` counter was a polite live region that changed on every event (react) | plain text; a separate status says Following live / Playing / Paused / Final picture; the slider has `aria-valuetext`; test |
+| B6 | HIGH | The site map had no text alternative beyond counts (react) | a table of the screens (who reached them, their answer) under the map; test |
+| B7 | HIGH | The event list stayed at the top while new rows arrived below (react) | it follows the newest row while the reader is at the bottom and stays put once they scroll up; test |
+| B8 | HIGH | Nothing bounded what a hostile application could send: megabyte URLs, invented agents, workers and paths, quadratic copies, a slow `nodeid` pattern (security H1) | `toEvent` cuts text (titles 500, previews 20 000, the rest 2 000, names 64), lists and objects to 200 items and 3 levels, and times outside 0–4·10⁹ s; caps on cards 40, tiles 2 000, frames 32, screens 300, code files 200, requirements 2 000 with 50 items each, statuses 20, assists 200, marked words 20; a one-pass test-file reader; tests |
+| B9 | MEDIUM | Reconnects never stopped: SSE errors (401 / 404 / 429 hidden by EventSource) and socket codes 4400 / 4403 / 1011 retried every 3 s forever; one blip pinned the tab to SSE (security M1, ts) | 3 s doubling to a minute with jitter, then "connection lost" after eight; 4403 → SSE; 4400 / 1008 / 1009 stop; after an SSE error the events endpoint is asked once why; SSE is remembered only after it has worked; tests |
+| B10 | MEDIUM | One malformed event could blank the whole page, and a broken panel never came back; an out-of-range time broke every clock (security M2, ts, react) | the fold skips and counts an event that throws (the page says how many); plain values only in rule and table text; times bounded; a boundary around the whole run and a reset key on each panel; tests |
+| B11 | MEDIUM | Findings stopped at 500 of any kind, so exploratory notes could push out defects; a status named `__proto__` vanished (security M3, ts) | caps per kind with "N more not shown"; rule counts in a `Map`; tests |
+| B12 | MEDIUM | The run was chosen from a list that might still be loading or stale; an address naming an unlisted run silently showed another; the list was never re-read (ts, react, security L1) | the run mounts only when listed after a fresh read; a notice while waiting; the list invalidated on start and polled; run ids checked before they enter a URL; tests |
+| B13 | MEDIUM | A Viewer was still offered Try the demo, New project and the wizard's Run (ts) | hidden on Projects, the Live picker and the empty list; the wizard shows a notice instead; tests |
+| B14 | MEDIUM | Per-event work over every event and a `memo` that never held (react, ts) | rows memoised, rows and cards memoised on what they show, the reducer memoised, Activity reads only while open |
+| B15 | MEDIUM | "Show earlier" grew without end and kept its length across agents (react) | capped at 3 000 rows and reset for each agent |
+| B16 | MEDIUM | A test's failure message was only in a mouse tooltip (react) | a list of the tests that did not pass, with their messages; test |
+| B17 | MEDIUM | `?agent=` was not checked; connection loss was not announced; headings and tab wiring; scrolling wrappers out of keyboard reach (react) | falls back to the running agent; a status role and notices; a Details heading, `aria-controls` only on the chosen tab, a focusable panel; scrolling regions focusable; tests |
+| B18 | LOW | "N of M stages done" counted failed and skipped stages; negative costs and alerts; huge depths and viewports; unlabelled watch links; the run id raw in an address; unused `initialPlayer` (react, ts, security) | "12 of 12 stages finished · 1 failed"; values clamped; links labelled and ids encoded; `initialPlayer` now opens a finished run |
+| B19 | LOW · **open** | A half-open socket after the computer sleeps keeps saying "live" (no keepalive) (ts) | watch in Phase C; the reconnect covers a closed socket |
+| B20 | LOW · **open** | Event keys are worker + sequence: a second process writing the same worker file in one folder would have its events dropped (security L3) | not in today's pipeline (each run writes its own folder); add a process id if that changes |
+| B21 | LOW · **open** | The browser checks' throwaway server still reads other keys from `backend/.env` (an `AGENTQA_COOKIE_SECURE=1` there would break their sign-in; nothing leaks: the generated owner and key win) (security L4) | a no-dotenv switch for the throwaway server |
+| B22 | LOW · **open** | Agent cards use `aria-pressed` for the followed agent too; the lightbox has no backdrop click; "Approve the gates automatically" defaults on (react) | the default is the M1.2 decision until M1.4 brings the gates into this app; the rest with M1.4's page polish |
 
 ## Record of changes
 
@@ -511,3 +569,23 @@ exception), tests `test_ai_client.py` and `test_api_hardening.py` (added to, not
 
 Left for Phase B: the React Live View itself (the page, components, model, player, WebSocket-then-SSE client,
 `expected-summary.json`, `check_app.py` and `check_live.py`); Phase C: the acceptance runs with the owner.
+
+**Phase B — two commits on `claude/gifted-ishizaka-972db8`, 3–4 Nov 2026** (`b02ec86` the pure model; then the page).
+
+New: `frontend/src/lib/live/{event,stream,board,lanes,panels,siteMap,model,player,connect,useLive}.ts` with their
+tests, `lib/can.ts`, `components/ErrorBoundary.tsx`, `components/live/{AgentBoard,LiveHeader,AgentFocus,
+TestsAndFindings,DetailsTabs,SiteMapPanel,PlayerBar}.tsx`, `pages/LiveRun.tsx`, `styles/live-frame.css`,
+`test-fixtures/{live.ts,live-board.json,live-expected-summary.json,fakeSocket.ts}`, `backend/tools/live_fixture_summary.py`
+(the independent count behind the expected summary), `frontend/design-system/check_live.py` and `make live-check`,
+tests `ErrorBoundary`, `AgentFocus`, `DetailsTabs`, `PlayerBar`, `TestsAndFindings`, `Projects`, `useLive`.
+
+Changed: `pages/Live.tsx` (rewritten), `pages/{Project,Projects,LivePicker}.tsx` and `pages/wizard/NewProject.tsx`
+(the Viewer rule; the run list refreshed on start; ids encoded), `components/ProjectList.tsx` (`mayCreate`),
+`lib/api.ts` (`liveBoard`, `shotUrl`, `LiveSession`), `styles/{live,motion,components}.css` and `styles.css` (the
+three-column layout from 1 100 px, the scan line), `vite.config.ts` (the dev proxy carries the socket),
+`design-system/check_app.py` (the live-run page), `design-system/check_contrast.py` (ten pairs) and its test,
+`backend/tests/test_live_board.py` (the frontend's copy of the board is the board). Removed: the v1 `lib/live.ts`,
+`lib/liveStream.ts`, `components/live/{AgentCard,EventRow}.tsx` and their tests. No agent and no engine code changed.
+
+Left for Phase C: the acceptance runs with the owner (a No-AI run watched live and replayed in the browser pane, one
+Cloud run up to $1, a look as a Viewer on a throwaway review server), then HANDOFF, MASTER §6/§7/§9 and ADR 0003.

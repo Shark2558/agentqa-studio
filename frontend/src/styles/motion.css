@@ -6,12 +6,14 @@
 @keyframes cross-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes skeleton { from { opacity: .55; } to { opacity: 1; } }
 @keyframes slide-in { from { transform: translateX(-100%); } }
+@keyframes scan { from { transform: translateY(0); } to { transform: translateY(100%); } }
 
 .agent.running .name svg { animation: spin var(--dur-pulse) linear infinite; }                          /* a loading indicator: may repeat */
 .agent.running::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid var(--color-primary); pointer-events: none;
   animation: pulse var(--dur-pulse) var(--ease) infinite; }
-.agent.done.changed .name svg { animation: tick-in var(--dur-draw) var(--ease) both; }                   /* once, only on cards whose state changed after mount */
-.agent.failed.changed .name svg { animation: cross-in var(--dur-draw) var(--ease) both; }
 .steps li.done .num svg { animation: tick-in var(--dur-draw) var(--ease) both; }
 [aria-busy="true"] .skel { animation: skeleton var(--dur-pulse) ease-in-out infinite alternate; }
-/* The browser-frame scan line (--dur-scan) is drawn in design-system/mock/index.html and arrives with Live View v2 (M1.3). */
+/* The browser-frame scan line (mock lines 159-160): a 2 px line sweeping the screen while that agent works. It moves a
+   full-size layer by its own height, so it stays on the compositor and needs no container query. */
+.frame.running .shotwrap::after { content: ""; position: absolute; inset: 0; background: linear-gradient(var(--color-primary) 0 2px, transparent 2px); opacity: .8;
+  pointer-events: none; animation: scan var(--dur-scan) linear infinite; }

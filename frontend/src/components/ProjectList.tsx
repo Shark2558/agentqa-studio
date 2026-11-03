@@ -8,10 +8,12 @@ type Props = {
   /** Where a row leads: the project page, or its Live View from the picker. */
   hrefFor: (slug: string) => string;
   emptyText: string;
+  /** Whether the empty state may point at the wizard (not for a Viewer). */
+  mayCreate?: boolean;
 };
 
 /** The project rows, shared by the Projects page and the Live View picker, with honest loading, error and empty states. */
-export function ProjectList({ projects, isPending, isError, hrefFor, emptyText }: Props) {
+export function ProjectList({ projects, isPending, isError, hrefFor, emptyText, mayCreate = true }: Props) {
   if (isPending) {
     return (
       <p className="muted" role="status">
@@ -29,7 +31,7 @@ export function ProjectList({ projects, isPending, isError, hrefFor, emptyText }
   if (!projects?.length) {
     return (
       <p className="muted">
-        {emptyText} <Link to="/projects/new">New project</Link>
+        {emptyText} {mayCreate && <Link to="/projects/new">New project</Link>}
       </p>
     );
   }

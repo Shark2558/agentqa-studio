@@ -6,7 +6,7 @@ import { safeBox, safeShot, text, type Box, type LiveEvent } from "./event";
 const BROWSER_AGENTS = new Set(["explorer", "exploratory", "executor", "healer", "security"]);
 const BROWSER_KINDS = new Set(["navigate", "action", "observe", "verdict", "request", "test_start", "test_end", "step", "login", "finding"]);
 const STEPS_KEPT = 6;
-
+const MAX_LANES = 32;                  // one per browser worker; a stream that invents workers gets no more
 export interface Lane {
   readonly key: string;
   readonly agent: string;
@@ -51,6 +51,7 @@ export function foldLanes(model: LanesModel, events: readonly LiveEvent[]): Lane
   let order: string[] | null = null;
   for (const e of events) {
     if (!BROWSER_AGENTS.has(e.agent) || !BROWSER_KINDS.has(e.kind)) continue;
+    if (!(lanes ?? model.lanes).has(e.w) && (order ?? model.order).length >= MAX_LANES) continue;
     lanes = lanes ?? new Map(model.lanes);
     order = order ?? [...model.order];
     const known = lanes.get(e.w);

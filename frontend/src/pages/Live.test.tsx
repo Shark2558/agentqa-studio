@@ -1,41 +1,18 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router";
+import { stubFetch } from "../test-fetch";
+import { FakeSocket } from "../test-fixtures/fakeSocket";
+import { demoBoard, demoEvents } from "../test-fixtures/live";
 import { Live } from "./Live";
 
-class FakeEventSource {
-  static instances: FakeEventSource[] = [];
-  listeners: Record<string, ((e: MessageEvent) => void)[]> = {};
-  url: string;
-  closed = false;
-  constructor(url: string) {
-    this.url = url;
-    FakeEventSource.instances.push(this);
-  }
-  addEventListener(type: string, cb: (e: MessageEvent) => void) {
-    (this.listeners[type] ??= []).push(cb);
-  }
-  emit(type: string, data?: unknown) {
-    for (const cb of this.listeners[type] ?? []) cb(new MessageEvent(type, { data: typeof data === "string" ? data : JSON.stringify(data) }));
-  }
-  close() {
-    this.closed = true;
-  }
-}
-const last = () => FakeEventSource.instances[FakeEventSource.instances.length - 1];
-const RUN = { id: "job-1-pipeline", label: "run 1", running: true, when: "now", shots: 0 };
-const ev = (seq: number, agent: string, kind: string, title: string, level?: string) => ({ t: 1700000000 + seq, seq, w: "main", agent, kind, title, level });
+const RUN = { id: "cli-fixture-pipeline", label: "Command line: pipeline", running: false, when: "03 Nov 13:36", has_events: true };
+const FINISHED = [{ type: "live", events: demoEvents, cursor: "c1" }, { type: "end", cursor: "c1", reason: "finished" }];
 
-function respond(status: number, body: unknown, delayMs = 0) {
-  return new Promise<Response>((resolve) =>
-    setTimeout(() => resolve(new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })), delayMs),
-  );
-}
-
-function mount(sessions: () => Promise<Response>, path = "/projects/demo/live") {
-  vi.stubGlobal("fetch", vi.fn(sessions));
-  vi.stubGlobal("EventSource", FakeEventSource);
+function mount(role = "owner", sessions: unknown[] = [RUN], path = "/projects/demo/live") {
+  stubFetch({ "GET /auth/me": { email: "o@example.com", role }, "GET /projects/demo/live/sessions": sessions, "GET /projects/demo/live/board": demoBoard });
+  vi.stubGlobal("WebSocket", FakeSocket);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
@@ -48,104 +25,103 @@ function mount(sessions: () => Promise<Response>, path = "/projects/demo/live") 
   );
 }
 
+async function socket(n = 1): Promise<FakeSocket> {
+  await waitFor(() => expect(FakeSocket.all.length).toBe(n));
+  return FakeSocket.all[n - 1];
+}
+
+beforeEach(() => sessionStorage.clear());
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  FakeEventSource.instances = [];
+  FakeSocket.all = [];
 });
 
-describe("Live: states before any event", () => {
-  it("shows a skeleton board and says it is loading while the runs load; the header does not claim 'No run yet'", () => {
-    mount(() => respond(200, { ok: true, data: [] }, 50));
-    expect(screen.getByRole("region", { name: "Agents" })).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status")).toHaveTextContent(/Loading/);
-    expect(screen.queryByText(/No run yet/)).toBeNull();
+describe("Live View: before a run", () => {
+  it("says there is no run yet and offers the project page to someone who may start runs", async () => {
+    mount("owner", []);
+    expect(await screen.findByText(/No run yet\. Start one/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Go to the project page/ })).toBeInTheDocument();
   });
 
-  it("with no run yet, says so once, links to the project page and hides the run selector", async () => {
-    mount(() => respond(200, { ok: true, data: [] }));
-    const link = await screen.findByRole("link", { name: /project page/ });
-    expect(link).toHaveAttribute("href", "/projects/demo");
-    expect(screen.queryByRole("combobox", { name: /Run/ })).toBeNull();
-    expect(FakeEventSource.instances).toHaveLength(0);
+  it("a Viewer sees no prompt to start a run", async () => {
+    mount("viewer", []);
+    expect(await screen.findByText("No run yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Go to the project page/ })).toBeNull();
   });
 
-  it("with a run but no events yet, waits for the first event and streams that run", async () => {
-    mount(() => respond(200, { ok: true, data: [RUN] }));
-    await waitFor(() => expect(screen.getByText(/Waiting for the first event/)).toBeVisible());
-    expect(screen.getByRole("combobox", { name: /Run/ })).toHaveValue("job-1-pipeline");
-    expect(last().url).toContain("/live/job-1-pipeline/stream");
-  });
-
-  it("falls back to the newest listed run when the URL names one that does not exist", async () => {
-    mount(() => respond(200, { ok: true, data: [RUN] }), "/projects/demo/live?session=job-999-gone");
-    await waitFor(() => expect(last().url).toContain("/live/job-1-pipeline/stream"));
-    expect(screen.getByRole("combobox", { name: /Run/ })).toHaveValue("job-1-pipeline");
-  });
-
-  it("tells the person when the runs could not be loaded", async () => {
-    mount(() => respond(500, { ok: false, error: { code: "server", message: "boom" } }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/could not be loaded/));
-    expect(screen.queryByText(/No run yet/)).toBeNull();
+  it("a run in the address that is not in the list yet shows a notice, never another run", async () => {
+    mount("owner", [RUN], "/projects/demo/live?session=job-9-pipeline");
+    expect(await screen.findByText(/not in the list yet/)).toBeInTheDocument();
+    expect(FakeSocket.all).toHaveLength(0);
   });
 });
 
-describe("Live: the stream", () => {
-  async function streaming() {
-    mount(() => respond(200, { ok: true, data: [RUN] }));
-    await waitFor(() => expect(FakeEventSource.instances).toHaveLength(1));
-    return last();
-  }
-
-  it("builds the board from events, marks only later changes, and shows failures with a glyph and a word", async () => {
-    const source = await streaming();
-    act(() => source.emit("live", { events: [ev(1, "srs", "stage_start", "analyze started"), ev(2, "srs", "stage_end", "analyze done")], cursor: "c1" }));
-    const board = screen.getByRole("region", { name: "Agents" });
-    const card = within(board).getByText("srs").closest(".agent")!;
-    expect(card).toHaveClass("done");
-    expect(card).not.toHaveClass("changed");                              // history: shown quietly
-    act(() => source.emit("live", { events: [ev(3, "executor", "stage_start", "run started"), ev(4, "executor", "stage_end", "run failed", "bad")], cursor: "c2" }));
-    expect(within(board).getByText("executor").closest(".agent")).toHaveClass("failed", "changed");
-    const log = screen.getByRole("log", { name: /Live events/ });
-    expect(log).toHaveAttribute("aria-live", "off");
-    const failed = within(log).getByText("run failed").closest(".evt") as HTMLElement;
-    expect(failed).toHaveClass("fail");
-    expect(within(failed).getByText("Failed")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/executor.*Failed/);
+describe("Live View: a finished run", () => {
+  it("opens at its final picture with the replay ready", async () => {
+    mount();
+    (await socket()).deliver(FINISHED);
+    const board = await screen.findByRole("region", { name: "Agents" });
+    await waitFor(() => expect(within(board).getAllByRole("button", { name: /Done/ })).toHaveLength(12));
+    expect(screen.getByRole("button", { name: /Replay from the start/ })).toBeInTheDocument();
+    expect(screen.getByText(/27 · 14 passed/)).toBeInTheDocument();
+    expect(screen.getByText(/\$0\.1249/)).toBeInTheDocument();
+    expect(screen.getByText(/447 \/ 447/)).toBeInTheDocument();
+    expect(document.querySelector("[data-transport]")?.getAttribute("data-transport")).toBe("websocket");
   });
 
-  it("ignores a malformed frame and a frame without an events list", async () => {
-    const source = await streaming();
-    act(() => source.emit("live", "{truncated"));
-    act(() => source.emit("live", { nope: 1 }));
-    act(() => source.emit("live", { events: [ev(1, "srs", "stage_start", "ok")], cursor: "c1" }));
-    expect(within(screen.getByRole("region", { name: "Agents" })).getByText("srs")).toBeInTheDocument();
+  it("replay from the start goes back to the beginning", async () => {
+    mount();
+    (await socket()).deliver(FINISHED);
+    fireEvent.click(await screen.findByRole("button", { name: /Replay from the start/ }));
+    expect(screen.getByText(/^0 \/ 447/)).toBeInTheDocument();
   });
 
-  it("after a dropped connection, says so, reconnects from the last cursor and never shows an event twice", async () => {
-    const source = await streaming();
-    act(() => source.emit("live", { events: [ev(1, "srs", "stage_start", "analyze started")], cursor: "c1" }));
-    vi.useFakeTimers();
-    try {
-      act(() => source.emit("error"));
-      expect(screen.getByRole("alert")).toHaveTextContent(/Connection lost/);
-      expect(source.closed).toBe(true);
-      act(() => {
-        vi.advanceTimersByTime(3000);
-      });
-      expect(FakeEventSource.instances).toHaveLength(2);
-      expect(last().url).toContain("cursor=c1");
-      act(() => last().emit("live", { events: [ev(1, "srs", "stage_start", "analyze started"), ev(2, "srs", "stage_end", "analyze done")], cursor: "c2" }));
-      expect(screen.queryByRole("alert")).toBeNull();
-      expect(screen.getAllByText("analyze started")).toHaveLength(1);
-    } finally {
-      vi.useRealTimers();
-    }
+  it("an agent in the address that is not on the board shows the whole run instead", async () => {
+    mount("owner", [RUN], "/projects/demo/live?agent=bogus");
+    (await socket()).deliver(FINISHED);
+    expect(await screen.findByRole("heading", { name: "What is happening" })).toBeInTheDocument();
+  });
+});
+
+describe("Live View: when the connection cannot go on", () => {
+  it("says so plainly when the sign-in ended", async () => {
+    mount();
+    const ws = await socket();
+    ws.deliver([{ type: "live", events: demoEvents.slice(0, 30), cursor: "c" }]);
+    ws.drop(4401);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/sign-in ended/);
   });
 
-  it("says when a run ended without any event", async () => {
-    const source = await streaming();
-    act(() => source.emit("end"));
-    expect(screen.getByText(/ended without any event/)).toBeVisible();
+  it("after an hour without news it offers to check again, which reconnects", async () => {
+    mount();
+    (await socket()).deliver([{ type: "live", events: demoEvents.slice(0, 30), cursor: "c" }, { type: "end", cursor: "c", reason: "idle" }]);
+    fireEvent.click(await screen.findByRole("button", { name: "Check again" }));
+    await socket(2);
+  });
+});
+
+describe("Live View: content from the application under test is only text", () => {
+  it("shows a page title with HTML in it as text, and an address as text, never a link", async () => {
+    mount();
+    const evil = { t: 1700000000, seq: 1, w: "gw0", agent: "explorer", kind: "navigate", phase: "action",
+                   title: '<img src=x onerror="alert(1)">', url: "javascript:alert(1)", path: "/x" };
+    (await socket()).deliver([{ type: "live", events: [{ t: 1699999999, seq: 0, w: "main", agent: "explorer", kind: "stage_start", phase: "lifecycle", title: "explore started" }, evil], cursor: "c" }]);
+    expect((await screen.findAllByText('<img src=x onerror="alert(1)">')).length).toBeGreaterThan(0);
+    expect(document.querySelector("img[src='x']")).toBeNull();
+    expect(screen.getByText("javascript:alert(1)").closest("a")).toBeNull();
+  });
+});
+
+describe("Details tabs", () => {
+  it("move with the arrow keys, Home and End", async () => {
+    mount();
+    (await socket()).deliver(FINISHED);
+    const doc = await screen.findByRole("tab", { name: "Document" });
+    expect(doc).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(doc, { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Site map" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Site map" }), { key: "End" });
+    expect(screen.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
   });
 });

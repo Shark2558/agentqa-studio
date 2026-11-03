@@ -78,7 +78,7 @@ describe("rules, code and the document", () => {
       ev(3, "reconciler", "status", { status: "Confirmed", req: "FR-3" }),
       ev(4, "reconciler", "question", { title: "Is the limit 50 or 100?" }),
     ]);
-    expect(p.rules.counts).toEqual({ Confirmed: 2, Divergent: 1 });
+    expect([...p.rules.counts]).toEqual([["Confirmed", 2], ["Divergent", 1]]);
     expect(p.rules.questions).toEqual(["Is the limit 50 or 100?"]);
     expect(p.rules.rows[0].req).toBe("FR-3");                 // newest first
   });
@@ -130,5 +130,47 @@ describe("lanes: one browser frame per worker", () => {
     ]);
     expect(lanes.order).toEqual(["main"]);
     expect(lanes.lanes.get("main")?.shot).toBeNull();
+  });
+});
+
+describe("panels: a hostile application cannot hide evidence or freeze the tab (security review)", () => {
+  it("a flood of exploratory findings never pushes out a defect, and says how many it left out", () => {
+    const flood = Array.from({ length: 700 }, (_, i) => ev(i, "exploratory", "finding", { title: "noise " + i }));
+    const p = panels([...flood, ev(800, "triage", "defect", { severity: "Critical", title: "Critical: the real bug" })]);
+    expect(p.findings.some((f) => f.kind === "defect" && f.title === "the real bug")).toBe(true);
+    expect(p.hiddenFindings).toBe(200);
+  });
+
+  it("counts a status named __proto__ like any other", () => {
+    const p = panels([ev(1, "reconciler", "status", { status: "__proto__" }), ev(2, "reconciler", "status", { status: "__proto__" })]);
+    expect(p.rules.counts.get("__proto__")).toBe(2);
+  });
+
+  it("a rule value or table cell that is not plain text shows as nothing instead of breaking the fold", () => {
+    const p = panels([
+      ev(1, "srs", "requirement", { req: "FR-1", text: "x" }),
+      ev(2, "srs", "rule", { req: "FR-1", rule_kind: "max", value: [{ toString: 1 }, 5] }),
+      ev(3, "srs", "table", { rows: [[{ toString: 1 }, "ok"]] }),
+    ]);
+    expect(p.doc.requirements.get("FR-1")?.rules[0]).toBe("max 5");
+    expect(p.doc.blocks.find((b) => b.kind === "table")?.rows).toEqual([["", "ok"]]);
+  });
+
+  it("reads a test file name from a long test id quickly", () => {
+    const started = performance.now();
+    const p = panels([ev(1, "executor", "test_start", { case: "TC-1", nodeid: "a".repeat(2_000) })]);
+    expect(performance.now() - started).toBeLessThan(50);
+    expect(p.tiles.get("TC-1")?.group).toBe("run");
+    expect(panels([ev(1, "executor", "test_start", { case: "TC-2", nodeid: "tests/test_login.py::test_x" })]).tiles.get("TC-2")?.group).toBe("file:test_login");
+  });
+
+  it("keeps at most 2 000 tiles, 200 code files and 50 rules per requirement", () => {
+    const tiles = Array.from({ length: 2_100 }, (_, i) => ev(i, "designer", "case", { case: "TC-" + i }));
+    const files = Array.from({ length: 250 }, (_, i) => ev(i, "generator", "write", { file: "f" + i + ".py", tests: 1 }));
+    const rules = Array.from({ length: 80 }, (_, i) => ev(i, "srs", "rule", { req: "FR-9", rule_kind: "r" + i }));
+    const p = panels([...tiles, ...files, ...rules]);
+    expect(p.tileOrder).toHaveLength(2_000);
+    expect(p.code.size).toBe(200);
+    expect(p.doc.requirements.get("FR-9")?.rules).toHaveLength(50);
   });
 });

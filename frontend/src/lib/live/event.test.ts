@@ -86,3 +86,45 @@ describe("compareEvents: one order for live and replay", () => {
     expect([c, b, a, d].sort(compareEvents)).toEqual([d, a, b, c]);
   });
 });
+
+describe("toEvent: nothing from the application under test can grow without bound (security review)", () => {
+  it("cuts long text: titles at 500 characters, code previews at 20 000, everything else at 2 000", () => {
+    const e = toEvent({ ...base, title: "t".repeat(9_000), url: "u".repeat(1_000_000), preview: "p".repeat(90_000) });
+    expect(e?.title).toHaveLength(500);
+    expect(e?.url).toHaveLength(2_000);
+    expect(e?.preview).toHaveLength(20_000);
+  });
+
+  it("keeps nested data shallow and short: lists of at most 200, three levels, text and numbers only", () => {
+    const deep = { a: { b: { c: { d: "too deep" } } } };
+    const e = toEvent({ ...base, rows: Array.from({ length: 900 }, (_, i) => [i, "x".repeat(5_000)]), value: deep, fn: () => 1 });
+    const rows = (e?.rows ?? []) as unknown[][];
+    expect(rows).toHaveLength(200);
+    expect(rows[0][1]).toHaveLength(2_000);
+    expect(e?.value).toEqual({ a: { b: { c: {} } } });
+    expect(e).not.toHaveProperty("fn");
+  });
+
+  it("refuses a time no run can have (it would break every clock on the page)", () => {
+    expect(toEvent({ ...base, t: 1e20 })).toBeNull();
+    expect(toEvent({ ...base, t: -1 })).toBeNull();
+  });
+
+  it("cuts the worker, agent and kind names short", () => {
+    const e = toEvent({ ...base, w: "w".repeat(500), agent: "a".repeat(500) });
+    expect(e?.w).toHaveLength(64);
+    expect(e?.agent).toHaveLength(64);
+  });
+
+  it("a __proto__ key is kept as plain data and changes no prototype", () => {
+    const e = toEvent(JSON.parse('{"t":1700000000,"seq":1,"w":"m","agent":"srs","kind":"x","title":"y","value":{"__proto__":{"polluted":1}}}'));
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(Object.getPrototypeOf(e?.value)).toBe(Object.prototype);
+  });
+});
+
+describe("safeBox: the viewport is a real screen size", () => {
+  it.each([["a giant viewport", 50_000], ["a zero viewport", 0]])("drops %s", (_why, vw) => {
+    expect(safeBox({ ...base, vw, box: { x: 1, y: 1, width: 2, height: 2 } } as LiveEvent)).toBeNull();
+  });
+});

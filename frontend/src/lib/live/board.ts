@@ -67,6 +67,11 @@ interface Ctx {
 
 const contexts = new WeakMap<BoardDef, Ctx>();
 const own = <T>(rec: Readonly<Record<string, T>>, key: string): T | undefined => (Object.hasOwn(rec, key) ? rec[key] : undefined);
+// A stream that invents names must not grow the board without end (security review).
+const MAX_CARDS = 40;
+const MAX_ASSISTS = 200;
+const MAX_MODEL_KEYS = 20;
+const atLeastZero = (n: number | undefined): number => Math.max(0, n ?? 0);
 
 function context(def: BoardDef): Ctx {
   const known = contexts.get(def);
@@ -98,9 +103,11 @@ export function emptyBoard(def: BoardDef): BoardModel {
   };
 }
 
-function cardOf(d: Draft, agent: string, ctx: Ctx): Card {
+/** The agent's card, made on its first word; null once the board holds 40 cards (the rest are not shown). */
+function cardOf(d: Draft, agent: string, ctx: Ctx): Card | null {
   const known = d.cards.get(agent);
   if (known) return known;
+  if (d.cards.size >= MAX_CARDS) return null;
   const made = newCard(agent, own(ctx.def.labels, agent) ?? agent, null, true);
   d.cards.set(agent, made);
   d.order.push(agent);
@@ -109,8 +116,12 @@ function cardOf(d: Draft, agent: string, ctx: Ctx): Card {
 
 function update(d: Draft, agent: string, ctx: Ctx, change: (c: Card) => Partial<Card>): void {
   const c = cardOf(d, agent, ctx);
-  d.cards.set(agent, { ...c, ...change(c) });
+  if (c) d.cards.set(agent, { ...c, ...change(c) });
 }
+
+/** `map` with `key` set, unless it would grow past 20 keys. */
+const keyed = (map: ReadonlyMap<string, string>, key: string, value: string): ReadonlyMap<string, string> =>
+  map.has(key) || map.size < MAX_MODEL_KEYS ? new Map(map).set(key, value) : map;
 
 /** The card an event counts for: a helper (Analyst, Test Case Generator, Importer) works for the stage running now. */
 function targetOf(d: Draft, agent: string, ctx: Ctx): string {
@@ -151,18 +162,17 @@ function onPipeline(d: Draft, e: LiveEvent, ctx: Ctx): void {
 function onAi(d: Draft, e: LiveEvent, ctx: Ctx): void {
   const key = text(e, "agent_key") ?? "?";
   if (e.kind === "cost") {
-    const cost = num(e, "cost_usd");
-    if (cost === undefined) return;
-    const tin = num(e, "input_tokens") ?? 0;
-    const tout = num(e, "output_tokens") ?? 0;
+    if (num(e, "cost_usd") === undefined) return;
+    const cost = atLeastZero(num(e, "cost_usd"));            // a negative cost must never lower the spend shown
+    const tin = atLeastZero(num(e, "input_tokens"));
+    const tout = atLeastZero(num(e, "output_tokens"));
     d.ai = { calls: d.ai.calls + 1, cost: d.ai.cost + cost, tokensIn: d.ai.tokensIn + tin, tokensOut: d.ai.tokensOut + tout };
     if (d.running) update(d, d.running, ctx, (c) => ({ cost: c.cost + cost, tokensIn: c.tokensIn + tin, tokensOut: c.tokensOut + tout,
                                                       actualModel: text(e, "model") ?? c.actualModel }));
   } else if (e.kind === "model" && d.running) {
     const reason = text(e, "reason");
     const planned = e.title.includes(": ") ? e.title.slice(e.title.indexOf(": ") + 2) : e.title;
-    update(d, d.running, ctx, (c) => (reason ? { reasons: new Map(c.reasons).set(key, reason) }
-                                             : { planned: new Map(c.planned).set(key, planned) }));
+    update(d, d.running, ctx, (c) => (reason ? { reasons: keyed(c.reasons, key, reason) } : { planned: keyed(c.planned, key, planned) }));
   }
 }
 
@@ -170,6 +180,7 @@ function onAssist(d: Draft, e: LiveEvent, agent: string, ctx: Ctx): void {
   const id = text(e, "assist_id");
   if (!id) return;
   if (!d.assists.has(id)) {
+    if (d.assists.size >= MAX_ASSISTS) return;
     d.assists.set(id, agent);
     update(d, agent, ctx, () => ({ state: "waiting", waitingSince: e.t }));
     return;
@@ -195,7 +206,7 @@ function counted(c: Card, e: LiveEvent): Record<string, number> {
   if (name) add(name);
   if (e.agent === "writer" && e.kind === "requirement" && texts(e, "flags").length) add("flagged");
   if (e.agent === "generator" && e.kind === "write") add("tests", num(e, "tests") ?? 0);
-  if (e.agent === "security" && e.kind === "summary") next.alerts = num(e, "alerts") ?? next.alerts ?? 0;
+  if (e.agent === "security" && e.kind === "summary") next.alerts = atLeastZero(num(e, "alerts") ?? next.alerts);
   if (e.agent === "executor" && e.kind === "test_start") add("running");
   if (e.agent === "executor" && e.kind === "test_end") {
     add("running", -1);

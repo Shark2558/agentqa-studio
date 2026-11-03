@@ -36,3 +36,15 @@ describe("site map: screens by click depth", () => {
     expect(layoutMap(m).nodes).toHaveLength(2);
   });
 });
+
+describe("site map: sizes from the run are kept in range (security review)", () => {
+  it("a depth that is negative, fractional or huge lands in a real column", () => {
+    const m = foldMap(emptyMap, [nav("/a", { depth: -3 }), nav("/b", { depth: 2.7 }), nav("/c", { depth: 1e9 })]);
+    expect([m.nodes.get("/a")?.depth, m.nodes.get("/b")?.depth, m.nodes.get("/c")?.depth]).toEqual([0, 2, 8]);
+  });
+
+  it("keeps at most 300 screens", () => {
+    const m = foldMap(emptyMap, Array.from({ length: 400 }, (_, i) => nav("/p" + i)));
+    expect(m.order).toHaveLength(300);
+  });
+});

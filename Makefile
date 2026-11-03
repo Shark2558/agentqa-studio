@@ -13,7 +13,7 @@ DEMO := projects/demo
 COMPOSE := docker compose -f deploy/docker-compose.yml
 IMAGE ?= agentqa-studio:dev
 
-.PHONY: ui-check setup test lint demo-portal demo-regression demo-check dev image up down smoke web-install web-test web-build web-dev
+.PHONY: ui-check live-check setup test lint demo-portal demo-regression demo-check dev image up down smoke web-install web-test web-build web-dev
 
 setup:            ## create the venv outside the repo and install everything
 	py -3.13 -m venv "$(VENV)" || python3 -m venv "$(VENV)"
@@ -60,6 +60,9 @@ web-build:        ## production build into frontend/dist (served by the backend 
 
 ui-check:         ## measure the built React app at five widths in both themes (needs web-build; Playwright in the venv)
 	"$(PY)" -I frontend/design-system/check_app.py
+
+live-check:       ## watch the recorded run arrive in the built app; reload, replay and SSE end at the same picture (needs web-build)
+	"$(PY)" -I frontend/design-system/check_live.py
 
 web-dev:          ## Vite dev server on 5173, proxying /api to the backend on 8700
 	$(NPM) run dev

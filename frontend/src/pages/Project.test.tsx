@@ -7,8 +7,9 @@ import { Project } from "./Project";
 
 const BUDGET = { month: "2026-11", spent: 0.42, cap: 10, pct: 4, alert_at_pct: 80, state: "ok" };
 
-function mount(settings: unknown) {
+function mount(settings: unknown, role = "owner") {
   stubFetch({
+    "GET /auth/me": { email: "o@example.com", role },
     "GET /projects/demo": { slug: "demo", name: "Demo portal", url: "http://127.0.0.1:8800" },
     "GET /projects/demo/runs": [],
     "GET /projects/demo/ai": { settings, effective: [], notice: null, budget: BUDGET },
@@ -42,5 +43,21 @@ describe("Project page: the AI card", () => {
     mount({ mode: "cloud" });
     expect(await screen.findByText("Cloud AI")).toBeInTheDocument();
     expect(screen.getByText("$0.42 of $10.00 used this month")).toBeInTheDocument();
+  });
+});
+
+describe("Project page: who may start a run", () => {
+  it("offers the owner the Run button and the gate choice", async () => {
+    mount({});
+    expect(await screen.findByRole("button", { name: /Run full pipeline/ })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /Approve the gates automatically/ })).toBeInTheDocument();
+  });
+
+  it("a Viewer sees no Run button and no gate choice", async () => {
+    mount({}, "viewer");
+    expect(await screen.findByText("No AI")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Run full pipeline/ })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /Approve the gates/ })).toBeNull();
+    expect(screen.getByText(/^Nothing has run yet\.$/)).toBeInTheDocument();
   });
 });

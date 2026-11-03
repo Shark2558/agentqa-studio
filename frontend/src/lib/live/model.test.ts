@@ -76,3 +76,14 @@ describe("replay matches the live view", () => {
     expect(performance.now() - started).toBeLessThan(200);
   });
 });
+
+describe("fold: one event that cannot be folded is skipped and counted, never the whole picture lost", () => {
+  it("skips a throwing event and keeps the rest", () => {
+    const bad = { ...events[0], seq: 99_999, agent: "srs", kind: "text" } as LiveEvent;     // the document panel reads its title
+    Object.defineProperty(bad, "title", { get: () => { throw new Error("hostile"); }, enumerable: true });
+    const model = fold(emptyModel(demoBoard), [events[0], bad, events[1]], demoBoard);
+    expect(model.skipped).toBe(1);
+    expect(model.count).toBe(3);
+    expect(model.board.tLast).toBe(events[1].t);                    // the event after the bad one was folded
+  });
+});

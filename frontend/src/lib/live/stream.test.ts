@@ -38,19 +38,24 @@ describe("mergeEvents: every event once, in one order", () => {
     expect(one.events).toEqual(snapshot);
   });
 
-  it("keeps at most the newest 50 000 events and says it dropped the oldest", () => {
+  it("keeps at most 50 000 events, dropping the oldest in whole blocks of 500 and counting them", () => {
     const many = Array.from({ length: 50_010 }, (_, i) => ev(i, i));
     const s = mergeEvents(emptyStream, many);
-    expect(s.events).toHaveLength(50_000);
-    expect(s.events[0].seq).toBe(10);
+    expect(s.events).toHaveLength(49_510);
+    expect(s.events[0].seq).toBe(500);
+    expect(s.dropped).toBe(500);
     expect(s.truncated).toBe(true);
+    expect(s.changedFrom).toBe(0);
+    const more = mergeEvents(s, [ev(60_000, 60_000)]);
+    expect(more.dropped).toBe(500);                 // room again: nothing more dropped
+    expect(more.changedFrom).toBe(49_510);
   });
 });
 
 describe("endStream", () => {
   it("records why the stream ended", () => {
     expect(endStream(emptyStream, "finished").ended).toBe("finished");
-    expect(endStream(emptyStream, "nonsense").ended).toBe("finished");
+    expect(endStream(emptyStream, "nonsense").ended).toBe("idle");      // never claim a run finished without being told
     expect(endStream(emptyStream, "gone").ended).toBe("gone");
   });
 });

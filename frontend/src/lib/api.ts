@@ -1,4 +1,5 @@
 /** The API client: one envelope, the CSRF header on every state-changing call, cookies for the session. */
+import type { BoardDef } from "./live/board";
 
 export type Envelope<T> =
   | { ok: true; data: T }
@@ -58,8 +59,10 @@ export const api = {
   startRun: (slug: string, body: RunRequest) =>
     request<Run>(`/projects/${encodeURIComponent(slug)}/runs`, { method: "POST", body: JSON.stringify(body) }),
   liveSessions: (slug: string) => request<LiveSession[]>(`/projects/${encodeURIComponent(slug)}/live/sessions`),
-  streamUrl: (slug: string, session: string) =>
-    `${BASE}/projects/${encodeURIComponent(slug)}/live/${encodeURIComponent(session)}/stream`,
+  liveBoard: (slug: string) => request<BoardDef>(`/projects/${encodeURIComponent(slug)}/live/board`),
+  /** A screenshot's address; `name` must already have passed `safeShot`. */
+  shotUrl: (slug: string, session: string, name: string) =>
+    `${BASE}/projects/${encodeURIComponent(slug)}/live/${encodeURIComponent(session)}/shots/${encodeURIComponent(name)}`,
 };
 
 export interface User {
@@ -210,7 +213,8 @@ export interface LiveSession {
   label: string;
   running: boolean;
   when: string;
-  shots: number;
+  has_events?: boolean;
+  shots?: number;
 }
 
 export interface LiveEvent {

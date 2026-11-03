@@ -64,12 +64,16 @@ function handlers(): Handlers & { frames: unknown[][]; ends: string[]; statuses:
 }
 const last = <T>(xs: T[]) => xs[xs.length - 1];
 
+let probeStatus = 200;
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.spyOn(Math, "random").mockReturnValue(0.5);         // no jitter: each wait is exactly the backoff
   vi.stubGlobal("WebSocket", FakeSocket);
   vi.stubGlobal("EventSource", FakeSource);
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: probeStatus })));
   sessionStorage.clear();
   cursor = "";
+  probeStatus = 200;
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -80,7 +84,8 @@ afterEach(() => {
 
 describe("liveUrl", () => {
   it("builds the WebSocket address from the page's own address, with the cursor", () => {
-    expect(liveUrl("websocket", "demo", "run 1", "abc=")).toBe(`ws://${location.host}/api/v1/projects/demo/live/run%201/ws?cursor=abc%3D`);
+    expect(liveUrl("websocket", "demo", "cli-20261103-133600-pipeline", "abc=")).toBe(
+      `ws://${location.host}/api/v1/projects/demo/live/cli-20261103-133600-pipeline/ws?cursor=abc%3D`);
     expect(liveUrl("sse", "demo", "run-1", "")).toBe("/api/v1/projects/demo/live/run-1/stream");
   });
 });
@@ -105,6 +110,8 @@ describe("connectLive: WebSocket first", () => {
     last(FakeSocket.all).drop(1006);
     expect(FakeSource.all).toHaveLength(1);
     expect(h.transports).toEqual(["websocket", "sse"]);
+    expect(sessionStorage.getItem(TRANSPORT_KEY)).toBeNull();          // not until SSE has shown it works
+    last(FakeSource.all).emit("live", { events: [ev], cursor: "c1" });
     expect(sessionStorage.getItem(TRANSPORT_KEY)).toBe("sse");
     connectLive("demo", "run-2", handlers());
     expect(FakeSocket.all).toHaveLength(1);                 // the next run goes straight to SSE
@@ -154,6 +161,61 @@ describe("connectLive: WebSocket first", () => {
     expect(h.frames).toEqual([]);
   });
 
+  it("a socket that worked before is tried again, never swapped for SSE, after a blip", () => {
+    const h = handlers();
+    connectLive("demo", "run-1", h);
+    last(FakeSocket.all).open();
+    last(FakeSocket.all).send({ type: "live", events: [ev], cursor: "c1" });
+    last(FakeSocket.all).drop(1006);
+    vi.advanceTimersByTime(3_000);
+    last(FakeSocket.all).drop(1006);                         // the retry fails before it opens (Wi-Fi blip)
+    vi.advanceTimersByTime(6_000);
+    expect(FakeSource.all).toHaveLength(0);
+    expect(FakeSocket.all).toHaveLength(3);
+    expect(sessionStorage.getItem(TRANSPORT_KEY)).toBeNull();
+  });
+
+  it("waits longer after each failed try, then gives up and says the connection is lost", () => {
+    const h = handlers();
+    connectLive("demo", "run-1", h);
+    const waits: number[] = [];
+    for (let i = 0; i < 9; i += 1) {
+      const ws = last(FakeSocket.all);
+      ws.open();
+      ws.drop(1011);
+      const before = FakeSocket.all.length;
+      let waited = 0;
+      while (FakeSocket.all.length === before && waited <= 60_000) {
+        vi.advanceTimersByTime(1_000);
+        waited += 1_000;
+      }
+      waits.push(waited);
+    }
+    expect(waits.slice(0, 6)).toEqual([3_000, 6_000, 12_000, 24_000, 48_000, 60_000]);
+    expect(last(h.statuses)).toBe("lost");
+    expect(FakeSocket.all).toHaveLength(9);                 // eight retries, then no more
+  });
+
+  it("uses SSE when the server refuses the socket for its origin (4403), and stops on a bad request (4400)", () => {
+    const one = handlers();
+    connectLive("demo", "run-1", one);
+    last(FakeSocket.all).open();
+    last(FakeSocket.all).drop(4403);
+    expect(FakeSource.all).toHaveLength(1);
+    const two = handlers();
+    connectLive("demo", "run-1", two);
+    last(FakeSocket.all).open();
+    last(FakeSocket.all).drop(4400);
+    vi.advanceTimersByTime(120_000);
+    expect(last(two.statuses)).toBe("lost");
+    expect(FakeSocket.all).toHaveLength(2);
+  });
+
+  it("refuses a run id that would walk out of its folder", () => {
+    expect(() => liveUrl("sse", "demo", "..", "")).toThrow();
+    expect(() => liveUrl("websocket", "..", "run-1", "")).toThrow();
+  });
+
   it("stopping closes the socket and cancels a pending retry", () => {
     const h = handlers();
     const stop = connectLive("demo", "run-1", h);
@@ -165,17 +227,42 @@ describe("connectLive: WebSocket first", () => {
 });
 
 describe("connectLive: Server-Sent Events", () => {
-  it("streams batches and the end, and retries from the cursor on an error", () => {
+  it("streams batches and the end, and retries from the cursor on an error", async () => {
     sessionStorage.setItem(TRANSPORT_KEY, "sse");
     const h = handlers();
     connectLive("demo", "run-1", h);
     const es = last(FakeSource.all);
     es.emit("live", { events: [ev], cursor: "c2" });
     es.emit("error", {});
-    vi.advanceTimersByTime(3_000);
+    await vi.advanceTimersByTimeAsync(3_000);
     expect(last(FakeSource.all).url).toContain("cursor=c2");
     last(FakeSource.all).emit("end", { cursor: "c2", reason: "idle" });
     expect(h.ends).toEqual(["idle"]);
     expect(h.transports).toEqual(["sse"]);
+  });
+});
+
+describe("connectLive: why an SSE stream failed (EventSource hides the HTTP status)", () => {
+  it.each([[401, "signed-out"], [404, "gone"]])("asks once; %s means %s and nothing is retried", async (status, word) => {
+    sessionStorage.setItem(TRANSPORT_KEY, "sse");
+    probeStatus = status;
+    const h = handlers();
+    connectLive("demo", "run-1", h);
+    last(FakeSource.all).emit("error", {});
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(last(h.statuses)).toBe(word);
+    expect(FakeSource.all).toHaveLength(1);
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  it("too busy (429) waits 10 s before trying again", async () => {
+    sessionStorage.setItem(TRANSPORT_KEY, "sse");
+    probeStatus = 429;
+    connectLive("demo", "run-1", handlers());
+    last(FakeSource.all).emit("error", {});
+    await vi.advanceTimersByTimeAsync(9_000);
+    expect(FakeSource.all).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(FakeSource.all).toHaveLength(2);
   });
 });

@@ -16,6 +16,7 @@ export interface Model {
   readonly panels: PanelsModel;
   readonly map: SiteMap;
   readonly count: number;
+  readonly skipped: number;            // events that could not be folded; the page says how many
 }
 
 export interface Timeline {
@@ -23,18 +24,35 @@ export interface Timeline {
 }
 
 export function emptyModel(def: BoardDef): Model {
-  return { board: emptyBoard(def), lanes: emptyLanes, panels: emptyPanels, map: emptyMap, count: 0 };
+  return { board: emptyBoard(def), lanes: emptyLanes, panels: emptyPanels, map: emptyMap, count: 0, skipped: 0 };
 }
 
-export function fold(model: Model, events: readonly LiveEvent[], def: BoardDef): Model {
-  if (events.length === 0) return model;
+function foldAll(model: Model, events: readonly LiveEvent[], def: BoardDef): Model {
   return {
     board: foldBoard(model.board, events, def),
     lanes: foldLanes(model.lanes, events),
     panels: foldPanels(model.panels, events),
     map: foldMap(model.map, events),
     count: model.count + events.length,
+    skipped: model.skipped,
   };
+}
+
+/** The model after `events`. One event that cannot be folded must not lose the whole picture: the batch is then folded
+ *  one event at a time and the ones that throw are skipped and counted in `skipped` (shown on the page). */
+export function fold(model: Model, events: readonly LiveEvent[], def: BoardDef): Model {
+  if (events.length === 0) return model;
+  try {
+    return foldAll(model, events, def);
+  } catch {
+    return events.reduce((m, e) => {
+      try {
+        return foldAll(m, [e], def);
+      } catch {
+        return { ...m, count: m.count + 1, skipped: m.skipped + 1 };
+      }
+    }, model);
+  }
 }
 
 /** Checkpoints for `events`; with a previous timeline, the ones before `changedFrom` are kept as they are. */

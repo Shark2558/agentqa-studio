@@ -57,6 +57,21 @@ describe("playerReducer", () => {
   });
 });
 
+describe("playerReducer: settle and shift", () => {
+  const p: Player = { pos: 0, playing: true, speed: 1, follow: true };
+
+  it("settle opens a finished run at its final picture, or where this viewer left it", () => {
+    expect(playerReducer(p, { type: "settle", total: 447, saved: null })).toEqual({ pos: 447, playing: false, speed: 2, follow: false });
+    expect(playerReducer(p, { type: "settle", total: 447, saved: { pos: 120, follow: false } }).pos).toBe(120);
+  });
+
+  it("shift moves the position back when the oldest events are dropped, never below the start", () => {
+    const at = { ...p, pos: 900, follow: false };
+    expect(playerReducer(at, { type: "shift", by: 500 })).toEqual({ ...at, pos: 400 });
+    expect(playerReducer(at, { type: "shift", by: 5000 }).pos).toBe(0);
+  });
+});
+
 describe("initialPlayer: where a run opens (owner decision 4)", () => {
   it("a finished run opens at its final picture, paused", () => {
     expect(initialPlayer(447, false, null)).toEqual({ pos: 447, playing: false, speed: 2, follow: false });

@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListChecks, Play, Pulse, Robot } from "@phosphor-icons/react";
+import { useMe } from "../App";
 import { ApiError, api } from "../lib/api";
 import { MODES, aiApi, capState, settingsFrom } from "../lib/ai";
+import { canWrite } from "../lib/can";
 
 const RUNNING_POLL_MS = 3000;
 
@@ -24,18 +26,21 @@ export function Project() {
     mutationFn: () => api.startRun(slug, { scope: "pipeline", policy: "srs_wins", auto_approve: autoApprove }),
     onSuccess: (run) => {
       queryClient.invalidateQueries({ queryKey: ["runs", slug] });
-      navigate(`/projects/${encodeURIComponent(slug)}/live?session=job-${run.id}-${run.stage}`);
+      queryClient.invalidateQueries({ queryKey: ["live-sessions", slug] });     // the Live View must not show the last run's list
+      navigate(`/projects/${encodeURIComponent(slug)}/live?session=${encodeURIComponent(`job-${run.id}-${run.stage}`)}`);
     },
   });
   const ai = useQuery({ queryKey: ["ai", "project", slug], queryFn: () => aiApi.project(slug) });
+  // A Viewer watches and reads; only someone who may change things is offered the Run button (the server refuses too).
+  const mayRun = canWrite(useMe().data?.role);
   const running = runs.data?.find((r) => r.status === "running");
   const aiMode = ai.data ? settingsFrom(ai.data.settings).mode : null;
   const aiTitle = aiMode ? MODES.find((m) => m.id === aiMode)?.title ?? "No AI" : null;
   const aiLine = ai.data ? (aiMode === "none" || aiMode === "local" ? "nothing is spent" : capState(ai.data.budget).text) : ai.isError ? "could not be loaded" : "loading…";
   const error = start.error instanceof ApiError ? start.error : null;
 
-  if (project.isError) return <p className="notice bad page-pad">That project does not exist.</p>;
-  if (!project.data) return <p className="muted page-pad">Loading…</p>;
+  if (project.isError) return <p className="notice bad page-pad" role="alert">That project does not exist.</p>;
+  if (!project.data) return <p className="muted page-pad" role="status">Loading…</p>;
   const p = project.data;
 
   return (
@@ -49,10 +54,12 @@ export function Project() {
           <p className="sub mono">{p.url}</p>
         </div>
         <div className="spacer" />
-        <label className="check small">
-          <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
-          Approve the gates automatically
-        </label>
+        {mayRun && (
+          <label className="check small">
+            <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
+            Approve the gates automatically
+          </label>
+        )}
         <Link className="btn" to={`/projects/${encodeURIComponent(slug)}/requirements`}>
           <ListChecks aria-hidden="true" />
           Requirements
@@ -61,10 +68,12 @@ export function Project() {
           <Pulse aria-hidden="true" />
           Live View
         </Link>
-        <button className="btn primary" type="button" onClick={() => start.mutate()} disabled={start.isPending || !!running}>
-          <Play aria-hidden="true" />
-          {running ? "Running…" : "Run full pipeline"}
-        </button>
+        {mayRun && (
+          <button className="btn primary" type="button" onClick={() => start.mutate()} disabled={start.isPending || !!running}>
+            <Play aria-hidden="true" />
+            {running ? "Running…" : "Run full pipeline"}
+          </button>
+        )}
       </div>
       {error && (
         <p className="notice bad" role="alert">
@@ -101,7 +110,7 @@ export function Project() {
 
       <section className="card flat mt-4" aria-labelledby="h-runs">
         <h2 id="h-runs">Runs</h2>
-        {runs.data?.length === 0 && <p className="muted">Nothing has run yet. Press “Run full pipeline” to start; the demo takes about six minutes.</p>}
+        {runs.data?.length === 0 && <p className="muted">{mayRun ? "Nothing has run yet. Press “Run full pipeline” to start; the demo takes about six minutes." : "Nothing has run yet."}</p>}
         <div className="scroll-x">
           <table>
             <thead>
@@ -127,7 +136,9 @@ export function Project() {
                   <td className="mono">{r.started_at}</td>
                   <td className="mono">{r.finished_at ?? "—"}</td>
                   <td>
-                    <Link to={`/projects/${encodeURIComponent(slug)}/live?session=job-${r.id}-${r.stage}`}>watch</Link>
+                    <Link to={`/projects/${encodeURIComponent(slug)}/live?session=${encodeURIComponent(`job-${r.id}-${r.stage}`)}`} aria-label={`Watch run ${r.id}`}>
+                      watch
+                    </Link>
                   </td>
                 </tr>
               ))}

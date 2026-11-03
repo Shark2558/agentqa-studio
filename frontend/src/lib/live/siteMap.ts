@@ -5,6 +5,8 @@ import { num, safeShot, text, type LiveEvent } from "./event";
 
 const MAP_AGENTS = new Set(["explorer", "exploratory"]);
 const MAX_DEPTH = 8;
+const MAX_NODES = 300;                 // a crawler that invents paths must not grow the map without end
+const column = (n: number): number => Math.min(MAX_DEPTH, Math.max(0, Math.floor(n)));
 const NODE_W = 176;
 const NODE_H = 40;
 const GAP_X = 214;
@@ -38,7 +40,7 @@ function added(nodes: ReadonlyMap<string, MapNode>, key: string, e: LiveEvent): 
   const parentPath = text(e, "parent");
   const parent = parentPath ? keyOf(parentPath) : (known?.parent ?? null);
   const parentNode = parent ? nodes.get(parent) : undefined;
-  const depth = known?.depth ?? num(e, "depth") ?? (parentNode ? parentNode.depth + 1 : key === "/" ? 0 : 1);
+  const depth = known?.depth ?? column(num(e, "depth") ?? (parentNode ? parentNode.depth + 1 : key === "/" ? 0 : 1));
   const role = text(e, "role") ?? "anonymous";
   const status = num(e, "status") ?? null;
   const keepStatus = status !== null && (status >= HTTP_ERROR || known?.status == null) ? status : (known?.status ?? null);
@@ -62,6 +64,7 @@ export function foldMap(map: SiteMap, events: readonly LiveEvent[]): SiteMap {
       if (known) current = key;                               // a check or another agent's visit only moves the marker
       continue;
     }
+    if (!known && (order ?? map.order).length >= MAX_NODES) continue;
     nodes = nodes ?? new Map(map.nodes);
     order = order ?? [...map.order];
     if (!known) order.push(key);

@@ -2,7 +2,9 @@ import { useEffect, useReducer, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Check, Play } from "@phosphor-icons/react";
+import { useMe } from "../../App";
 import { ApiError, api } from "../../lib/api";
+import { canWrite } from "../../lib/can";
 import { STEPS, answersForApi, canContinue, initialWizard, reduceWizard, rolesForApi } from "../../lib/wizard";
 import { StepBasics } from "./StepBasics";
 import { StepRequirements } from "./StepRequirements";
@@ -12,8 +14,23 @@ import { StepAi } from "./StepAi";
 import { saveAiStep } from "../../lib/ai";
 import { StepReview } from "./StepReview";
 
-/** The six-step new-project wizard (PRD §4). The project exists from step 1 on, so every later step saves into it. */
+/** The wizard for someone who may create projects; a Viewer is told what they can do instead (the server refuses
+ *  their writes too: this only keeps the page honest). */
 export function NewProject() {
+  const me = useMe();
+  if (me.isPending) return <p className="muted page-pad" role="status">Loading…</p>;
+  if (!canWrite(me.data?.role)) {
+    return (
+      <p className="notice warn page-pad">
+        Viewers can watch runs and read results; creating a project needs the owner or a tester. <Link to="/">Back to the projects</Link>
+      </p>
+    );
+  }
+  return <Wizard />;
+}
+
+/** The six-step new-project wizard (PRD §4). The project exists from step 1 on, so every later step saves into it. */
+function Wizard() {
   const [s, dispatch] = useReducer(reduceWizard, initialWizard);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -55,7 +72,8 @@ export function NewProject() {
     mutationFn: () => api.startRun(s.slug!, { scope: "pipeline", policy: "srs_wins", auto_approve: true }),
     onSuccess: (run) => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      navigate(`/projects/${encodeURIComponent(s.slug!)}/live?session=job-${run.id}-${run.stage}`);
+      queryClient.invalidateQueries({ queryKey: ["live-sessions", s.slug] });
+      navigate(`/projects/${encodeURIComponent(s.slug!)}/live?session=${encodeURIComponent(`job-${run.id}-${run.stage}`)}`);
     },
     onError: (e) => setError(e instanceof ApiError ? e.message : "The run did not start"),
   });
