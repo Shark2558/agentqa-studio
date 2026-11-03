@@ -18,13 +18,16 @@ milestone plan before code is written and likes being shown the result in the br
 | M0.1 repo + ECC + CI, M0.2 Docker, M0.3 real-AI validation, M0.4 design system | done | 63d3f38 · b2b8370 · 697e93f · 40d4151 |
 | M0.5 `/api/v1` + orchestrator extraction + React app shell at `/app` | done | 291e259 |
 | **M1.1 onboarding wizard** (six steps, documents with verdicts, Requirement Chat agent, accounts into the vault, address preflight, Requirements page) | done, reviewed, acceptance watched | bee5d2a |
-| **M1.2 AI modes & selector 🔒** | **next** | — |
+| **M1.2-UI** flat blue-and-white look, five accents, phone layout, Live View reachable (owner-approved mock, reviewed) | done | 2b21608 · 7d2c613 · a6106ea · 2943fbe |
+| **M1.2 AI modes & selector 🔒** — Phase A (backend, `llm.py` removed) | done on branch `claude/silly-dewdney-918bf5` (`cea3977`), **not merged** | — |
+| **M1.2 Phase B** (AI pages on the new look, four acceptance runs) | **next**: merge the branch first | — |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-1-onboarding-wizard.md`
 for the latest patterns (tests first, fresh-context review table, "left open on purpose").
 
-Test counts at hand-off: backend **174 passed** (`python -m pytest -q tests` from `backend/`, ~90 s), frontend
-**25 Vitest** passed, `tsc -b` and `oxlint` clean, demo regression 19/19 (last run in M0.5 acceptance).
+Test counts at hand-off: backend **180 passed** on `main` (330 on the M1.2 Phase A branch), frontend **62 Vitest** in 12
+files, `tsc -b` and `oxlint` (with jsx-a11y) clean, contrast 212/212 (`make lint`), `make ui-check` green at six widths,
+demo regression 19/19 with 0 extra (fresh run, 3 Nov 2026).
 
 ## How to run it here (Windows, Google Drive folder — the gotchas matter)
 
