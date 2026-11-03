@@ -93,9 +93,8 @@ policy:
 execution:
   workers: auto             # 2-4 parallel browsers depending on the CPU
 
-llm:
-  enabled: false
-  model: qwen3:4b
+ai:
+  mode: none                # none | local | cloud | hybrid: choose on the project's AI page (M1.2)
 
 # Multi-role workflows: the Workflow agent derives them from the SRS (FR-07: the Clerk verifies, FR-09: the
 # Officer approves) and the app map, across both portals. Flows it cannot derive can still be written here:

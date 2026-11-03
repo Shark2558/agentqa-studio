@@ -484,12 +484,6 @@ def cmd_ci(args):
         sys.exit(1)
 
 
-def cmd_llm_check(args):
-    from agentqa.llm import check
-    p, _ = _project(args)
-    log(check(p.cfg["llm"], p))
-
-
 def cmd_owner_set(args):
     """Create or replace the owner sign-in for the API: writes backend/.env (git-ignored) with the password hash."""
     import getpass
@@ -559,7 +553,7 @@ def cmd_demo_portal(args):
                     "--dept-port", str(args.dept_port)], cwd=str(root))
 
 
-def main(argv=None):
+def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="agentqa", description="AgentQA Studio: local autonomous web testing")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -672,7 +666,6 @@ def main(argv=None):
     sp.add_argument("--min-score", type=int, default=0, help="also fail below this readiness score (0-100)")
     sp.add_argument("--skip-exploratory", action="store_true")
     sp.set_defaults(func=cmd_ci)
-    with_project(sub.add_parser("llm-check", help="check the optional local model")).set_defaults(func=cmd_llm_check)
 
     sp = sub.add_parser("ui", help="start the web UI")
     sp.add_argument("--port", type=int, default=8700)
@@ -699,8 +692,11 @@ def main(argv=None):
     sp.add_argument("--port", type=int, default=8800)
     sp.add_argument("--host", default="127.0.0.1", help="interface to listen on (0.0.0.0 inside a container)")
     sp.set_defaults(func=cmd_demo_portal)
+    return ap
 
-    args = ap.parse_args(argv)
+
+def main(argv=None):
+    args = build_parser().parse_args(argv)
     try:
         args.func(args)
     except SystemExit as exc:

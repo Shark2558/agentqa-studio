@@ -880,7 +880,7 @@ def assistant_page(request: Request, slug: str):
     ctx = _ctx(request, slug, "assistant")
     history = ctx["store"].all("SELECT * FROM chat ORDER BY id DESC LIMIT 40")[::-1]
     return tpl.TemplateResponse(request, "assistant.html", {**ctx, "history": history, "suggestions": SUGGESTIONS,
-                                                           "model_on": bool(ctx["project"].cfg.get("llm", {}).get("enabled"))})
+                                                           "model_on": str((ctx["project"].cfg.get("ai") or {}).get("mode") or "none") != "none"})
 
 
 @app.post("/p/{slug}/assistant/ask")
@@ -1063,13 +1063,12 @@ def testdata_page(request: Request, slug: str, msg: str = "", edit: str = "", ed
                      "last": last_auth.get(role), "session": sess,
                      "nav_hints": len(v.nav_hints(role)) if v.path.exists() and not role.endswith("__peer") else 0})
     secrets = {k: mask(val) for k, val in ((v.load()["secrets"] if v.path.exists() else {}) or {}).items()}
-    llm = p.cfg.get("llm") or {}
     editing = next((r for r in rows if r["role"] == edit), None)
     auth = s.all("SELECT * FROM auth_log ORDER BY id DESC LIMIT 40")
     ready_n = sum(1 for r in rows if r["ready"] and not r["peer"])
     return tpl.TemplateResponse(request, "testdata.html", {
         **ctx, "rows": rows, "methods": METHODS, "otp_sources": OTP_SOURCES, "datasets": v.datasets() if v.path.exists() else {},
-        "secrets": secrets, "llm": llm, "msg": msg, "editing": editing, "auth": auth, "apps": p.applications(),
+        "secrets": secrets, "msg": msg, "editing": editing, "auth": auth, "apps": p.applications(),
         "edit_app": edit_app, "envs": ["Development", "Test / QA", "UAT", "Staging", "Production"],
         "ready_n": ready_n, "roles_n": sum(1 for r in rows if not r["peer"]), "add": request.query_params.get("add")})
 
@@ -1176,20 +1175,6 @@ async def testdata_secret(request: Request, slug: str):
     return RedirectResponse(f"/p/{slug}/testdata#secrets", status_code=303)
 
 
-@app.post("/p/{slug}/testdata/model")
-async def testdata_model(request: Request, slug: str):
-    from agentqa import yamledit
-    p, _ = _open(slug)
-    f = await request.form()
-    provider = str(f.get("provider") or "off")
-    llm = dict(p.cfg.get("llm") or {})
-    block = {"enabled": provider != "off", "provider": "gemini" if provider == "gemini" else "ollama",
-             "model": llm.get("model", "qwen3:4b"), "gemini_model": str(f.get("gemini_model") or llm.get("gemini_model") or "auto"),
-             "redact": bool(f.get("redact")), "send_screenshots": bool(f.get("send_screenshots"))}
-    yamledit.replace_top_block(p.config_path, "llm", yaml.safe_dump({"llm": block}, sort_keys=False))
-    return RedirectResponse(f"/p/{slug}/testdata#model", status_code=303)
-
-
 # ---------------------------------------------------------------------------
 # AI providers (installation-wide keys, failover policy, health and audit log)
 # ---------------------------------------------------------------------------
@@ -1228,7 +1213,8 @@ def ai_page(request: Request, slug: str, edit: str = "", msg: str = ""):
     return tpl.TemplateResponse(request, "ai.html", {
         **ctx, "keys": keys, "policy": pol, "catalog": catalog, "kinds": kinds, "events": gw.store.events(80),
         "summary": summary, "editing": editing, "msg": msg, "home": str(gw.store.home),
-        "project_on": bool((ctx["project"].cfg.get("llm") or {}).get("enabled"))})
+        "project_on": str((ctx["project"].cfg.get("ai") or {}).get("mode") or "none") != "none",
+        "project_mode": str((ctx["project"].cfg.get("ai") or {}).get("mode") or "none")})
 
 
 @app.post("/p/{slug}/ai/key")
@@ -1241,6 +1227,12 @@ async def ai_key(request: Request, slug: str):
     vals = {k: str(f.get(k) or "").strip() for k in ("id", "label", "key", "base_url", "model", "fallback_model",
                                                        "deployment", "api_version")}
     vals = {k: v for k, v in vals.items() if v or k in ("key", "fallback_model", "base_url")}
+    if vals.get("base_url"):
+        from agentqa.orchestrator import preflight
+        try:
+            vals["base_url"] = preflight.check_base_url(vals["base_url"])
+        except ValueError as exc:
+            raise HTTPException(400, f"Address: {exc}") from exc
     vals.update(provider=provider, priority=int(f.get("priority") or 10),
                 status="disabled" if f.get("disabled") else "active")
     vals["label"] = vals.get("label") or f"{catalog[provider]['name']} key"
@@ -1291,21 +1283,26 @@ async def ai_policy(request: Request, slug: str):
     num = lambda k, d: float(f.get(k) or d)  # noqa: E731
     gw.store.set_policy({"order": order, "provider_fallback": bool(f.get("provider_fallback")),
                          "attempts_per_key": int(num("attempts_per_key", 2)), "timeout_s": num("timeout_s", 60),
-                         "backoff_s": num("backoff_s", 1), "send_screenshots": bool(f.get("send_screenshots")),
-                         "redact": bool(f.get("redact")),
+                         "backoff_s": num("backoff_s", 1), "redact": bool(f.get("redact")),
                          "cooldown_s": {k: num("cd_" + k, v) for k, v in gw.store.policy()["cooldown_s"].items()}})
     return RedirectResponse(f"/p/{slug}/ai?msg=Policy+saved.#policy", status_code=303)
 
 
 @app.post("/p/{slug}/ai/project")
 async def ai_project(request: Request, slug: str):
-    from agentqa import yamledit
+    """A toggle between No AI and the project's last non-none mode (the new AI page chooses among all four)."""
+    from agentqa.ai import settings as ai_settings
     p, _ = _open(slug)
     f = await request.form()
-    block = {**(p.cfg.get("llm") or {}), "enabled": bool(f.get("enabled"))}
-    keep = ["enabled", "provider", "model", "base_url", "gemini_model", "redact", "send_screenshots", "polish_defects"]
-    yamledit.replace_top_block(p.config_path, "llm", yaml.safe_dump({"llm": {k: block[k] for k in keep if k in block}},
-                                                                     sort_keys=False))
+    block = {k: v for k, v in (p.cfg.get("ai") or {}).items() if k != "migrated_from"}
+    current = str(block.get("mode") or "none")
+    if f.get("enabled"):
+        block["mode"] = str(block.get("last_mode") or "local")
+    else:
+        block["mode"] = "none"
+        if current != "none":
+            block["last_mode"] = current
+    ai_settings.save_ai(p.config_path, block)
     return RedirectResponse(f"/p/{slug}/ai#project", status_code=303)
 
 

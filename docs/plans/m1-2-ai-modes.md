@@ -249,12 +249,84 @@ tuning for Opus (M0.3 gap c, measured during acceptance only).
 
 ## Verification
 
-_(filled in during the build)_
+**Phase A (backend), 3 Nov 2026, on branch `claude/silly-dewdney-918bf5`.**
+
+| Check | Result |
+|---|---|
+| `python -m pytest -q tests` (from `backend/`) | every new test file written RED first, then green; the full suite's final count is in the Record of changes |
+| `python -m pyflakes agentqa demo tools tests` | clean |
+| Demo regression in No-AI mode (`pipeline -p projects/demo --policy srs_wins --auto-approve`, then `tools/check_demo.py`) | **19/19 seeded bugs found, 0 unexpected defects** (run 2026-11-03 08:50, with the engine rewired to `model_for`) |
+| `python -m agentqa ai-test` on the owner's two real keys | Gemini (pinned `gemini-flash-lite-latest`) OK · Claude (`auto` → `claude-sonnet-5-5`) OK; one tiny call each, before and after the review fixes |
+| `import agentqa.llm` | fails (`test_legacy_llm_removed.py`); no source file mentions the old module; `llm-check` is gone, `ai-test` stays |
+| File and function sizes | every new file ≤ 400 lines (router 304, providers 385, client 172); no function reaches 50 lines |
+
+Plan-vs-build differences worth knowing:
+- `test_ai_gateway.py` expected the Gemini auto-pick `gemini-2.5-flash`; the plan changes the pick to the `-latest` alias
+  (M0.3 gap a), so that one expectation now reads `gemini-flash-latest`. The `test_v05` Gemini client test moved into
+  `test_ai_catalog` (pick, fenced JSON) and `test_ai_client` / `test_ai_router_scope` (redaction on cloud only).
+- The default price table carries today's vendor prices (`usage.PRICES_DATED = 2026-11-03`): Anthropic Opus 5.5 $4/$20,
+  Sonnet 5.5 $2/$10, Haiku 5.5 $0.10/$0.50; Gemini 3.5 Flash-Lite $0.30/$2.50, 3.8 Flash $0.75/$3.75 (Google raises it on
+  1 Jan 2027: override under the policy's `prices` then), 3.1 Pro $2/$12; OpenAI gpt-4o-mini $0.15/$0.60, gpt-4o
+  $2.50/$10, gpt-4.1-mini $0.40/$1.60. Providers without a table are charged at the highest known price, flagged
+  `estimated` (errs high, says so).
+- Local vision is decided per key by the model's name (`catalog.LOCAL_VISION`: llava, *vl, vision, minicpm-v, moondream,
+  bakllava, gemma3, pixtral), not by a catalogue flag, because Ollama serves both kinds behind one address.
+- This PC adds about 1.5 s of HTTP-client set-up per request (the Drive certificate issue of ADR 0001 in a milder form),
+  so the per-key-timeout test uses one attempt.
 
 ## Review (fresh context)
 
-_(filled in during the build)_
+Three reviewers in fresh contexts on the uncommitted change set (`ecc:code-reviewer`, `ecc:python-reviewer`,
+`ecc:security-reviewer`), 3 Nov 2026. Verdicts before fixes: WARN · BLOCK · WARN. Every HIGH and MEDIUM was fixed
+test-first in the same commit; the LOWs below marked "open" are recorded for Phase B or later.
+
+| # | Severity | Finding (reviewer) | Fix |
+|---|---|---|---|
+| 1 | HIGH | `PATCH /ai/keys/{id}` with explicit nulls wrote `None` into the shared key store (`priority: null` broke `ordered()` for every project; `status: null` disabled the key) (python) | nulls dropped except for clearable fields (`timeout_s`, `deployment`, `api_version`, `fallback_model`); `ordered()` tolerant of a missing priority; test |
+| 2 | HIGH (latent) | Hybrid mode could send an image to a cloud key without screenshot consent once a local model can see (all three) | consent enforced at **two** layers: `modes._hybrid` routes an unconsented image to `("local",)` only, and the router takes `cloud_image` and strips the image for any cloud key without it (and skips cloud keys entirely for `need_vision`); tests in modes, router and client |
+| 3 | MEDIUM | `local_vision` was always False (both local providers `vision: False`), so local OCR / Visual QA images could never work (python) | `catalog.can_see(key)`: local keys see by model name; test |
+| 4 | MEDIUM | Hand-edited YAML of the wrong shape (`budget: "x"`, `consent: [1]`) crashed every agent stage; `"false"` string counted as consent; unquoted `off` parsed as False and fell open (python, code, security) | `_mapping` / `_tier` helpers, consent is `is True`, `validate` reports the shape; tests |
+| 5 | MEDIUM | NaN / Infinity prices or cool-downs accepted by the policy and defeating the cap (python, security) | `Annotated[float, allow_inf_nan=False]` in the schemas; `merged_prices` ignores non-finite overrides; tests |
+| 6 | MEDIUM | A cloud answer without usage figures was metered as $0; billed-but-unusable answers (not JSON, cut off) were not metered at all; Gemini thinking tokens not counted (all three) | `on_usage` fires for every billed attempt with `ok`, `usage_known`, `approx_input_tokens`, `max_tokens`; `usage.record` charges prompt size + max_tokens and flags `estimated` when usage is unknown; Gemini adds `thoughtsTokenCount`; tests |
+| 7 | MEDIUM | Empty `scopes` fell open to every key (python, code) | `ordered(())` → no keys; test |
+| 8 | MEDIUM | `Store` opened per `model_for` and never closed (python, code) | `AiClient.close()` + context manager; `effective()` and the no-route path close theirs; test |
+| 9 | MEDIUM | `base_url` placeholders stored for Azure / OpenAI-compatible; private `preflight._check_host` called from the API; the old dashboard's key form skipped the address guard (python, security) | `preflight.check_base_url` is the one public choke point, used by the API (POST and PATCH) and the old form; 422 when those two providers come without an address; tests incl. the legacy form |
+| 10 | MEDIUM | One tier's "model not available" marked the whole key dead for every tier (code) | dead models kept per key as a list; `state=model` only for a pinned key; test |
+| 11 | MEDIUM | Untyped public signatures, `**_ignored` swallowing typos (python) | typed under `TYPE_CHECKING`; `**_ignored` removed |
+| 12 | LOW | `AiClient.model` read the thread-wide `gw.last` (python, code) | the client keeps its own last answer; test |
+| 13 | LOW | Gemini version compared as floats (2.10 < 2.5) (python) | tuple comparison; test |
+| 14 | LOW | `budget.pct` rounded to 100 while still "warning" (code) | floor; test |
+| 15 | LOW | Loopback HTTP honoured `HTTP_PROXY` (local prompts could leave through a proxy) (security) | `trust_env=False` for loopback hosts in the adapters and the local probe |
+| 16 | LOW | `parse_json` / `r.json()` could raise `RecursionError` / `ValueError` out of the router on hostile model output (security) | `parse_json` caps length and catches both; adapters' `_json()` turns a non-JSON body into `ProviderError("bad_output")` |
+| 17 | LOW | Path segments (Gemini model, Azure deployment / api-version) unencoded; OCR errors swallowed silently; `/_calls` snapshot without the lock; dead code (`has_keys`, `STATES`, `allow_cloud`); `_grouped` identifier unchecked; `last_mode` dropped by `PUT`; `_ANNOUNCED` unbounded | all fixed (quote, warn, lock, removed, assert, kept, capped) |
+| 18 | LOW · **open** | Budget alert de-duplication is per process (two worker processes on one project could both alert once) (code) | acceptable for M1.2 (stages run one at a time); revisit with the scheduler (M1.5) |
+| 19 | LOW · **open** | Audit log (`ai_events.detail`, `key_state.last_error`) keeps up to 160 chars of a non-JSON answer / 500 of a provider error body, scrubbed for keys only (security) | pre-existing M0.3 behaviour; decide in M1.4 whether the detail should be kind + status only |
+| 20 | LOW · **open** | Anthropic SDK client follows redirects; DNS is checked once at save time (rebinding); Test endpoint can run up to the key's timeout in the threadpool (security) | owner-only paths; cap the test timeout and pin resolved addresses in the cloud edition (M3) |
+| 21 | LOW · **open** | Mock-server fixtures duplicated across test files (python) | consolidate in `conftest` when Phase B adds more |
+| 22 | INFO · **open** | `current_user` has no role check (security) | M2.1 adds roles; key / policy / test endpoints then need `role == "owner"` |
 
 ## Record of changes
 
-_(filled in during the build)_
+**Phase A — one commit on `claude/silly-dewdney-918bf5`, 3 Nov 2026.** Full suite after the review fixes: **330 passed**
+(174 at hand-off; 302 before the review fixes, with one test double updated).
+
+New: `agentqa/ai/{settings,catalog,usage,budget,modes,client,local}.py`, `agentqa/api/{routes_ai,schemas_ai}.py`,
+`docs/adr/0002-one-ai-gateway.md`, tests `test_ai_settings`, `test_ai_catalog`, `test_ai_router_scope`, `test_ai_usage`,
+`test_ai_budget`, `test_ai_modes`, `test_ai_client`, `test_ai_local`, `test_api_ai`, `test_legacy_llm_removed`.
+
+Changed: `agentqa/ai/__init__.py` (lazy), `providers.py` (CATALOG moved out, `last_usage` for all families, `_json`,
+no proxy on loopback), `router.py` (scopes, tiers, per-key timeout, next candidate model, `on_usage`, `cloud_image`,
+per-thread `last`), `store.py` (`send_screenshots` retired, `prices`, `lmstudio` in the order), `config.py` (`ai:`
+defaults, `migrate_llm`), `yamledit.py` (`remove_top_block`), `documents.py` / `orchestrator/intake.py` (`ai=`),
+`orchestrator/preflight.py` (`check_base_url`, `check_host` public), `doctor.py` (effective table), `cli.py`
+(`build_parser`, `llm-check` gone), `api/__init__.py` (routers), `web/app.py` + `templates/{ai,testdata}.html`
+(ai.mode toggle, model panel removed, address guard), the ten call sites (`assistant`, `casegen`, `requirements`,
+`req_writer`, `srs_analyst`, `triage`, `visual_qa`, `login_flow`, `req_chat`, `documents`), `demo/mock_ai.py`
+(local paths, usage fields, `/_seen`, `slow-model`, `nousage`), `demo/project.yaml` (`ai: {mode: none}`),
+`backend/README.md` (AI modes section). Deleted: `agentqa/llm.py`. Tests updated, not weakened: `test_ai_gateway`
+(alias pick, dead-model list), `test_v05` (Gemini test moved, `model_for` fake), `test_v06`, `test_visual_qa`,
+`test_wizard_hardening` (probe fake takes `ai`).
+
+Left open on purpose (Phase B): the React AI page and wizard step; acceptance runs in Local (Ollama qwen3:4b) and
+Cloud (Anthropic first in the order) modes with the owner watching; the cap demo with a $0.05 project. Not in this
+phase: items 18–22 above; `docs/HANDOFF.md` (another session owns it).

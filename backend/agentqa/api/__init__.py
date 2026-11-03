@@ -83,8 +83,9 @@ def create_app(settings: Settings | None = None, legacy: bool = False, frontend_
     def docs(user: _auth.User = Depends(_auth.current_user)):
         return get_swagger_ui_html(openapi_url=f"{API_PREFIX}/openapi.json", title="AgentQA Studio API")
 
-    from agentqa.api import routes_live, routes_projects, routes_runs, routes_wizard
-    for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_wizard.router, routes_wizard.tools):
+    from agentqa.api import routes_ai, routes_live, routes_projects, routes_runs, routes_wizard
+    for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_wizard.router, routes_wizard.tools,
+                   routes_ai.router, routes_ai.projects):
         app.include_router(router, prefix=API_PREFIX)
 
     _serve_frontend(app, frontend_dist)

@@ -186,7 +186,7 @@ def test_requirement_writer_rewrites_every_requirement_and_flags_what_the_model_
     assert out["by_rules"] == out["requirements"] > 0
     w = s.one("SELECT std FROM requirements ORDER BY seq")["std"]["written"]
     assert w["statement"] and w["steps"] and w["by"].startswith("rules")
-    p.cfg.setdefault("llm", {})["enabled"] = True
+    p.cfg["ai"] = {"mode": "cloud", "consent": {"send_text": True}}        # the stand-in key is a cloud key
     writer_ai("sk-writer-good-0000000001")
     out = req_writer.write(p, s)
     assert out["by_model"] == out["requirements"] and out["flagged"] == 0

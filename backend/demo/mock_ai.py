@@ -2,13 +2,17 @@
 
     python -m agentqa demo-ai --port 8950
 
-Paths: /openai/v1 (OpenAI and every OpenAI-compatible provider), /anthropic/v1, /gemini/v1beta and
-/azure/openai/deployments/<name>/chat/completions. What happens depends on the key's text:
+Paths: /openai/v1 (OpenAI and every OpenAI-compatible provider), /anthropic/v1, /gemini/v1beta,
+/azure/openai/deployments/<name>/chat/completions, and the two keyless local stand-ins /ollama/api/{tags,chat} and
+/lmstudio/v1/{models,chat/completions} (an empty key is fine there). What happens depends on the key's text:
   ...ratelimit...  429 rate limit (Retry-After: 30)     ...quota...    429 daily quota used up
   ...billing...    429 insufficient_quota (billing)      ...invalid...  401 key rejected
   ...down...       503 service unavailable              ...slow...     answers after 5 s (times out)
-  ...garbage...    200 but not JSON                      anything else  a valid JSON answer
-and model 'retired-model' answers 404 'model not found'. Every request is counted per key (GET /_calls).
+  ...garbage...    200 but not JSON                      ...nousage...  a valid answer without usage figures
+  anything else    a valid JSON answer
+and model 'retired-model' answers 404 'model not found'; model 'slow-model' answers after 5 s. Every request is counted
+per key (GET /_calls); GET /_seen says per key whether an image ever arrived. Every answer carries the provider's usage
+fields (usage / usageMetadata / prompt_eval_count), one token in and one out.
 
 Most answers carry no test content: this server exists to exercise routing, not to stand in for a model. The
 one exception is AgentQA's own tagged tasks ([[AQ-TASK:visual-act]], visual-verify, casegen, req-writer), which get a
@@ -26,9 +30,16 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 CALLS: dict[str, int] = {}
+SEEN: dict[str, dict] = {}
 LOCK = threading.Lock()
-MODELS = ["gpt-4o-mini", "gpt-4o", "claude-sonnet-5-5", "claude-haiku-5-5", "gemini-2.5-flash", "gemini-2.5-pro",
-          "deepseek-chat", "llama-3.3-70b-versatile", "mistral-small-latest"]
+MODELS = ["gpt-4o-mini", "gpt-4o", "claude-sonnet-5-5", "claude-haiku-5-5", "claude-opus-5-5", "gemini-2.5-flash",
+          "gemini-2.5-pro", "gemini-3.8-flash", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-pro-latest",
+          "deepseek-chat", "llama-3.3-70b-versatile", "mistral-small-latest", "slow-model"]
+LOCAL_MODELS = ["qwen3:4b"]
+KEYLESS_PATHS = ("/ollama/", "/lmstudio/")
+SLOW_S = 5
+USAGE_OPENAI = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+USAGE_GEMINI = {"promptTokenCount": 1, "candidatesTokenCount": 1, "thoughtsTokenCount": 1, "totalTokenCount": 3}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -48,12 +59,20 @@ class Handler(BaseHTTPRequestHandler):
         for k, v in (headers or {}).items():
             self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.wfile.write(data)
+        except OSError:
+            pass                      # the client gave up (a timeout test): nothing to answer any more
+
+    def _keyless(self) -> bool:
+        return self.path.startswith(KEYLESS_PATHS)
 
     def _fault(self, key: str) -> bool:
         with LOCK:
             CALLS[key] = CALLS.get(key, 0) + 1
         key = key.lower()
+        if not key and self._keyless():
+            return False
         if "ratelimit" in key:
             self._send(429, {"error": {"type": "rate_limit_exceeded", "message": "Rate limit reached for requests"}},
                        {"Retry-After": "30"})
@@ -76,10 +95,18 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/_calls"):
-            return self._send(200, CALLS)
+            with LOCK:
+                return self._send(200, dict(CALLS))
+        if self.path.startswith("/_seen"):
+            with LOCK:
+                return self._send(200, dict(SEEN))
         key = self._key()
         if self._fault(key):
             return
+        if self.path.startswith("/ollama"):
+            return self._send(200, {"models": [{"name": m, "model": m} for m in LOCAL_MODELS]})
+        if self.path.startswith("/lmstudio"):
+            return self._send(200, {"data": [{"id": m} for m in LOCAL_MODELS]})
         if self.path.startswith("/gemini"):
             return self._send(200, {"models": [{"name": f"models/{m}", "supportedGenerationMethods": ["generateContent"]}
                                                for m in MODELS if m.startswith("gemini")]})
@@ -93,8 +120,12 @@ class Handler(BaseHTTPRequestHandler):
         if self._fault(key):
             return
         model = body.get("model") or (self.path.split("/models/")[-1].split(":")[0] if "/models/" in self.path else "")
+        with LOCK:
+            SEEN[key] = {"image": SEEN.get(key, {}).get("image", False) or _has_image(body), "model": model}
         if model == "retired-model":
             return self._send(404, {"error": {"message": f"The model `{model}` does not exist or you do not have access"}})
+        if model == "slow-model":
+            time.sleep(SLOW_S)
         texts = _texts(body)
         task = next((m.group(1) for t in texts for m in [re.search(r"\[\[AQ-TASK:([\w-]+)\]\]", t)] if m), None)
         if "garbage" in key.lower():
@@ -103,14 +134,31 @@ class Handler(BaseHTTPRequestHandler):
             answer = json.dumps(_scripted(task, texts, key.lower()))
         else:
             answer = json.dumps({"ok": True, "served_by": key[-6:], "model": model})
+        silent = "nousage" in key.lower()
         if self.path.startswith("/gemini"):
-            return self._send(200, {"candidates": [{"content": {"parts": [{"text": answer}]}}]})
+            return self._send(200, {"candidates": [{"content": {"parts": [{"text": answer}]}}],
+                                    **({} if silent else {"usageMetadata": USAGE_GEMINI})})
+        if self.path.startswith("/ollama"):
+            return self._send(200, {"model": model, "message": {"role": "assistant", "content": answer}, "done": True,
+                                    **({} if silent else {"prompt_eval_count": 1, "eval_count": 1})})
         if self.path.startswith("/anthropic"):
             # the shape of a real Messages response, so the official SDK parses it
             return self._send(200, {"id": "msg_mock", "type": "message", "role": "assistant", "model": model,
                                     "content": [{"type": "text", "text": answer}], "stop_reason": "end_turn",
                                     "stop_sequence": None, "usage": {"input_tokens": 1, "output_tokens": 1}})
-        return self._send(200, {"choices": [{"message": {"role": "assistant", "content": answer}}]})
+        return self._send(200, {"choices": [{"message": {"role": "assistant", "content": answer}}],
+                                **({} if silent else {"usage": USAGE_OPENAI})})
+
+
+def _has_image(obj) -> bool:
+    """Did an image arrive, in any family's shape (OpenAI image_url, Anthropic image block, Gemini inline_data, Ollama images)?"""
+    if isinstance(obj, dict):
+        if obj.get("type") == "image" or "inline_data" in obj or "image_url" in obj or obj.get("images"):
+            return True
+        return any(_has_image(v) for v in obj.values())
+    if isinstance(obj, list):
+        return any(_has_image(v) for v in obj)
+    return False
 
 
 def _texts(obj) -> list[str]:

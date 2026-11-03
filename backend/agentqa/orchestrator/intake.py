@@ -70,9 +70,10 @@ def _no_paths(detail: str, path: Path) -> str:
     return detail
 
 
-def probe_document(path: Path, folder: str = "srs") -> dict:
-    """read in full / partly read / not read, with the reason and how many pieces the reader found."""
-    blocks, info = documents.read(path)
+def probe_document(path: Path, folder: str = "srs", ai=None) -> dict:
+    """read in full / partly read / not read, with the reason and how many pieces the reader found. `ai` is the
+    project's `documents` client (OCR of scanned pages), or None."""
+    blocks, info = documents.read(path, ai=ai)
     status, detail = info["status"], _no_paths(info.get("detail") or "", path)
     if status == "read" and not blocks:
         status, detail = "partly", "no text was found in it"
@@ -97,7 +98,8 @@ def save_document(p: Project, filename: str, data: bytes, folder: str = "srs") -
     check_unpacked_size(name, data)
     path = _folder(p, folder) / name
     path.write_bytes(data)
-    return probe_document(path, folder)
+    from agentqa.ai.client import model_for
+    return probe_document(path, folder, ai=model_for(p, "documents"))
 
 
 def list_documents(p: Project, s: Store | None = None) -> list[dict]:

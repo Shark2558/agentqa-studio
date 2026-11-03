@@ -501,8 +501,8 @@ def _apply_answer(page, project: Project, role: str, agent: str, snap: dict, ans
 
 
 def _ask_model(page, project: Project, role: str, agent: str, snap: dict, goal: str) -> dict | None:
-    from agentqa.llm import get_llm
-    llm = get_llm(project, "login")
+    from agentqa.ai.client import model_for
+    llm = model_for(project, "login")
     if not llm or not llm.available():
         return None
     view = {"url": snap["url"], "title": snap["title"],

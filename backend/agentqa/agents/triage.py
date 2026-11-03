@@ -16,7 +16,6 @@ import httpx
 
 from agentqa import live
 from agentqa.config import Project
-from agentqa.llm import get_llm
 from agentqa.store import Store, now
 from agentqa.util import log, warn
 
@@ -243,7 +242,8 @@ def triage(project: Project, store: Store, run_id: str | None = None) -> dict:
     seq = store.scalar("SELECT MAX(seq) FROM defects") or 0
     seen = set()
     created = updated = 0
-    llm = get_llm(project, "defects") if project.cfg["llm"].get("polish_defects") else None
+    from agentqa.ai.client import model_for
+    llm = model_for(project, "triage")                 # off unless the AI page assigns it a tier
     for sig, g in sorted(groups.items(), key=lambda kv: (SEV_ORDER.index(kv[1]["meta"]["severity"]), kv[0])):
         if not g["cases"] and not g.get("fresh_finding") and previous.get(sig):
             continue  # only old exploratory/ZAP evidence: no new verdict from it this run

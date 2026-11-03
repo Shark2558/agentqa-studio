@@ -5,7 +5,7 @@ also hold *intent* steps ("Open My Applications and pick the latest one") and *v
 Verified"). For those the Visual QA agent looks at the page the way a tester does:
 
   sees     the visible text, every visible control (numbered), the accessibility tree, and a screenshot when the
-           AI providers policy allows images to be sent (it is off by default)
+           project's consent allows images to be sent and the model can see (off by default)
   acts     one action at a time on a control it was shown (never a made-up selector); values only from the
            test data tokens ({mobile}, {name}...) or plain sample text, so it never sees a password; nothing
            that changes data on a production application
@@ -78,8 +78,8 @@ class VisualQA:
         self.llm = None
         if project is not None and cfg.get("enabled", True):
             try:
-                from agentqa.llm import get_llm
-                llm = get_llm(project, "visual-qa")
+                from agentqa.ai.client import model_for
+                llm = model_for(project, "visual_qa")
                 self.llm = llm if llm is not None and llm.available() else None
             except Exception as exc:  # noqa: BLE001
                 warn(f"[visual-qa] no model: {exc}")
@@ -106,10 +106,10 @@ class VisualQA:
                 "elements": els, "aria": aria}
 
     def _image(self, page) -> bytes | None:
+        """A screenshot only when the project consented to sending images and the model can see them."""
+        if self.llm is None or not getattr(self.llm, "image_allowed", False):
+            return None
         try:
-            from agentqa.ai import gateway
-            if not gateway().store.policy().get("send_screenshots"):
-                return None
             return page.screenshot(type="jpeg", quality=60, timeout=5000)
         except Exception:  # noqa: BLE001
             return None

@@ -20,7 +20,6 @@ import re
 
 from agentqa import readiness
 from agentqa.config import Project
-from agentqa.llm import get_llm
 from agentqa.store import Store, now
 from agentqa.util import similarity, tokens
 
@@ -317,7 +316,8 @@ def _search(project: Project, store: Store, q: str) -> dict:
     scored.sort(reverse=True)
     top = scored[:8]
     items = [_item(f"{rid} ({kind})", text[:180], link, kind) for _, kind, rid, text, link in top]
-    llm = get_llm(project, "assistant")
+    from agentqa.ai.client import model_for
+    llm = model_for(project, "assistant")
     if llm and llm.available() and top:
         context = "\n".join(f"[{rid}] {text}" for _, _, rid, text, _ in top)
         out = llm.chat_json("You answer questions about a software test project using ONLY the records given. "
@@ -329,5 +329,5 @@ def _search(project: Project, store: Store, q: str) -> dict:
     if not top:
         return {"text": "I could not find anything about that in this project. Try one of these:",
                 "suggestions": SUGGESTIONS}
-    return {"text": "These records match your question best" + ("" if llm else " (turn on the local model in Settings "
+    return {"text": "These records match your question best" + ("" if llm else " (turn on AI for this project on its AI page "
                     "for written answers)") + ":", "items": items}

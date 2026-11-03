@@ -20,15 +20,15 @@ from cryptography.fernet import Fernet, InvalidToken
 
 DEFAULT_POLICY = {
     "order": ["gemini", "openai", "anthropic", "azure_openai", "deepseek", "groq", "mistral", "openrouter",
-              "openai_compatible", "ollama"],
+              "openai_compatible", "ollama", "lmstudio"],
     "provider_fallback": True,       # when every key of a provider fails, try the next provider in `order`
     "attempts_per_key": 2,           # tries per key on timeouts, outages and broken answers
     "timeout_s": 60,
     "backoff_s": 1.0,                # wait between tries on the same key (doubles each try)
     "cooldown_s": {"rate_limit": 60, "quota": 3600, "unavailable": 120, "timeout": 60, "connection": 120,
                    "bad_output": 30},
-    "send_screenshots": False,       # images go to providers only when this is on
-    "redact": True,                  # mask mobile numbers, emails and 12-digit numbers before sending
+    "redact": True,                  # mask mobile numbers, emails and 12-digit numbers before sending to the cloud
+    "prices": {},                    # {provider: {model: [usd per 1M input tokens, usd per 1M output tokens]}} overrides
 }
 _LOCK = threading.Lock()
 SECRET_PATTERNS = [re.compile(p) for p in (r"sk-[A-Za-z0-9_\-]{12,}", r"AIza[0-9A-Za-z_\-]{20,}", r"gsk_[A-Za-z0-9]{20,}",
@@ -146,6 +146,8 @@ class AIStore:
             rows = [dict(r) for r in db.execute("SELECT * FROM key_state")]
         for r in rows:
             r["models"] = json.loads(r["models"] or "[]")
+            if isinstance(r.get("dead_model"), str) and r["dead_model"].startswith("["):
+                r["dead_model"] = json.loads(r["dead_model"])
         return rows
 
     def state(self, kid: str) -> dict:

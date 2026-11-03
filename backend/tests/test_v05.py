@@ -1,4 +1,4 @@
-"""v0.5: test data vault, tester-style login, ask-the-tester, Gemini client, Functional Test Analyst, Excel export."""
+"""v0.5: test data vault, tester-style login, ask-the-tester, Functional Test Analyst, Excel export."""
 from __future__ import annotations
 
 import io
@@ -7,12 +7,11 @@ import shutil
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from cryptography.fernet import Fernet
 
-from conftest import ROOT, free_port
+from conftest import ROOT
 
 from agentqa.config import Project
 from agentqa.store import Store
@@ -121,49 +120,8 @@ def test_assist_waits_for_an_answer_from_the_dashboard(tmp_path):
     assert out["ans"]["text"] == "482913" and out["ans"]["via"] == "dashboard"
 
 
-# ---- Gemini (against a local stand-in for the Google API) ------------------------------------
-
-def test_gemini_client_picks_flash_masks_personal_data_and_parses_json():
-    from agentqa.llm import GeminiLLM
-    seen = {}
-
-    class H(BaseHTTPRequestHandler):
-        def log_message(self, *a):
-            pass
-
-        def do_GET(self):
-            seen["key"] = self.headers.get("x-goog-api-key")
-            body = {"models": [{"name": f"models/{n}", "supportedGenerationMethods": ["generateContent"]} for n in
-                               ("gemini-2.0-flash-lite", "gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-preview-tts",
-                                "text-embedding-004")]}
-            self._send(body)
-
-        def do_POST(self):
-            seen["path"] = self.path
-            seen["body"] = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            self._send({"candidates": [{"content": {"parts": [{"text": '```json\n{"cases": [{"title": "x"}]}\n```'}]}}]})
-
-        def _send(self, obj):
-            data = json.dumps(obj).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-
-    port = free_port()
-    srv = HTTPServer(("127.0.0.1", port), H)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    try:
-        g = GeminiLLM({"enabled": True, "gemini_url": f"http://127.0.0.1:{port}/v1beta", "gemini_model": "auto"}, "test-key")
-        assert g.available() and g.model == "gemini-2.5-flash"
-        out = g.chat_json("You test portals.", "Citizen 9123456780 with qa@example.com and Aadhaar 1234 5678 9012")
-        assert out == {"cases": [{"title": "x"}]}
-        sent = json.dumps(seen["body"])
-        assert "9123456780" not in sent and "qa@example.com" not in sent and "1234 5678 9012" not in sent
-        assert seen["key"] == "test-key" and seen["path"].endswith("gemini-2.5-flash:generateContent")
-    finally:
-        srv.shutdown()
+# ---- Gemini: the model pick, redaction and fenced-JSON parsing moved to the gateway in M1.2 (test_ai_catalog.py,
+#      test_ai_client.py, test_ai_router_scope.py); the old per-project client is gone (test_legacy_llm_removed.py).
 
 
 # ---- Functional Test Analyst -----------------------------------------------------------------
@@ -208,7 +166,7 @@ def test_casegen_keeps_unknown_steps_as_intent_and_traces_every_case(v05, monkey
     """The Test Case Generation agent: steps on the app map stay recorded steps, others become intent steps."""
     from agentqa.agents import casegen, requirements
     p, s = v05
-    p.cfg["llm"]["enabled"] = True
+    p.cfg["ai"] = {"mode": "local"}
     requirements.standardise(p, s, use_llm=False)
     want = s.one("SELECT id FROM requirements ORDER BY seq")["id"]
 
@@ -224,7 +182,7 @@ def test_casegen_keeps_unknown_steps_as_intent_and_traces_every_case(v05, monkey
                                                {"action": "click", "target": "Download PDF"}],     # no such button
                  "expected": "A PDF downloads"},
                 {"req_id": "NOT-ASKED", "title": "made up", "steps": [{"action": "intent", "text": "x"}], "expected": "y"}]}
-    monkeypatch.setattr("agentqa.llm.get_llm", lambda project, task="": Fake())
+    monkeypatch.setattr("agentqa.ai.client.model_for", lambda project, agent="": Fake())
     cases = casegen.generate(p, s, [])
     model = [c for c in cases if c["params"]["generated_by"] == "model"]
     assert len(model) == 1 and model[0]["req_ids"] == [want]                  # the case for an unasked ID is dropped

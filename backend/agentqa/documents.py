@@ -5,8 +5,8 @@ read (all of it), partial (some pages or parts could not be read, and which ones
 with the reason and what would fix it). Nothing is dropped silently: the Requirement Analyst records every block
 as a source segment, and unread parts appear on the Requirements page.
 
-Scanned pages and images are read with Tesseract OCR when it is installed, else with a vision-capable AI
-key when images are allowed on the AI providers page.
+Scanned pages and images are read with Tesseract OCR when it is installed, else with the project's AI client for
+the `documents` agent (a model that can see, when the project's mode and consent allow it; callers pass it in).
 """
 from __future__ import annotations
 
@@ -33,8 +33,8 @@ def _tesseract() -> str | None:
     return None
 
 
-def ocr(image: bytes) -> tuple[str | None, str]:
-    """(text, how). Tesseract first, then a vision-capable AI key (only when images are allowed)."""
+def ocr(image: bytes, ai=None) -> tuple[str | None, str]:
+    """(text, how). Tesseract first, then the project's `documents` AI client (None when the project allows none)."""
     exe = _tesseract()
     if exe:
         try:
@@ -44,19 +44,17 @@ def ocr(image: bytes) -> tuple[str | None, str]:
                 return text, "Tesseract OCR"
         except (OSError, subprocess.SubprocessError):
             pass
-    try:
-        from agentqa.ai import gateway
-        gw = gateway()
-        if gw.has_keys() and gw.store.policy().get("send_screenshots"):
-            out = gw.complete_json("You transcribe scanned requirement documents exactly. Reply with JSON only.",
+    if ai is not None:
+        try:
+            out = ai.complete_json("You transcribe scanned requirement documents exactly. Reply with JSON only.",
                                    'Transcribe all text in the image, keeping headings, numbering and table rows (cells '
-                                   'separated by " | "). Return {"text": "..."}.', task="ocr", max_tokens=4000,
-                                   image=image, need_vision=True)
+                                   'separated by " | "). Return {"text": "..."}.', task="ocr", max_tokens=4000, image=image)
             if out and out.get("text"):
                 return str(out["text"]), "AI vision model"
-    except Exception:  # noqa: BLE001
-        pass
-    return None, ("install Tesseract OCR, or add a vision-capable AI key and allow images on the AI providers page")
+        except Exception as exc:  # noqa: BLE001 - OCR is best effort; the page is reported as unread below
+            from agentqa.util import warn
+            warn(f"[ocr] the AI model could not read the image ({exc.__class__.__name__}: {str(exc)[:160]})")
+    return None, ("install Tesseract OCR, or allow images for a vision-capable AI model on the project's AI page")
 
 
 def _convert_office(path: Path, to: str) -> Path | None:
@@ -76,7 +74,7 @@ def _convert_office(path: Path, to: str) -> Path | None:
 
 # ---------------------------------------------------------------------------------------------
 
-def read(path: Path) -> tuple[list[dict], dict]:
+def read(path: Path, ai=None) -> tuple[list[dict], dict]:
     ext = path.suffix.lower()
     info = {"kind": ext.lstrip("."), "pages": None, "status": "read", "detail": ""}
     try:
@@ -88,7 +86,7 @@ def read(path: Path) -> tuple[list[dict], dict]:
                 return [], {**info, "status": "unread", "detail": "old Word format: save it as .docx (or install LibreOffice)"}
             return _docx(conv), {**info, "detail": "converted from .doc with LibreOffice"}
         if ext == ".pdf":
-            return _pdf(path, info)
+            return _pdf(path, info, ai)
         if ext in TEXT:
             return text_blocks(path.read_text(encoding="utf-8", errors="replace")), info
         if ext in (".xlsx", ".xlsm"):
@@ -113,7 +111,7 @@ def read(path: Path) -> tuple[list[dict], dict]:
         if ext == ".json":
             return _json(json.loads(path.read_text(encoding="utf-8", errors="replace"))), info
         if ext in IMAGES:
-            text, how = ocr(path.read_bytes())
+            text, how = ocr(path.read_bytes(), ai)
             if text is None:
                 return [], {**info, "status": "unread", "detail": f"an image: {how}"}
             return text_blocks(text), {**info, "detail": f"read with {how}"}
@@ -158,7 +156,7 @@ def _docx(path: Path) -> list[dict]:
     return blocks
 
 
-def _pdf(path: Path, info: dict) -> tuple[list[dict], dict]:
+def _pdf(path: Path, info: dict, ai=None) -> tuple[list[dict], dict]:
     from pypdf import PdfReader
     reader = PdfReader(str(path))
     blocks, unread, ocred = [], [], []
@@ -173,7 +171,7 @@ def _pdf(path: Path, info: dict) -> tuple[list[dict], dict]:
                 pass
             got = ""
             for im in imgs[:4]:
-                t, _how = ocr(im.data)
+                t, _how = ocr(im.data, ai)
                 got += (t or "") + "\n"
             if got.strip():
                 text, _ = got, ocred.append(n)
@@ -186,7 +184,7 @@ def _pdf(path: Path, info: dict) -> tuple[list[dict], dict]:
             blocks.append(b)
     if unread:
         info.update(status="partial" if blocks else "unread",
-                    detail=f"scanned page(s) {', '.join(map(str, unread))} could not be read: " + ocr(b"")[1])
+                    detail=f"scanned page(s) {', '.join(map(str, unread))} could not be read: " + ocr(b"", None)[1])
     elif ocred:
         info["detail"] = f"page(s) {', '.join(map(str, ocred))} read with OCR"
     return blocks, info

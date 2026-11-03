@@ -9,6 +9,8 @@ from typing import Any
 
 import yaml
 
+from agentqa.ai.settings import DEFAULT_AI, migrate_llm
+
 DEFAULTS: dict[str, Any] = {
     "project": "Untitled project",
     "base_url": "http://127.0.0.1:8000",
@@ -65,20 +67,7 @@ DEFAULTS: dict[str, Any] = {
         "evidence": "all",       # all: a screenshot and step log for every test; failures: only for failed tests
         "video": False,          # record a video of every browser session (large)
     },
-    "llm": {
-        "enabled": False,
-        "base_url": "http://127.0.0.1:11434",
-        "model": "qwen3:4b",
-        "timeout_s": 240,
-        "num_ctx": 8192,
-        "max_chunks": 40,
-        "polish_defects": False,
-        "provider": "ollama",     # ollama (local, nothing leaves the computer) or gemini (Google; key on the Test data page)
-        "gemini_model": "auto",   # auto picks the newest stable Gemini Flash model your key can use
-        "api_key_secret": "GOOGLE_API_KEY",
-        "redact": True,           # mask mobile numbers, emails and 12-digit numbers before sending to Gemini
-        "send_screenshots": False,
-    },
+    "ai": DEFAULT_AI,         # AI mode, consent, budget and per-agent tiers (agentqa/ai/settings.py)
     "jira": {
         "enabled": False,
         "base_url": "",
@@ -229,7 +218,8 @@ class Project:
         if not self.config_path.exists():
             raise FileNotFoundError(f"No project.yaml in {self.root}. Run 'agentqa init' first.")
         raw = yaml.safe_load(self.config_path.read_text(encoding="utf-8")) or {}
-        self.cfg = _merge(DEFAULTS, raw)
+        self.cfg = _merge(DEFAULTS, migrate_llm(raw))
+        self.cfg.pop("llm", None)                 # the old block is read for the migration only
         self.cfg["base_url"] = str(self.cfg["base_url"]).rstrip("/")
         self.state = self.root / ".agentqa"
         self.state.mkdir(exist_ok=True)

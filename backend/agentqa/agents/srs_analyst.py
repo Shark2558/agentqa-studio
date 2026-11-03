@@ -4,7 +4,7 @@ Reads SRS documents (.docx, .pdf, .md, .txt), splits them into numbered
 requirements, extracts testable rules (field constraints, access rules,
 features, workflow states, performance targets) and flags ambiguous text.
 
-Rules come from deterministic patterns first. If a local model is enabled,
+Rules come from deterministic patterns first. When the project's AI mode allows a model,
 requirements the patterns could not interpret are sent to it one at a time,
 and anything it proposes is marked source='llm' for a person to confirm.
 """
@@ -15,7 +15,6 @@ from pathlib import Path
 
 from agentqa import live
 from agentqa.config import Project
-from agentqa.llm import LocalLLM, get_llm
 from agentqa.store import Store, now
 from agentqa.util import log, warn
 
@@ -359,6 +358,7 @@ REQ_ID_COL = re.compile(r"^(id|req|ref|no|s\.? ?no|sr|#|req(uirement)? ?(id|no|#
 
 def analyze(project: Project, store: Store, use_llm: bool | None = None) -> dict:
     from agentqa import documents
+    from agentqa.ai.client import model_for
     files = sorted(p for p in project.srs_dir.iterdir() if p.is_file() and p.suffix.lower() in documents.SUPPORTED)
     if not files:
         raise FileNotFoundError(f"No requirement documents in {project.srs_dir}. Add .docx, .pdf, .xlsx, .csv, .html, "
@@ -369,6 +369,7 @@ def analyze(project: Project, store: Store, use_llm: bool | None = None) -> dict
     seq = 0
     rule_seq = 0
     pending_llm: list[dict] = []
+    ocr_ai = model_for(project, "documents")           # scanned pages: a model that can see, when allowed
 
     def add_rules(req_id: str, rules: list[dict], source: str, confidence: float):
         nonlocal rule_seq
@@ -392,7 +393,7 @@ def analyze(project: Project, store: Store, use_llm: bool | None = None) -> dict
         log(f"  reading {f.name}")
         section = ""
         section_kind = "functional"
-        blocks, info = documents.read(f)
+        blocks, info = documents.read(f, ai=ocr_ai)
         store.insert("documents", {"name": f.name, "kind": info["kind"], "size": f.stat().st_size, "pages": info.get("pages"),
                                    "segments": len(blocks), "status": info["status"], "detail": info.get("detail") or "",
                                    "read_at": now()})
@@ -529,15 +530,15 @@ def analyze(project: Project, store: Store, use_llm: bool | None = None) -> dict
                 segment(f, ref, "para", text, made, "requirement")
 
     # optional model pass on requirements the patterns could not interpret
-    llm = get_llm(project, "srs") or LocalLLM({})
-    want = llm.enabled if use_llm is None else use_llm
+    llm = model_for(project, "srs")
+    want = (llm is not None) if use_llm is None else use_llm
     llm_used = 0
-    if want and pending_llm and llm.available():
-        cap = int(project.cfg["llm"].get("max_chunks", 40))
-        log(f"  asking local model '{llm.model}' about {min(cap, len(pending_llm))} requirement(s) "
-            f"the patterns could not interpret (CPU models take ~20-60 s each)")
+    if want and pending_llm and llm is not None and llm.available():
+        cap = int((project.cfg.get("ai") or {}).get("max_chunks", 40))
+        log(f"  asking the model ({llm.model}) about {min(cap, len(pending_llm))} requirement(s) "
+            f"the patterns could not interpret (local CPU models take ~20-60 s each)")
         for item in pending_llm[:cap]:
-            live.emit("srs", "model", f"Asking the local model about {item['id']}", req=item["id"], text=item["text"])
+            live.emit("srs", "model", f"Asking the model about {item['id']}", req=item["id"], text=item["text"])
             out = llm.chat_json(LLM_SYSTEM, f"Roles in this system: {', '.join(aliases)}.\nRequirement {item['id']}: {item['text']}")
             if not out:
                 continue
@@ -557,11 +558,11 @@ def analyze(project: Project, store: Store, use_llm: bool | None = None) -> dict
                 flags.append({"term": "model interpretation", "reason": str(interp)[:300]})
                 store.update("requirements", "id", item["id"], {"ambiguity": flags})
     elif want and pending_llm:
-        warn("Local model enabled but unavailable; skipped the model pass.")
+        warn("AI is on for this project but no model is available; skipped the model pass.")
 
     # completeness: text with requirement-like wording that produced no requirement
     missed = store.all("SELECT * FROM segments WHERE disposition='possibly missed'")
-    if missed and want and llm.available():
+    if missed and want and llm is not None and llm.available():
         live.emit("srs", "model", f"Completeness check: asking the model about {len(missed)} passage(s) no requirement came from")
         for chunk in [missed[i:i + 12] for i in range(0, min(len(missed), 60), 12)]:
             out = llm.chat_json(MISSED_SYSTEM, "\n".join(f"[{m['id']}] ({m['doc']} › {m['ref']}) {m['text'][:600]}" for m in chunk),

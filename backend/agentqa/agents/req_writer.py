@@ -131,8 +131,8 @@ def write(project: Project, store: Store, use_llm: bool | None = None) -> dict:
     written: dict[str, dict] = {}
     llm = None
     if use_llm is not False:
-        from agentqa.llm import get_llm
-        llm = get_llm(project, "requirement-writer")
+        from agentqa.ai.client import model_for
+        llm = model_for(project, "req_writer")
         if llm is not None and not llm.available():
             llm = None
     if llm is not None:

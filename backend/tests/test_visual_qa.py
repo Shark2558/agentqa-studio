@@ -1,6 +1,6 @@
 """Requirement 5: the Visual QA agent acts only on controls it was shown and passes only with a quote from the page.
 
-Runs a real browser against the demo Citizen Portal. The "model" is the local AI stand-in (demo/mock_ai.py),
+Runs a real browser against the demo Citizen Portal. The "model" is the AI stand-in (demo/mock_ai.py) behind a cloud key,
 which answers AgentQA's tagged tasks by word overlap: it exercises the plumbing (gateway, grounding, quote
 check), not a model's judgement.
 """
@@ -67,7 +67,7 @@ def ai(tmp_path, monkeypatch):
 def _vq(demo, **kw):
     from agentqa.agents.visual_qa import VisualQA
     p, _ = demo
-    p.cfg.setdefault("llm", {})["enabled"] = True
+    p.cfg["ai"] = {"mode": "cloud", "consent": {"send_text": True, "send_screenshots": False}}
     return VisualQA(p, ask_person=False, **kw)
 
 

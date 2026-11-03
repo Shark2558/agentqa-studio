@@ -118,10 +118,6 @@ def questions(text: str, items: list[dict], aliases: dict[str, list[str]]) -> li
     return out
 
 
-def _ai_mode(project: Project) -> str:
-    return str((project.cfg.get("ai") or {}).get("mode") or "none").lower()
-
-
 def _ai_chat(project: Project, text: str, gateway) -> dict | None:
     out = gateway.complete_json(AI_SYSTEM, text.strip(), task="req_chat", max_tokens=1500)
     reqs = [str(r.get("text", "")).strip() for r in (out or {}).get("requirements", []) if isinstance(r, dict)]
@@ -137,14 +133,14 @@ def _ai_chat(project: Project, text: str, gateway) -> dict | None:
 
 
 def chat(project: Project, text: str, gateway=None) -> dict:
-    """{"items", "questions", "source": "rules" | "ai"}; the AI path only when the project's AI mode is not `none`."""
-    if _ai_mode(project) != "none":
-        if gateway is None:
-            from agentqa.ai.router import gateway as _gateway
-            gateway = _gateway()
-        if gateway.available():
-            answer = _ai_chat(project, text, gateway)
-            if answer:
-                return answer
+    """{"items", "questions", "source": "rules" | "ai"}; the AI path only when the project's AI mode, consent, budget
+    and keys allow it (`model_for`), with the rules as the fallback whenever the model gives nothing usable."""
+    if gateway is None:
+        from agentqa.ai.client import model_for
+        gateway = model_for(project, "req_chat")
+    if gateway is not None and gateway.available():
+        answer = _ai_chat(project, text, gateway)
+        if answer:
+            return answer
     items = extract(text)
     return {"items": items, "questions": questions(text, items, project.role_aliases()), "source": "rules"}
