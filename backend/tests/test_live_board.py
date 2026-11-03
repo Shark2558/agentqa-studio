@@ -78,3 +78,11 @@ def test_the_board_endpoint_needs_sign_in_and_a_real_project(client):
     assert body["ok"] is True
     assert body["data"]["stages"][0]["label"] == "Requirement Analyst"
     assert "citizen" in body["data"]["roles"]
+
+
+def test_the_frontend_copy_of_the_board_is_the_board():
+    import json
+    from pathlib import Path
+    copy = Path(__file__).resolve().parents[2] / "frontend" / "src" / "test-fixtures" / "live-board.json"
+    data = json.loads(copy.read_text(encoding="utf-8"))
+    assert data == board.board(data["roles"]), "re-run backend/tools/live_fixture_summary.py"

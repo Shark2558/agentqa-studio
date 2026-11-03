@@ -1,0 +1,129 @@
+{
+ "stages": [
+  {
+   "stage": "analyze",
+   "agent": "srs",
+   "label": "Requirement Analyst"
+  },
+  {
+   "stage": "explore",
+   "agent": "explorer",
+   "label": "Explorer"
+  },
+  {
+   "stage": "reconcile",
+   "agent": "reconciler",
+   "label": "Reconciler"
+  },
+  {
+   "stage": "write",
+   "agent": "writer",
+   "label": "Requirement Writer"
+  },
+  {
+   "stage": "design",
+   "agent": "designer",
+   "label": "Test Designer"
+  },
+  {
+   "stage": "generate",
+   "agent": "generator",
+   "label": "Script Generator"
+  },
+  {
+   "stage": "run",
+   "agent": "executor",
+   "label": "Executor"
+  },
+  {
+   "stage": "exploratory",
+   "agent": "exploratory",
+   "label": "Exploratory Tester"
+  },
+  {
+   "stage": "security",
+   "agent": "security",
+   "label": "Security Scanner"
+  },
+  {
+   "stage": "triage",
+   "agent": "triage",
+   "label": "Triage + Bugs"
+  },
+  {
+   "stage": "heal",
+   "agent": "healer",
+   "label": "Healer"
+  },
+  {
+   "stage": "report",
+   "agent": "reporter",
+   "label": "Reporter"
+  }
+ ],
+ "helpers": {
+  "design": [
+   "analyst",
+   "casegen",
+   "importer"
+  ]
+ },
+ "helper_fallback": {
+  "importer": "design"
+ },
+ "labels": {
+  "srs": "Requirement Analyst",
+  "explorer": "Explorer",
+  "reconciler": "Reconciler",
+  "writer": "Requirement Writer",
+  "designer": "Test Designer",
+  "generator": "Script Generator",
+  "executor": "Executor",
+  "exploratory": "Exploratory Tester",
+  "security": "Security Scanner",
+  "triage": "Triage + Bugs",
+  "healer": "Healer",
+  "reporter": "Reporter",
+  "analyst": "Functional Test Analyst",
+  "casegen": "Test Case Generator",
+  "importer": "Test Importer",
+  "doctor": "Readiness check",
+  "pipeline": "Pipeline",
+  "ai": "AI models"
+ },
+ "gates": [
+  {
+   "id": "questions",
+   "label": "Questions for you",
+   "after": "reconcile"
+  },
+  {
+   "id": "plan",
+   "label": "Test plan approval",
+   "before": "generate"
+  },
+  {
+   "id": "defects",
+   "label": "Defects to confirm",
+   "after": "triage"
+  }
+ ],
+ "ai_labels": {
+  "req_chat": "Requirement Chat",
+  "req_writer": "Requirement Writer",
+  "srs": "Requirement Analyst",
+  "requirements": "Requirement enrichment",
+  "casegen": "Test Case Generation",
+  "visual_qa": "Visual QA",
+  "documents": "Document OCR",
+  "triage": "Defect title polish",
+  "assistant": "Assistant",
+  "login": "Login navigation"
+ },
+ "roles": [
+  "citizen",
+  "clerk",
+  "officer",
+  "admin"
+ ]
+}

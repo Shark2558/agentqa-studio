@@ -1,0 +1,78 @@
+{
+ "cards": {
+  "srs": {
+   "state": "done",
+   "cost": 0.0052,
+   "model": "claude-sonnet-5-5"
+  },
+  "explorer": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "reconciler": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "writer": {
+   "state": "done",
+   "cost": 0.1197,
+   "model": "claude-opus-5-5"
+  },
+  "designer": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "generator": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "executor": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "exploratory": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "security": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "triage": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "healer": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  },
+  "reporter": {
+   "state": "done",
+   "cost": 0,
+   "model": null
+  }
+ },
+ "gates": {
+  "questions": 15,
+  "plan": "approved",
+  "defects": 19
+ },
+ "tiles": {
+  "defect": 10,
+  "not-run": 3,
+  "passed": 14
+ },
+ "ai": {
+  "calls": 3,
+  "cost": 0.1249
+ }
+}

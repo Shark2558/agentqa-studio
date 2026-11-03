@@ -1,0 +1,94 @@
+/** One live event as the API serves it, checked at the boundary. Everything in an event comes from the run, and much of
+ *  it from the application under test (page titles, URLs, document text, model rewrites): it is data, shown as text,
+ *  never markup, never a link. Reading a field goes through the helpers here, which check its type. */
+
+export type Phase = "thought" | "action" | "result" | "waiting" | "lifecycle" | "meta" | "note";
+export const PHASES: readonly Phase[] = ["thought", "action", "result", "waiting", "lifecycle", "meta", "note"];
+
+export interface LiveEvent {
+  readonly t: number;
+  readonly seq: number;
+  readonly w: string;
+  readonly agent: string;
+  readonly kind: string;
+  readonly title: string;
+  readonly phase: Phase;
+  readonly level?: string | number;
+  readonly [key: string]: unknown;
+}
+
+export type Severity = "ok" | "warn" | "bad";
+
+export interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  vw: number;
+  vh: number;
+}
+
+const DEFAULT_VW = 1280;
+const DEFAULT_VH = 720;
+const SHOT_NAME = /^[\w.-]{1,80}\.jpg$/;
+const MAX_LIST = 50;
+
+const isText = (v: unknown): v is string => typeof v === "string";
+const isFiniteNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+/** The event, with its phase checked (an unknown phase is a note), or null when it is not shaped like one. */
+export function toEvent(x: unknown): LiveEvent | null {
+  if (!x || typeof x !== "object" || Array.isArray(x)) return null;
+  const e = x as Record<string, unknown>;
+  if (!isFiniteNumber(e.t) || !Number.isInteger(e.seq) || (e.seq as number) < 0) return null;
+  if (!isText(e.w) || !isText(e.agent) || !isText(e.kind) || !isText(e.title)) return null;
+  const phase = PHASES.includes(e.phase as Phase) ? (e.phase as Phase) : "note";
+  return { ...e, phase } as LiveEvent;
+}
+
+export const eventKey = (e: LiveEvent): string => `${e.w}:${e.seq}`;
+
+/** One order for live and replay: time, then sequence, then worker. */
+export function compareEvents(a: LiveEvent, b: LiveEvent): number {
+  return a.t - b.t || a.seq - b.seq || (a.w < b.w ? -1 : a.w > b.w ? 1 : 0);
+}
+
+export function severity(e: LiveEvent): Severity | null {
+  return e.level === "ok" || e.level === "warn" || e.level === "bad" ? e.level : null;
+}
+
+/** A text field, or undefined when the event has none (or something that is not text). */
+export function text(e: LiveEvent, key: string): string | undefined {
+  const v = e[key];
+  return isText(v) ? v : undefined;
+}
+
+/** A finite number field, or undefined. */
+export function num(e: LiveEvent, key: string): number | undefined {
+  const v = e[key];
+  return isFiniteNumber(v) ? v : undefined;
+}
+
+/** A list of text, keeping only the text items (at most 50). */
+export function texts(e: LiveEvent, key: string): string[] {
+  const v = e[key];
+  return Array.isArray(v) ? v.filter(isText).slice(0, MAX_LIST) : [];
+}
+
+/** A screenshot name the server could have written: a plain `.jpg` file name, nothing that walks a path. */
+export function safeShot(name: unknown): string | null {
+  return isText(name) && SHOT_NAME.test(name) ? name : null;
+}
+
+/** The outlined element's box, from finite numbers only, starting inside the viewport; otherwise null. */
+export function safeBox(e: LiveEvent): Box | null {
+  const b = e.box;
+  if (!b || typeof b !== "object") return null;
+  const { x, y, width, height } = b as Record<string, unknown>;
+  if (![x, y, width, height].every(isFiniteNumber)) return null;
+  const vw = num(e, "vw") ?? DEFAULT_VW;
+  const vh = num(e, "vh") ?? DEFAULT_VH;
+  const box = { x: x as number, y: y as number, width: width as number, height: height as number, vw, vh };
+  if (box.x < 0 || box.y < 0 || box.width <= 0 || box.height <= 0 || vw <= 0 || vh <= 0) return null;
+  return box.x < vw && box.y < vh ? box : null;
+}
