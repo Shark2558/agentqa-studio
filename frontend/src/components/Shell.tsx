@@ -6,6 +6,7 @@ import { api } from "../lib/api";
 import { useMe } from "../App";
 import { NavLinks } from "./NavLinks";
 import { NavDrawer } from "./NavDrawer";
+import { ThemeMenu } from "./ThemeMenu";
 
 type Props = {
   children: React.ReactNode;
@@ -58,6 +59,7 @@ export function Shell({ children }: Props) {
           <span className="mark" aria-hidden="true">AQ</span>
           <span className="brand-name">AgentQA Studio</span>
         </NavLink>
+        <ThemeMenu placement="down" />
       </header>
       {open && <NavDrawer slug={slug} onClose={() => setOpen(false)} />}
       <nav className="side" aria-label="Main">
@@ -70,6 +72,7 @@ export function Shell({ children }: Props) {
         </NavLink>
         <NavLinks slug={slug} />
         <div className="side-foot">
+          <ThemeMenu />
           <span className="muted small">{me.data?.email}</span>
           <button className="btn sm" type="button" onClick={signOut}>
             <SignOut aria-hidden="true" />

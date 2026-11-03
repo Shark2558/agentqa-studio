@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "../lib/api";
+import { ThemeMenu } from "../components/ThemeMenu";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
@@ -25,6 +26,7 @@ export function SignIn() {
 
   return (
     <main className="sign-in">
+      <ThemeMenu placement="down" />
       <form
         className="card sign-in-card"
         onSubmit={(e) => {

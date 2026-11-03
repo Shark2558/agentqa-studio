@@ -43,7 +43,7 @@ PAUSE_S = 0.4                 # stays well under the API's 240 requests per minu
 TOLERANCE = 0.5
 FIELDS = "input:not([type=radio],[type=checkbox]), select, textarea, .btn"
 CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, .next, form, section"
-TARGETS = ".nav a, .icon-btn"
+TARGETS = ".nav a, .icon-btn, .appear-btn"
 MIN_TARGET = 44
 
 _INSIDE_JS = """({fields, containers, tol}) => {
@@ -139,6 +139,8 @@ def check_font_and_accent(page, label: str) -> list[str]:
     problems = []
     if "IBM Plex Sans" not in page.evaluate("getComputedStyle(document.body).fontFamily"):
         problems.append(f"{label}: body is not IBM Plex Sans")
+    if not page.get_by_role("button", name="Appearance").first.is_visible():
+        problems.append(f"{label}: no Appearance button")
     before = page.evaluate("getComputedStyle(document.querySelector('.btn.primary')).backgroundColor")
     page.evaluate("document.documentElement.setAttribute('data-accent', 'teal')")
     page.wait_for_timeout(400)                       # the button's 150 ms colour transition must finish first
@@ -177,8 +179,12 @@ def run_pages(browser, base: str, slug: str, theme: str, widths: tuple[int, ...]
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    if not (ROOT / "frontend" / "dist" / "index.html").is_file():
+    index = ROOT / "frontend" / "dist" / "index.html"
+    if not index.is_file():
         print("frontend/dist is missing: run `make web-build` first")
+        return 1
+    if 'src="/app/theme-boot.js"' not in index.read_text(encoding="utf-8"):
+        print("dist/index.html does not load /app/theme-boot.js: the saved theme would flash on reload")
         return 1
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:      # Windows may still hold the test db for a moment
         proc, base = start_server(Path(tmp) / "projects")
