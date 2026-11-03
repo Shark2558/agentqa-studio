@@ -77,8 +77,8 @@ StepLater.tsx`) is the placeholder to replace; `req_chat.chat()` already takes t
 
 Known gaps to fold into M1.2: Gemini auto-pick chose `gemini-3.8-flash` (times out) so the key is pinned to
 `gemini-flash-lite-latest` (fallback `gemini-3-flash-preview`) — fix the auto-pick; usage/cost is only recorded for
-Anthropic so far; **Ollama is not installed** on this PC (ask the owner before installing anything; the Local-mode
-acceptance needs it).
+Anthropic so far; **Ollama 0.40.13 is installed** on this PC since 3 Nov 2026 but has no model pulled yet (the owner runs
+`ollama pull qwen3:4b` himself: the assistant's sandboxed shell cannot; 4 GB GPU, so 4b not 8b). Plan: `docs/plans/m1-2-ai-modes.md`.
 
 ## Follow-ups parked (not blockers)
 

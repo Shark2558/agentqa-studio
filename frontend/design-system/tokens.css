@@ -1,10 +1,13 @@
-/* AgentQA Studio design tokens — soft-UI neumorphism in professional blue and white, Data-Dense Dashboard rules for
-   monitoring screens. Source: ui-ux-pro-max (SaaS palette, Data-Dense Dashboard style) reconciled with PRD §11; see
-   MASTER.md. Every text/background pair the screens use is verified by check_contrast.py in both themes.
+/* AgentQA Studio design tokens — flat, professional blue and white (M1.2-UI), Data-Dense Dashboard rules for
+   monitoring screens. Sources: ui-ux-pro-max styles "Flat Design" + "Minimalism & Swiss", palette "SaaS (General)",
+   reconciled with PRD §11; see MASTER.md. Every text/background pair the screens use is verified by check_contrast.py
+   in both themes and for every accent.
 
    Layers: primitives (scales) → semantic roles → component recipes. Components use semantic tokens only; raw hex never
    appears in a component. Themes: every colour is declared ONCE with light-dark(light, dark); `color-scheme` on the
-   root decides which side applies (the OS preference by default, or the data-theme attribute when the person chose). */
+   root decides which side applies (the OS preference by default, or data-theme when the person chose). Accents: the
+   five brand slots (--accent*) are set here for Blue and overridden per `data-accent` on the same <html> element;
+   --color-primary* and --color-focus read the slots, so no component knows which accent is on. */
 
 :root {
   color-scheme: light dark;
@@ -12,55 +15,57 @@
   /* ---------- primitives ---------- */
   --blue-50: #EFF6FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE; --blue-300: #93C5FD; --blue-400: #60A5FA;
   --blue-500: #3B82F6; --blue-600: #2563EB; --blue-700: #1D4ED8; --blue-800: #1E40AF; --blue-900: #1E3A8A;
+  --indigo-100: #E0E7FF; --indigo-200: #C7D2FE; --indigo-300: #A5B4FC; --indigo-400: #818CF8; --indigo-500: #6366F1;
+  --indigo-600: #4F46E5; --indigo-700: #4338CA; --indigo-800: #3730A3; --indigo-900: #312E81;
+  --teal-100: #CCFBF1; --teal-200: #99F6E4; --teal-300: #5EEAD4; --teal-400: #2DD4BF; --teal-500: #14B8A6;
+  --teal-600: #0D9488; --teal-700: #0F766E; --teal-800: #115E59; --teal-900: #134E4A;
   --slate-50: #F8FAFC; --slate-100: #F1F5F9; --slate-200: #E2E8F0; --slate-300: #CBD5E1; --slate-400: #94A3B8;
   --slate-500: #64748B; --slate-600: #475569; --slate-700: #334155; --slate-800: #1E293B; --slate-900: #0F172A;
-  --shell-light: #EDF2F8; --sunken-light: #EAF0F7; --card-dark: #151D31; --raised-dark: #1A2338; --sunken-dark: #0C1324;
-  --line-dark: #2A3650; --night: #0B1120;
-  --green-700: #15803D; --green-800: #166534; --green-100: #DCFCE7; --green-400: #4ADE80; --green-900: #14532D; --green-200: #BBF7D0;
+  --card-dark: #151D31; --raised-dark: #1A2338; --sunken-dark: #0C1324; --line-dark: #2A3650; --night: #0B1120;
+  --green-100: #DCFCE7; --green-200: #BBF7D0; --green-300: #86EFAC; --green-400: #4ADE80; --green-500: #22C55E;
+  --green-600: #16A34A; --green-700: #15803D; --green-800: #166534; --green-900: #14532D;
   --amber-700: #B45309; --amber-800: #92400E; --amber-100: #FEF3C7; --amber-400: #FBBF24; --amber-900: #78350F; --amber-200: #FDE68A;
   --red-700: #C2271D; --red-800: #991B1B; --red-100: #FEE2E2; --red-400: #F87171; --red-900: #7F1D1D; --red-200: #FECACA;
   --violet-700: #6D28D9; --violet-800: #5B21B6; --violet-100: #EDE9FE; --violet-300: #C4B5FD; --violet-900: #3B2A78; --violet-200: #DDD6FE;
 
-  /* ---------- semantic: surfaces and text ---------- */
-  --color-bg: light-dark(var(--shell-light), var(--slate-900));        /* shell: one tone below the cards so soft shadows read */
-  --color-surface: light-dark(var(--slate-50), var(--card-dark));      /* cards and panels */
-  --color-surface-raised: light-dark(#FFFFFF, var(--raised-dark));     /* the lit top of a raised neumorphic card */
-  --color-surface-2: light-dark(var(--sunken-light), var(--sunken-dark)); /* sunken: pressed controls, table header, row hover */
+  /* ---------- semantic: surfaces and text (flat: white cards on a near-white page, 1 px lines, no soft shadows) ---------- */
+  --color-bg: light-dark(var(--slate-50), var(--slate-900));           /* page */
+  --color-surface: light-dark(#FFFFFF, var(--card-dark));              /* cards, panels, sidebar */
+  --color-surface-raised: light-dark(#FFFFFF, var(--raised-dark));     /* menus, drawer, popovers (the one elevated layer) */
+  --color-surface-2: light-dark(var(--slate-100), var(--sunken-dark)); /* table header, row hover, wells, skeletons */
   --color-ink: light-dark(var(--slate-800), var(--slate-200));
   --color-ink-2: light-dark(var(--slate-700), var(--slate-300));
   --color-muted: light-dark(var(--slate-600), var(--slate-400));
   --color-icon: light-dark(var(--slate-600), var(--slate-400));
-  --color-line: light-dark(var(--slate-200), var(--line-dark));
-  --color-line-strong: var(--slate-500);                                /* control boundaries: ≥ 3:1 in both themes */
-  --color-track: var(--slate-500);                                      /* pending bars and empty tracks: ≥ 3:1 non-text */
+  --color-line: light-dark(var(--slate-200), var(--line-dark));        /* card and row borders */
+  --color-line-strong: var(--slate-500);                               /* control boundaries: ≥ 3:1 in both themes */
+  --color-track: var(--slate-500);                                     /* pending bars and empty tracks: ≥ 3:1 non-text */
 
-  /* ---------- semantic: brand ---------- */
-  --color-primary: light-dark(var(--blue-600), var(--blue-400));
-  --color-primary-hover: light-dark(var(--blue-700), var(--blue-300));
+  /* ---------- accent slots: Blue by default; the data-accent blocks below override only these five ---------- */
+  --accent: light-dark(var(--blue-600), var(--blue-400));
+  --accent-hover: light-dark(var(--blue-700), var(--blue-300));
+  --accent-soft: light-dark(var(--blue-100), var(--blue-900));         /* tint: selected nav, chips, selected choice */
+  --accent-ink: light-dark(var(--blue-700), var(--blue-200));          /* text on the tint and on the page (plain accent measures < 4.5 on tints) */
+  --accent-focus: light-dark(var(--blue-500), var(--blue-400));
+
+  /* ---------- semantic: brand (read the slots; never the scales) ---------- */
+  --color-primary: var(--accent);
+  --color-primary-hover: var(--accent-hover);
   --color-on-primary: light-dark(#FFFFFF, var(--night));
-  --color-primary-soft: light-dark(var(--blue-100), var(--blue-900));  /* tint: selected nav, chips, info */
-  --color-primary-ink: light-dark(var(--blue-700), var(--blue-200));   /* text on the tint (plain primary measures < 4.5) */
-  --color-focus: light-dark(var(--blue-500), var(--blue-400));
+  --color-primary-soft: var(--accent-soft);
+  --color-primary-ink: var(--accent-ink);
+  --color-focus: var(--accent-focus);
 
-  /* ---------- semantic: status — never colour alone; each has a glyph (--glyph-*) and a label ---------- */
-  --color-ok: light-dark(var(--green-800), var(--green-400));    /* green-700 measured 4.37:1 on the sunken panel */     --color-ok-soft: light-dark(var(--green-100), var(--green-900));     --color-ok-ink: light-dark(var(--green-800), var(--green-200));
-  --color-warn: light-dark(var(--amber-800), var(--amber-400));  /* amber-700 measured 4.38:1 on the sunken panel */   --color-warn-soft: light-dark(var(--amber-100), var(--amber-900));   --color-warn-ink: light-dark(var(--amber-800), var(--amber-200));
-  --color-bad: light-dark(var(--red-700), var(--red-400));        --color-bad-soft: light-dark(var(--red-100), var(--red-900));        --color-bad-ink: light-dark(var(--red-800), var(--red-200));
-  --color-info: light-dark(var(--blue-700), var(--blue-400));     --color-info-soft: light-dark(var(--blue-100), var(--blue-900));     --color-info-ink: light-dark(var(--blue-800), var(--blue-200));
-  --color-visual: light-dark(var(--violet-700), var(--violet-300)); --color-visual-soft: light-dark(var(--violet-100), var(--violet-900)); --color-visual-ink: light-dark(var(--violet-800), var(--violet-200));
+  /* ---------- semantic: status — never colour alone; each has a glyph (--glyph-*) and a label; info stays blue in every accent ---------- */
+  --color-ok: light-dark(var(--green-800), var(--green-400));          --color-ok-soft: light-dark(var(--green-100), var(--green-900));     --color-ok-ink: light-dark(var(--green-800), var(--green-200));
+  --color-warn: light-dark(var(--amber-800), var(--amber-400));        --color-warn-soft: light-dark(var(--amber-100), var(--amber-900));   --color-warn-ink: light-dark(var(--amber-800), var(--amber-200));
+  --color-bad: light-dark(var(--red-700), var(--red-400));             --color-bad-soft: light-dark(var(--red-100), var(--red-900));        --color-bad-ink: light-dark(var(--red-800), var(--red-200));
+  --color-info: light-dark(var(--blue-700), var(--blue-400));          --color-info-soft: light-dark(var(--blue-100), var(--blue-900));     --color-info-ink: light-dark(var(--blue-800), var(--blue-200));
+  --color-visual: light-dark(var(--violet-700), var(--violet-300));    --color-visual-soft: light-dark(var(--violet-100), var(--violet-900)); --color-visual-ink: light-dark(var(--violet-800), var(--violet-200));
   --color-neutral-soft: light-dark(var(--slate-200), var(--line-dark)); --color-neutral-ink: light-dark(var(--slate-700), var(--slate-300));
 
-  /* ---------- neumorphic recipes (light source top-left); only the two shadow colours change per theme ---------- */
-  --shadow-hi: light-dark(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.04));
-  --shadow-lo: light-dark(rgba(30, 41, 59, 0.12), rgba(0, 0, 0, 0.55));
-  --shadow-flat: light-dark(rgba(30, 41, 59, 0.06), rgba(0, 0, 0, 0.4));
-  --shadow-glow: light-dark(rgba(37, 99, 235, 0.06), rgba(0, 0, 0, 0.35));
-  --shadow-primary: light-dark(rgba(37, 99, 235, 0.28), rgba(96, 165, 250, 0.25));
-  --neu-raised: -6px -6px 14px var(--shadow-hi), 6px 6px 14px var(--shadow-lo);
-  --neu-raised-sm: -3px -3px 8px var(--shadow-hi), 3px 3px 8px var(--shadow-lo);
-  --neu-pressed: inset -3px -3px 8px var(--shadow-hi), inset 3px 3px 8px var(--shadow-lo);
-  --neu-flat: 0 1px 2px var(--shadow-flat), 0 6px 20px var(--shadow-glow);   /* dense panels, tables, event rows */
-  --neu-primary: 0 6px 16px var(--shadow-primary);                            /* primary button lift */
+  /* ---------- elevation: flat everywhere; one soft shadow for the layer that floats (menus, drawer) ---------- */
+  --elev-overlay: light-dark(0 8px 24px rgba(15, 23, 42, 0.14), 0 8px 24px rgba(0, 0, 0, 0.5));
 
   /* ---------- typography ---------- */
   --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
@@ -78,19 +83,51 @@
 
   /* ---------- spacing (density 8: 4–32 scale), radii, sizes ---------- */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px;
-  --radius-lg: 16px; --radius: 14px; --radius-sm: 10px; --radius-xs: 8px; --radius-pill: 999px;
+  --radius-lg: 12px; --radius: 10px; --radius-sm: 8px; --radius-xs: 6px; --radius-pill: 999px;
   --control-h: 40px;          /* visual height of buttons and inputs */
   --target-min: 44px;         /* minimum hit area: controls shorter than this extend their hit box (see .btn::before) */
-  --sidebar-w: 248px; --header-h: 56px; --row-h: 36px; --icon-sm: 16px; --icon: 20px; --icon-lg: 24px;
+  --sidebar-w: 248px; --header-h: 56px; --row-h: 36px; --drawer-w: 280px;
+  --icon-sm: 16px; --icon: 20px; --icon-lg: 24px;
   --stroke: 1.75px;           /* one icon stroke per surface */
 
   /* ---------- motion (reduced-motion zeroes these, see below) ---------- */
-  --dur-press: 150ms; --dur-ui: 200ms; --dur-panel: 300ms; --dur-pulse: 1200ms;
+  --dur-press: 150ms; --dur-ui: 200ms; --dur-draw: 200ms; --dur-panel: 300ms; --dur-pulse: 1200ms; --dur-scan: 1600ms;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* ---------- status glyphs (Phosphor names; shape carries state alongside colour) ---------- */
   --glyph-pass: "check-circle"; --glyph-fail: "x-circle"; --glyph-blocked: "prohibit"; --glyph-notrun: "circle-dashed";
   --glyph-visual: "eye"; --glyph-running: "spinner"; --glyph-waiting: "hand-palm";
+}
+
+/* ---------- accents: each picks its own shades so that white (light) / night (dark) text on the solid, the ink on the
+   tint and the focus ring all pass; the checker measures every brand pair per accent ---------- */
+:root[data-accent="indigo"] {
+  --accent: light-dark(var(--indigo-600), var(--indigo-400));
+  --accent-hover: light-dark(var(--indigo-700), var(--indigo-300));
+  --accent-soft: light-dark(var(--indigo-100), var(--indigo-900));
+  --accent-ink: light-dark(var(--indigo-700), var(--indigo-200));
+  --accent-focus: light-dark(var(--indigo-500), var(--indigo-400));
+}
+:root[data-accent="teal"] {
+  --accent: light-dark(var(--teal-700), var(--teal-400));
+  --accent-hover: light-dark(var(--teal-800), var(--teal-300));
+  --accent-soft: light-dark(var(--teal-100), var(--teal-900));
+  --accent-ink: light-dark(var(--teal-800), var(--teal-200));
+  --accent-focus: light-dark(var(--teal-600), var(--teal-400));
+}
+:root[data-accent="green"] {
+  --accent: light-dark(var(--green-700), var(--green-400));
+  --accent-hover: light-dark(var(--green-800), var(--green-300));
+  --accent-soft: light-dark(var(--green-100), var(--green-900));
+  --accent-ink: light-dark(var(--green-800), var(--green-200));
+  --accent-focus: light-dark(var(--green-700), var(--green-400));
+}
+:root[data-accent="slate"] {
+  --accent: light-dark(var(--slate-700), var(--slate-300));
+  --accent-hover: light-dark(var(--slate-800), var(--slate-200));
+  --accent-soft: light-dark(var(--slate-200), var(--slate-700));
+  --accent-ink: light-dark(var(--slate-800), var(--slate-100));
+  --accent-focus: light-dark(var(--slate-500), var(--slate-400));
 }
 
 /* A person's explicit choice overrides the OS preference. */
@@ -99,14 +136,16 @@
 
 /* ---------- motion: respect the OS ---------- */
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur-press: 0ms; --dur-ui: 0ms; --dur-panel: 0ms; --dur-pulse: 0ms; }
+  :root { --dur-press: 0ms; --dur-ui: 0ms; --dur-draw: 0ms; --dur-panel: 0ms; --dur-pulse: 0ms; --dur-scan: 0ms; }
   *, *::before, *::after { animation: none !important; transition-duration: 0ms !important; }
 }
 
 /* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }   /* width: 100% means the box, padding included: no field ever crosses its card */
 html { background: var(--color-bg); color: var(--color-ink); font-size: var(--text-base); line-height: var(--leading);
        -webkit-font-smoothing: antialiased; }
 body { margin: 0; background: var(--color-bg); color: var(--color-ink); font-family: var(--font-sans); }
 code, pre, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .num { font-variant-numeric: tabular-nums; }
 :focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

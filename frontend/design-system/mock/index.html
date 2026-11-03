@@ -1,88 +1,117 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-accent="blue">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AgentQA Studio — design mock</title>
-<!-- Preview only: the product bundles its fonts locally (M0.5). -->
+<title>AgentQA Studio — design mock (M1.2-UI, flat)</title>
+<!-- Preview only: the product bundles its fonts locally. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="../tokens.css">
 <style>
-/* ---------- mock-only chrome: screen / theme / font switches ---------- */
+/* ---------- mock-only chrome: the screen switch. Theme and accent are chosen in the real Appearance menu. ---------- */
 :root { --mockbar-h: 49px; }
-.mock-bar { position: sticky; top: 0; z-index: 10; display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap;
-  padding: var(--space-2) var(--space-4); background: var(--color-surface-2); border-bottom: 1px solid var(--color-line);
-  font-size: var(--text-sm); color: var(--color-muted); }
+.mock-bar { position: sticky; top: 0; z-index: 10; display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; padding: var(--space-2) var(--space-4);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-line); font-size: var(--text-sm); color: var(--color-muted); }
 .mock-bar b { color: var(--color-ink); }
-.sw { display: inline-flex; border-radius: var(--radius-pill); box-shadow: var(--neu-pressed); padding: 3px; gap: 3px; }
-.sw button { position: relative; border: 0; background: transparent; color: var(--color-muted); padding: 0 12px; border-radius: var(--radius-pill);
-  font: inherit; font-weight: var(--weight-medium); cursor: pointer; min-height: 34px; }
-.sw button::before { content: ""; position: absolute; inset: -5px 0; }               /* hit area 44 px */
-.sw button[aria-pressed="true"] { background: var(--color-surface-raised); color: var(--color-primary-ink); box-shadow: var(--neu-raised-sm); }
-body[data-font="jakarta"] { --font-sans: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif; }
+.sw { display: inline-flex; border: 1px solid var(--color-line); border-radius: var(--radius-pill); padding: 3px; gap: 3px; background: var(--color-surface-2); }
+.sw button { position: relative; border: 0; background: transparent; color: var(--color-muted); padding: 0 12px; border-radius: var(--radius-pill); font: inherit; font-weight: var(--weight-medium); cursor: pointer; min-height: 34px; }
+.sw button::before { content: ""; position: absolute; inset: -5px 0; }
+.sw button[aria-pressed="true"] { background: var(--color-surface); color: var(--color-primary-ink); border: 1px solid var(--color-line); }
 .screen[hidden] { display: none; }
 
-/* ---------- shell ---------- */
-.shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: calc(100vh - var(--mockbar-h)); }
-.side { padding: var(--space-4) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); background: var(--color-bg); }
+/* ---------- shell: mobile first. A top bar + drawer under 760 px, the sidebar from 760 px up ---------- */
+.shell { min-height: calc(100dvh - var(--mockbar-h)); }
+.topnav { position: sticky; top: var(--mockbar-h); z-index: 5; display: flex; align-items: center; gap: var(--space-2); height: var(--header-h); padding: 0 var(--space-3);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-line); }
+.topnav .brand { padding: 0; flex: 1; min-width: 0; } .topnav .brand .tag { display: none; }
+.icon-btn { position: relative; display: inline-grid; place-items: center; width: var(--target-min); height: var(--target-min); border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-icon); cursor: pointer; }
+.icon-btn:hover { background: var(--color-surface-2); color: var(--color-ink); } .icon-btn[aria-expanded="true"] { background: var(--color-primary-soft); color: var(--color-primary-ink); }
+.side { display: none; }
 .brand { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-2) var(--space-4); color: var(--color-ink); text-decoration: none; }
-.brand .mark { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--color-on-primary);
-  font-weight: var(--weight-bold); font-size: 13px; letter-spacing: .04em; background: var(--color-primary); box-shadow: var(--neu-primary); }
+.brand .mark { width: 36px; height: 36px; border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--color-bg); background: var(--color-ink);
+  font-weight: var(--weight-bold); font-size: 12px; letter-spacing: .06em; flex: none; }
 .brand .name { display: block; font-size: var(--text-md); line-height: var(--leading-tight); font-weight: var(--weight-semibold); }
 .brand .tag { display: block; font-size: var(--text-xs); color: var(--color-muted); }
-.proj { border-radius: var(--radius); padding: var(--space-3); box-shadow: var(--neu-pressed); margin: 0 0 var(--space-3); }
-.proj b { display: block; font-size: var(--text-sm); } .proj span { font-size: var(--text-xs); color: var(--color-muted); font-family: var(--font-mono); }
+.proj { border: 1px solid var(--color-line); border-radius: var(--radius); padding: var(--space-3); margin: 0 0 var(--space-3); background: var(--color-surface-2); }
+.proj b { display: block; font-size: var(--text-sm); } .proj span { font-size: var(--text-xs); color: var(--color-muted); font-family: var(--font-mono); overflow-wrap: anywhere; }
 .nav-sect { font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: .09em; text-transform: uppercase; color: var(--color-muted); padding: var(--space-3) var(--space-2) var(--space-1); }
-.nav a { display: flex; align-items: center; gap: 10px; min-height: var(--target-min); padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--color-ink-2);
-  text-decoration: none; font-weight: var(--weight-medium); transition: box-shadow var(--dur-ui) var(--ease); }
-.nav a:hover { color: var(--color-ink); box-shadow: var(--neu-raised-sm); }
-.nav a[aria-current="page"] { box-shadow: var(--neu-pressed); color: var(--color-primary-ink); font-weight: var(--weight-semibold); }
+.nav a { position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--target-min); padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--color-ink-2);
+  text-decoration: none; font-weight: var(--weight-medium); transition: background-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease); }
+.nav a:hover { color: var(--color-ink); background: var(--color-surface-2); }
+.nav a[aria-current="page"] { background: var(--color-primary-soft); color: var(--color-primary-ink); font-weight: var(--weight-semibold); }
+.nav a[aria-current="page"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--color-primary); }
 .nav a svg { color: var(--color-icon); } .nav a[aria-current="page"] svg { color: var(--color-primary); }
 .nav .count { margin-left: auto; min-width: 22px; text-align: center; font-size: var(--text-xs); font-weight: var(--weight-semibold); border-radius: var(--radius-pill); padding: 1px 7px; white-space: nowrap; }
-.main { padding: var(--space-4) var(--space-5) var(--space-6); min-width: 0; }
-.topbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); min-height: var(--header-h); }
+.side-foot { margin-top: auto; padding-top: var(--space-3); border-top: 1px solid var(--color-line); display: flex; flex-direction: column; gap: var(--space-2); }
+.main { padding: var(--space-3); min-width: 0; }
+.topbar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); min-height: var(--header-h); flex-wrap: wrap; }
 .crumbs { font-size: var(--text-sm); color: var(--color-muted); } .crumbs b { color: var(--color-ink); font-weight: var(--weight-semibold); }
 .spacer { flex: 1; }
-.btn { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 0 var(--space-4); border-radius: var(--radius-sm); border: 0; font: inherit;
-  font-weight: var(--weight-semibold); cursor: pointer; color: var(--color-ink-2); background: var(--color-surface); box-shadow: var(--neu-raised-sm);
-  transition: box-shadow var(--dur-press) var(--ease), transform var(--dur-press) var(--ease); }
-.btn::before { content: ""; position: absolute; inset: -2px 0; }                      /* 40 px control, 44 px hit area */
-.btn:hover { color: var(--color-ink); } .btn:active { box-shadow: var(--neu-pressed); transform: translateY(1px); }
-.btn.primary { background: var(--color-primary); color: var(--color-on-primary); box-shadow: var(--neu-primary); }
+
+/* ---------- drawer (phones): a real <dialog>, so the page behind is inert and Escape closes it ---------- */
+dialog.drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: min(var(--drawer-w), 86vw); max-width: none; height: 100dvh; max-height: none; border: 0; border-right: 1px solid var(--color-line);
+  padding: var(--space-3); background: var(--color-surface-raised); color: var(--color-ink); box-shadow: var(--elev-overlay); display: none; flex-direction: column; }
+dialog.drawer[open] { display: flex; animation: slide-in var(--dur-ui) var(--ease); }
+dialog.drawer::backdrop { background: rgba(15, 23, 42, .45); }
+@keyframes slide-in { from { transform: translateX(-100%); } }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+
+/* ---------- controls: flat, 1 px lines, solid primary ---------- */
+.btn { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 0 var(--space-4); border-radius: var(--radius-sm); border: 1px solid var(--color-line-strong);
+  font: inherit; font-weight: var(--weight-semibold); cursor: pointer; color: var(--color-ink-2); background: var(--color-surface); text-decoration: none;
+  transition: background-color var(--dur-press) var(--ease), color var(--dur-press) var(--ease), transform var(--dur-press) var(--ease); }
+.btn::before { content: ""; position: absolute; inset: -2px 0; }
+.btn:hover { color: var(--color-ink); background: var(--color-surface-2); } .btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--color-primary); color: var(--color-on-primary); border-color: transparent; }
 .btn.primary:hover { background: var(--color-primary-hover); }
 .btn.sm { min-height: 32px; padding: 0 var(--space-3); font-size: var(--text-sm); } .btn.sm::before { inset: -6px 0; }
-.next { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius); margin-bottom: var(--space-4);
-  background: var(--color-warn-soft); color: var(--color-warn-ink); box-shadow: var(--neu-flat); }
-.next b { font-weight: var(--weight-semibold); }
+input, select { width: 100%; min-height: var(--control-h); padding: 0 var(--space-3); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-ink); font: inherit; }
+label { display: block; font-weight: var(--weight-semibold); font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-1); }
+.next { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius); margin-bottom: var(--space-4); flex-wrap: wrap; row-gap: var(--space-2);
+  background: var(--color-warn-soft); color: var(--color-warn-ink); border-left: 4px solid var(--color-warn); }
+.next b { font-weight: var(--weight-semibold); } .next .spacer { flex-basis: 100%; }
 h1 { font-size: var(--text-xl); margin: 0; letter-spacing: -.01em; } h2 { font-size: var(--text-md); margin: 0 0 var(--space-3); }
-.sub { color: var(--color-muted); font-size: var(--text-sm); margin: 2px 0 0; }
-.row { display: flex; align-items: center; gap: var(--space-2); } .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
+.sub { color: var(--color-muted); font-size: var(--text-sm); margin: 2px 0 0; overflow-wrap: anywhere; }
+.row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; } .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
 
-/* ---------- cards: raised (hero), flat (dense data), sunken (wells) ---------- */
-.card { background: var(--color-surface); border-radius: var(--radius); padding: var(--space-4); box-shadow: var(--neu-raised); min-width: 0; }
-.card.flat { box-shadow: var(--neu-flat); border: 1px solid var(--color-line); }
-.card.sunk { box-shadow: var(--neu-pressed); background: var(--color-bg); padding-bottom: var(--space-5); }
-.scroll-x { overflow-x: auto; }                                                       /* dense tables scroll inside their panel */
-.grid { display: grid; gap: var(--space-4); }
-.g-dash { grid-template-columns: 1.3fr 1fr 1fr 1fr; }
-.g-two { grid-template-columns: 2fr 1fr; }
-td.wrap { white-space: normal; min-width: 180px; }                                   /* the one column allowed to wrap */
-.g-live { grid-template-columns: 300px minmax(0, 1fr) 320px; }
+/* ---------- Appearance menu (the real component: theme + accent, saved per browser) ---------- */
+.appearance { position: relative; }
+.appearance .panel { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 20; width: 264px; padding: var(--space-3) var(--space-4) var(--space-4); border: 1px solid var(--color-line); border-radius: var(--radius);
+  background: var(--color-surface-raised); box-shadow: var(--elev-overlay); }
+.topnav .appearance .panel { bottom: auto; top: calc(100% + 8px); left: auto; right: 0; }
+.appearance .panel[hidden] { display: none; }
+.appearance fieldset { border: 0; padding: 0; margin: 0 0 var(--space-3); } .appearance legend { font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); padding: 0; margin-bottom: var(--space-2); }
+.modes { display: flex; gap: var(--space-1); } .modes label { flex: 1; margin: 0; }
+.modes input, .swatches input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.modes span { display: grid; place-items: center; min-height: 36px; border: 1px solid var(--color-line); border-radius: var(--radius-sm); font-weight: var(--weight-medium); font-size: var(--text-sm); cursor: pointer; }
+.modes input:checked + span { background: var(--color-primary-soft); color: var(--color-primary-ink); border-color: var(--color-primary); }
+.modes input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.swatches { display: flex; gap: var(--space-2); } .swatches label { margin: 0; }
+.swatches span { display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm); cursor: pointer; }
+.swatches i { width: 22px; height: 22px; border-radius: 50%; background: var(--sw); border: 1px solid rgba(0, 0, 0, .15); }
+.swatches input:checked + span { outline: 2px solid var(--color-primary); outline-offset: -2px; background: var(--color-primary-soft); }
+.swatches input:focus-visible + span { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.preview { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; padding: var(--space-2); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); }
+.preview a { color: var(--color-primary-ink); font-size: var(--text-sm); }
+
+/* ---------- cards, grids, tables (flat; hierarchy by scale and by border weight) ---------- */
+.card { background: var(--color-surface); border: 1px solid var(--color-line); border-radius: var(--radius); padding: var(--space-4); min-width: 0; }
+.card.sunk { background: var(--color-surface-2); padding-bottom: var(--space-5); }
+.scroll-x { overflow-x: auto; }
+.grid { display: grid; gap: var(--space-3); }
+td.wrap { white-space: normal; min-width: 180px; }
 .kpi .label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); font-weight: var(--weight-semibold); }
 .kpi .value { font-size: var(--text-2xl); font-weight: var(--weight-bold); letter-spacing: -.02em; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
 .kpi .value small { font-size: var(--text-md); font-weight: var(--weight-medium); color: var(--color-muted); }
 .kpi .delta { font-size: var(--text-sm); margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.verdict .value { font-size: 44px; }
-.bullet { height: 10px; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--color-bad-soft) 0 70%, var(--color-warn-soft) 70% 85%, var(--color-ok-soft) 85% 100%); position: relative; margin-top: var(--space-3); box-shadow: var(--neu-pressed); }
-.bullet i { position: absolute; left: 0; top: 2px; height: 6px; width: 82%; border-radius: var(--radius-pill); background: var(--color-primary); }
-.bullet s { position: absolute; left: 85%; top: -3px; width: 3px; height: 16px; background: var(--color-ink); border-radius: 2px; text-decoration: none; }
-.legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-3); font-size: var(--text-xs); color: var(--color-muted); margin-top: 6px; }
-.legend > * { white-space: nowrap; }
+.verdict { border-top: 4px solid var(--color-primary); } .verdict .value { font-size: 44px; }
+.bullet { height: 10px; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--color-bad-soft) 0 70%, var(--color-warn-soft) 70% 85%, var(--color-ok-soft) 85% 100%); position: relative; margin-top: var(--space-3); border: 1px solid var(--color-line); }
+.bullet i { position: absolute; left: 0; top: 1px; height: 6px; width: 82%; border-radius: var(--radius-pill); background: var(--color-primary); }
+.bullet s { position: absolute; left: 85%; top: -4px; width: 3px; height: 16px; background: var(--color-ink); border-radius: 2px; text-decoration: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px var(--space-3); font-size: var(--text-xs); color: var(--color-muted); margin-top: 6px; } .legend > * { white-space: nowrap; }
 .legend .marker { display: inline-block; width: 3px; height: 12px; background: var(--color-ink); border-radius: 2px; vertical-align: -2px; margin-right: 4px; }
-
-/* ---------- status: colour + glyph + label, never colour alone ---------- */
 .pill { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 6px; border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: var(--weight-semibold); white-space: nowrap; line-height: 18px; }
 .pill svg { width: 14px; height: 14px; }
 .pill.ok { background: var(--color-ok-soft); color: var(--color-ok-ink); } .pill.bad { background: var(--color-bad-soft); color: var(--color-bad-ink); }
@@ -91,42 +120,45 @@ td.wrap { white-space: normal; min-width: 180px; }                              
 .nav .count.warn { background: var(--color-warn-soft); color: var(--color-warn-ink); } .nav .count.info { background: var(--color-info-soft); color: var(--color-info-ink); }
 .sev { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-semibold); white-space: nowrap; }
 .sev.crit { color: var(--color-bad); } .sev.high { color: var(--color-warn); } .sev.med { color: var(--color-info); } .sev.low { color: var(--color-muted); }
-
-/* ---------- dense table (Data-Dense rules) ---------- */
 table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
-th { text-align: left; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .05em; color: var(--color-muted); font-weight: var(--weight-semibold);
-  padding: 8px 10px; background: var(--color-surface-2); position: sticky; top: 0; }
-th:first-child { border-radius: var(--radius-xs) 0 0 var(--radius-xs); } th:last-child { border-radius: 0 var(--radius-xs) var(--radius-xs) 0; }
+th { text-align: left; font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .05em; color: var(--color-muted); font-weight: var(--weight-semibold); padding: 8px 10px; background: var(--color-surface-2); position: sticky; top: 0; border-bottom: 1px solid var(--color-line); }
 td { padding: 0 10px; height: var(--row-h); border-bottom: 1px solid var(--color-line); white-space: nowrap; }
-tr:hover td { background: var(--color-surface-2); }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:hover td { background: var(--color-surface-2); } td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* ---------- agent board ---------- */
-.agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
-.agents.one-col { grid-template-columns: 1fr; }
-.agent { border-radius: var(--radius-sm); padding: var(--space-3); box-shadow: var(--neu-raised-sm); background: var(--color-surface); position: relative; min-height: 84px; }
+/* ---------- agents: state by border + glyph + label; the running card pulses (a loading indicator) ---------- */
+.agents { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); } .agents.one-col { grid-template-columns: 1fr; }
+.agent { position: relative; border: 1px solid var(--color-line); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--color-surface); min-height: 84px; }
 .agent .name { font-weight: var(--weight-semibold); font-size: var(--text-sm); display: flex; align-items: center; gap: 6px; }
-.agent .state { font-size: var(--text-xs); color: var(--color-muted); margin-top: 4px; }
-.agent .meta { font-size: var(--text-xs); color: var(--color-muted); margin-top: 8px; font-family: var(--font-mono); }
-.agent.done .name svg { color: var(--color-ok); } .agent.running { box-shadow: var(--neu-pressed), 0 0 0 2px var(--color-primary); }
-.agent.running .name svg { color: var(--color-primary); animation: spin var(--dur-pulse) linear infinite; }
-.agent.waiting { box-shadow: var(--neu-raised-sm), 0 0 0 2px var(--color-warn); } .agent.waiting .name svg { color: var(--color-warn); }
-.agent.idle { box-shadow: none; border: 1px dashed var(--color-line-strong); background: transparent; }   /* queued: no opacity on text */
-.agent.idle .name { color: var(--color-muted); } .agent.idle .name svg { color: var(--color-icon); }
+.agent .state { font-size: var(--text-xs); color: var(--color-muted); margin-top: 4px; } .agent .meta { font-size: var(--text-xs); color: var(--color-muted); margin-top: 8px; font-family: var(--font-mono); }
+.agent.done .name svg { color: var(--color-ok); animation: tick-in var(--dur-draw) var(--ease) both; }
+.agent.running { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); } .agent.running .name svg { color: var(--color-primary); animation: spin var(--dur-pulse) linear infinite; }
+.agent.running::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid var(--color-primary); animation: pulse var(--dur-pulse) var(--ease) infinite; pointer-events: none; }
+.agent.waiting { border-color: var(--color-warn); box-shadow: 0 0 0 1px var(--color-warn); } .agent.waiting .name svg { color: var(--color-warn); }
+.agent.failed { border-color: var(--color-bad); } .agent.failed .name svg { color: var(--color-bad); animation: cross-in var(--dur-draw) var(--ease) both; }
+.agent.idle { border-style: dashed; border-color: var(--color-line-strong); background: transparent; } .agent.idle .name { color: var(--color-muted); } .agent.idle .name svg { color: var(--color-icon); }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { from { transform: scale(1); opacity: .6; } to { transform: scale(1.06); opacity: 0; } }
+@keyframes tick-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cross-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.progress { height: 8px; border-radius: var(--radius-pill); background: var(--color-surface-2); border: 1px solid var(--color-line); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 100%; background: var(--color-primary); transform-origin: left; transform: scaleX(var(--p, 0)); transition: transform var(--dur-panel) var(--ease); }
+.skel { border-radius: var(--radius-xs); background: var(--color-surface-2); animation: skeleton var(--dur-pulse) ease-in-out infinite alternate; }
+@keyframes skeleton { from { opacity: .55; } to { opacity: 1; } }
 
 /* ---------- live view ---------- */
 .stream { display: flex; flex-direction: column; gap: var(--space-2); max-height: 420px; overflow: auto; padding-right: 4px; }
-.evt { display: grid; grid-template-columns: 64px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface); box-shadow: var(--neu-flat); border: 1px solid var(--color-line); }
+.evt { display: grid; grid-template-columns: 64px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-line); }
 .evt .k { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); padding-top: 2px; }
 .evt.thought .k { color: var(--color-visual); } .evt.action .k { color: var(--color-info); } .evt.result .k { color: var(--color-ok); } .evt.result.fail .k { color: var(--color-bad); }
 .evt p { margin: 0; font-size: var(--text-sm); } .evt .t { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
-.frame { aspect-ratio: 16 / 10; border-radius: var(--radius-sm); box-shadow: var(--neu-pressed); background: var(--color-surface-2); position: relative; overflow: hidden; }
-.frame .url { position: absolute; top: 8px; left: 8px; right: 8px; height: 26px; border-radius: 6px; background: var(--color-surface); font-family: var(--font-mono); font-size: var(--text-xs); display: flex; align-items: center; padding: 0 10px; color: var(--color-muted); }
-.frame .page { position: absolute; top: 44px; left: 8px; right: 8px; bottom: 8px; border-radius: 6px; background: var(--color-surface); padding: 12px; }
+.frame { aspect-ratio: 16 / 10; border-radius: var(--radius-sm); border: 1px solid var(--color-line); background: var(--color-surface-2); position: relative; overflow: hidden; container-type: size; }
+.frame .url { position: absolute; top: 8px; left: 8px; right: 8px; height: 26px; border-radius: 6px; background: var(--color-surface); border: 1px solid var(--color-line); font-family: var(--font-mono); font-size: var(--text-xs); display: flex; align-items: center; padding: 0 10px; color: var(--color-muted); }
+.frame .page { position: absolute; top: 44px; left: 8px; right: 8px; bottom: 8px; border-radius: 6px; background: var(--color-surface); border: 1px solid var(--color-line); padding: 12px; }
 .frame .field { height: 28px; border-radius: 6px; background: var(--color-surface-2); margin-bottom: 8px; }
 .frame .field.hit { outline: 2px solid var(--color-warn); outline-offset: 2px; } .frame .field.cta { width: 40%; background: var(--color-primary-soft); }
 .frame .act { position: absolute; left: 12px; bottom: 12px; font-size: var(--text-xs); background: var(--color-warn-soft); color: var(--color-warn-ink); padding: 2px 8px; border-radius: var(--radius-pill); font-weight: var(--weight-semibold); }
+.frame.running::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--color-primary); opacity: .8; animation: scan var(--dur-scan) linear infinite; pointer-events: none; }
+@keyframes scan { to { transform: translateY(100cqh); } }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 4px; list-style: none; margin: 0; padding: 0; }
 .tile { aspect-ratio: 1; border-radius: 6px; background: var(--color-surface-2); display: grid; place-items: center; color: var(--color-icon); }
 .tile svg { width: 14px; height: 14px; }
@@ -139,13 +171,21 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .cost { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); }
 svg.ic { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: var(--stroke); stroke-linecap: round; stroke-linejoin: round; flex: none; }
 svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
-@media (max-width: 1100px) { .g-dash, .g-two { grid-template-columns: 1fr 1fr; } .g-two { grid-template-columns: 1fr; } .g-live { grid-template-columns: 1fr; } }
-@media (max-width: 760px) { .shell { grid-template-columns: 1fr; } .side { display: none; } .main { padding: var(--space-3); } .g-dash { grid-template-columns: 1fr; }
-  .topbar, .next { flex-wrap: wrap; row-gap: var(--space-2); } .topbar .spacer, .next .spacer { flex-basis: 100%; } }
+
+/* ---------- breakpoints: 760 (sidebar) and 1100 (wide grids) ---------- */
+@media (min-width: 760px) {
+  .shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+  .topnav { display: none; }
+  .side { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-3); background: var(--color-surface); border-right: 1px solid var(--color-line);
+    position: sticky; top: var(--mockbar-h); height: calc(100dvh - var(--mockbar-h)); overflow-y: auto; }   /* the Appearance button is always in view */
+  .main { padding: var(--space-4) var(--space-5) var(--space-6); }
+  .g-dash { grid-template-columns: 1fr 1fr; } .next .spacer { flex-basis: auto; }
+}
+@media (min-width: 1100px) { .g-dash { grid-template-columns: 1.3fr 1fr 1fr 1fr; } .g-two { grid-template-columns: 2fr 1fr; } .g-live { grid-template-columns: 300px minmax(0, 1fr) 320px; } .grid { gap: var(--space-4); } }
 </style>
 </head>
-<body data-font="plex">
-<!-- Placeholder icon sprite (one family, 1.75 stroke, 24 grid). M0.5 replaces it with Phosphor (regular). -->
+<body>
+<!-- Placeholder icon sprite (one family, 1.75 stroke, 24 grid). The app uses Phosphor (regular). -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.3 2.3 4.7-5"/></symbol>
   <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></symbol>
@@ -162,39 +202,82 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8ZM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8Z"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5v14l12-7Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2 0-1.2-1-1.6-1-2.8 0-1 .8-1.7 2-1.7H17a4 4 0 0 0 4-4c0-4.5-4-7.5-9-7.5Z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7.5" r="1.2"/><circle cx="14.5" cy="7.5" r="1.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
 </svg>
 
 <div class="mock-bar" role="toolbar" aria-label="Mock controls">
-  <b>Design mock</b> · static, no data
+  <b>Design mock</b> · static, no data · theme and colour live in the Appearance menu (sidebar foot, or the top bar on a phone)
   <span class="sw" role="group" aria-label="Screen"><button aria-pressed="true" data-screen="dash">Dashboard</button><button aria-pressed="false" data-screen="live">Live View</button></span>
-  <span class="sw" role="group" aria-label="Theme"><button aria-pressed="true" data-theme-pick="light">Light</button><button aria-pressed="false" data-theme-pick="dark">Dark</button></span>
-  <span class="sw" role="group" aria-label="Font"><button aria-pressed="true" data-font-pick="plex">IBM Plex Sans</button><button aria-pressed="false" data-font-pick="jakarta">Plus Jakarta Sans</button></span>
 </div>
+
+<!-- Appearance menu: ONE template, stamped into the sidebar foot and the phone top bar by the script below -->
+<template id="appearance-tpl">
+  <div class="appearance">
+    <button type="button" class="btn sm appear-btn" aria-expanded="false"><svg class="ic sm" aria-hidden="true"><use href="#i-palette"/></svg>Appearance</button>
+    <div class="panel" hidden>
+      <fieldset><legend>Theme</legend>
+        <div class="modes">
+          <label><input type="radio" name="mode" value="light" data-theme-pick="light"><span>Light</span></label>
+          <label><input type="radio" name="mode" value="dark" data-theme-pick="dark"><span>Dark</span></label>
+          <label><input type="radio" name="mode" value="system" data-theme-pick="system"><span>System</span></label>
+        </div>
+      </fieldset>
+      <fieldset><legend>Colour</legend>
+        <div class="swatches">
+          <label title="Blue"><input type="radio" name="accent" value="blue" data-accent-pick="blue"><span><i style="--sw:#2563EB"></i><span class="sr-only">Blue</span></span></label>
+          <label title="Indigo"><input type="radio" name="accent" value="indigo" data-accent-pick="indigo"><span><i style="--sw:#4F46E5"></i><span class="sr-only">Indigo</span></span></label>
+          <label title="Teal"><input type="radio" name="accent" value="teal" data-accent-pick="teal"><span><i style="--sw:#0F766E"></i><span class="sr-only">Teal</span></span></label>
+          <label title="Green"><input type="radio" name="accent" value="green" data-accent-pick="green"><span><i style="--sw:#15803D"></i><span class="sr-only">Green</span></span></label>
+          <label title="Slate"><input type="radio" name="accent" value="slate" data-accent-pick="slate"><span><i style="--sw:#334155"></i><span class="sr-only">Slate</span></span></label>
+        </div>
+      </fieldset>
+      <div class="preview" aria-label="Preview"><button class="btn sm primary" type="button">Run</button><span class="pill info"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg>running</span><a href="#">a link</a></div>
+    </div>
+  </div>
+</template>
+
+<template id="nav-tpl">
+  <div class="nav">
+    <div class="nav-sect">Overview</div>
+    <a href="#" data-nav="dash" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Dashboard</a>
+    <a href="#" data-nav="live"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Live View<span class="count info">running</span></a>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Ask AgentQA</a>
+    <div class="nav-sect">Understand</div>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Requirements</a>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>Questions<span class="count warn">15</span></a>
+    <div class="nav-sect">Test</div>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Test plan</a>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Execution</a>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-bug"/></svg>Defects<span class="count warn">19</span></a>
+    <div class="nav-sect">Operate</div>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Schedules</a>
+    <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</a>
+  </div>
+</template>
+
+<header class="topnav">
+  <button type="button" class="icon-btn menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="drawer"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></button>
+  <a class="brand" href="#"><span class="mark" aria-hidden="true">AQ</span><span><span class="name">AgentQA Studio</span></span></a>
+  <span data-appearance-slot></span>
+</header>
+<dialog class="drawer" id="drawer" aria-label="Main">
+  <div class="drawer-head"><a class="brand" href="#" style="padding:0"><span class="mark" aria-hidden="true">AQ</span><span><span class="name">AgentQA Studio</span></span></a>
+    <button type="button" class="icon-btn close-drawer" aria-label="Close menu"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="proj"><b>Demo Certificate Portal</b><span>127.0.0.1:8800 · Test / QA</span></div>
+  <span data-nav-slot></span>
+</dialog>
 
 <div class="shell">
   <nav class="side" aria-label="Main">
     <a class="brand" href="#"><span class="mark" aria-hidden="true">AQ</span><span><span class="name">AgentQA Studio</span><span class="tag">Agents that test like people</span></span></a>
     <div class="proj"><b>Demo Certificate Portal</b><span>127.0.0.1:8800 · Test / QA</span></div>
-    <div class="nav">
-      <div class="nav-sect">Overview</div>
-      <a href="#" id="nav-dash" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-grid"/></svg>Dashboard</a>
-      <a href="#" id="nav-live"><svg class="ic" aria-hidden="true"><use href="#i-pulse"/></svg>Live View<span class="count info">running</span></a>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg>Ask AgentQA</a>
-      <div class="nav-sect">Understand</div>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>Requirements</a>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg>Questions<span class="count warn">15</span></a>
-      <div class="nav-sect">Test</div>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Test plan</a>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-play"/></svg>Execution</a>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-bug"/></svg>Defects<span class="count warn">19</span></a>
-      <div class="nav-sect">Operate</div>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Schedules</a>
-      <a href="#"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg>Settings</a>
-    </div>
+    <span data-nav-slot></span>
+    <div class="side-foot"><span data-appearance-slot></span><span class="cost">akash@example.com</span></div>
   </nav>
 
   <main class="main">
-    <!-- ================= DASHBOARD ================= -->
     <section class="screen" id="screen-dash" aria-labelledby="h-dash">
       <div class="topbar">
         <div><div class="crumbs">Projects / <b>Demo Certificate Portal</b></div><h1 id="h-dash">Dashboard</h1></div>
@@ -203,7 +286,6 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
         <button class="btn primary"><svg class="ic sm" aria-hidden="true"><use href="#i-play"/></svg>Run full pipeline</button>
       </div>
       <div class="next"><svg class="ic" aria-hidden="true"><use href="#i-hand"/></svg><span role="status"><b>Your turn: Gate 1.</b> 15 questions about the requirements wait; the rules behind them stay untested until you answer.</span><span class="spacer"></span><button class="btn sm">Answer questions</button></div>
-
       <div class="grid g-dash">
         <div class="card kpi verdict">
           <div class="label">Release readiness</div>
@@ -215,12 +297,10 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
         <div class="card kpi"><div class="label">Tests, last run</div><div class="value">184<small>/214</small></div><div class="delta"><span class="pill ok"><svg class="ic" aria-hidden="true"><use href="#i-check-circle"/></svg>184 passed</span><span class="pill bad"><svg class="ic" aria-hidden="true"><use href="#i-x-circle"/></svg>30 failed</span></div></div>
         <div class="card kpi"><div class="label">Open defects</div><div class="value">19</div><div class="delta"><span class="sev crit">3 CRIT</span><span class="sev high">6 HIGH</span><span class="sev med">7 MED</span><span class="sev low">3 LOW</span></div></div>
       </div>
-
       <div class="grid g-two mt-4">
-        <div class="card flat">
+        <div class="card">
           <h2>Defects to confirm</h2>
-          <div class="scroll-x">
-          <table>
+          <div class="scroll-x"><table>
             <thead><tr><th>ID</th><th>Severity</th><th>Defect</th><th>Where</th><th>Found by</th><th class="num">Evidence</th></tr></thead>
             <tbody>
               <tr><td class="mono">DEF-001</td><td><span class="sev crit">Critical</span></td><td class="wrap">/api/users open to every role</td><td class="mono">GET /api/users</td><td>API access test</td><td class="num">2</td></tr>
@@ -228,9 +308,7 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
               <tr><td class="mono">DEF-003</td><td><span class="sev crit">Critical</span></td><td class="wrap">Another citizen's record via the API</td><td class="mono">/api/applications/{id}</td><td>Record isolation</td><td class="num">2</td></tr>
               <tr><td class="mono">DEF-004</td><td><span class="sev high">High</span></td><td class="wrap">Citizen login takes a 9-digit mobile</td><td class="mono">/citizen/login</td><td>Functional login</td><td class="num">1</td></tr>
               <tr><td class="mono">DEF-005</td><td><span class="sev high">High</span></td><td class="wrap">Resend OTP does nothing</td><td class="mono">/citizen/login</td><td>Functional login</td><td class="num">1</td></tr>
-            </tbody>
-          </table>
-          </div>
+            </tbody></table></div>
           <div class="row mt-3"><button class="btn sm primary">Confirm 5 defects</button><button class="btn sm">Export Zoho CSV</button><span class="spacer"></span><span class="cost">14 more</span></div>
         </div>
         <div class="card">
@@ -240,14 +318,15 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
             <div class="agent done"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-check-circle"/></svg>Writer</div><div class="state">Done · 35 rewritten, 4 flagged</div><div class="meta">114 s · sonnet-5-5 · $0.03</div></div>
             <div class="agent running"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-spinner"/></svg>Explorer</div><div class="state">Running · clerk, 12 screens</div><div class="meta">38 s · no AI</div></div>
             <div class="agent waiting"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-hand"/></svg>Reconciler</div><div class="state">Waiting for you · 15 questions</div><div class="meta">gate 1</div></div>
-            <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Designer</div><div class="state">Queued</div><div class="meta">—</div></div>
+            <div class="agent failed"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-x-circle"/></svg>Security</div><div class="state">Failed · ZAP not reachable</div><div class="meta">retry</div></div>
             <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Executor</div><div class="state">Queued</div><div class="meta">—</div></div>
           </div>
+          <label for="f-name">Project name <span class="cost">(a field, to prove it stays inside the card)</span></label>
+          <input id="f-name" value="Demo Certificate Portal">
         </div>
       </div>
     </section>
 
-    <!-- ================= LIVE VIEW ================= -->
     <section class="screen" id="screen-live" aria-labelledby="h-live" hidden>
       <div class="topbar">
         <div><div class="crumbs">Projects / <b>Demo Certificate Portal</b></div><h1 id="h-live">Live View</h1><p class="sub">Run 20261103-0214 · started 02:14 · 4 workers · <span class="cost">AI so far: 2,806 in / 2,749 out tokens · $0.03</span></p></div>
@@ -256,14 +335,14 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
         <button class="btn sm">Go live</button>
       </div>
       <div class="card sunk">
-        <div class="row" style="justify-content:space-between"><span class="cost">Pipeline</span><span class="cost">gates marked in amber</span></div>
+        <div class="row" style="justify-content:space-between"><span class="cost">Pipeline · 3 of 10 stages done</span><span class="cost">gates in amber</span></div>
+        <div class="progress mt-3" role="progressbar" aria-valuenow="38" aria-valuemin="0" aria-valuemax="100" aria-label="Run progress"><i style="--p:.38"></i></div>
         <div class="timeline" role="img" aria-label="Pipeline progress: analyze, write, explore done; questions gate waiting; design, plan gate, generate, run, triage, defects gate pending">
           <div class="done" style="--h:70%"><span>analyze</span></div><div class="done" style="--h:100%"><span>write</span></div><div class="done" style="--h:60%"><span>explore</span></div>
           <div class="gate" style="--h:45%"><span>questions</span></div><div><span>design</span></div><div class="gate"><span>plan</span></div>
           <div><span>generate</span></div><div><span>run</span></div><div><span>triage</span></div><div class="gate"><span>defects</span></div>
         </div>
       </div>
-
       <div class="grid g-live mt-4">
         <div class="card">
           <h2>Agents</h2>
@@ -275,10 +354,9 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
             <div class="agent idle"><div class="name"><svg class="ic sm" aria-hidden="true"><use href="#i-circle-dashed"/></svg>Test Designer</div><div class="state">Queued</div></div>
           </div>
         </div>
-
-        <div class="card flat">
+        <div class="card">
           <div class="row" style="margin-bottom:var(--space-3)"><h2 style="margin:0">Explorer · what it is doing</h2><span class="pill info"><svg class="ic" aria-hidden="true"><use href="#i-spinner"/></svg>running</span><span class="spacer"></span><span class="cost">worker 2 · clerk</span></div>
-          <div class="frame" role="img" aria-label="Live browser frame: department login, typing into the username field">
+          <div class="frame running" role="img" aria-label="Live browser frame: department login, typing into the username field">
             <div class="url">127.0.0.1:8810/department/login</div>
             <div class="page"><div class="field hit"></div><div class="field"></div><div class="field cta"></div></div>
             <span class="act">typing username</span>
@@ -289,9 +367,9 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
             <div class="evt result"><div class="k">result</div><div><p>Logged in as clerk; landed on /department/dashboard (HTTP 200, 412 ms).</p><div class="t">02:17:43 · evidence: shot-0142.jpg</div></div></div>
             <div class="evt action"><div class="k">action</div><div><p>Open the "Applications" menu and visit every item.</p><div class="t">02:17:44</div></div></div>
             <div class="evt result fail"><div class="k">result</div><div><p>/department/admin/reports answered HTTP 500 — noted for Triage.</p><div class="t">02:17:49 · evidence: shot-0147.jpg, trace</div></div></div>
+            <div class="evt" aria-busy="true" aria-label="Loading the next event"><div class="skel" style="height:14px"></div><div><div class="skel" style="height:14px;width:70%"></div><div class="skel" style="height:10px;width:30%;margin-top:6px"></div></div></div>
           </div>
         </div>
-
         <div class="card">
           <h2>Tests <span class="cost">214 · 184 passed</span></h2>
           <ul class="tiles" aria-label="Test results, one square per test">
@@ -311,24 +389,38 @@ svg.ic.sm { width: var(--icon-sm); height: var(--icon-sm); }
 </div>
 
 <script>
-// Mock-only switches. The product does this with React state; here it is plain DOM.
-function pressOnly(attr, value) {
-  document.querySelectorAll(`[data-${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(`data-${attr}`) === value)));
+// Mock-only wiring. The product does this with React state; here it is plain DOM. Templates are stamped twice
+// (sidebar + drawer / top bar) so there is one source for the nav and one for the Appearance menu.
+const html = document.documentElement;
+document.querySelectorAll('[data-nav-slot]').forEach(s => s.replaceWith(document.getElementById('nav-tpl').content.cloneNode(true)));
+document.querySelectorAll('[data-appearance-slot]').forEach(s => s.replaceWith(document.getElementById('appearance-tpl').content.cloneNode(true)));
+let group = 0;
+document.querySelectorAll('.appearance').forEach(a => { group += 1; a.querySelectorAll('[data-theme-pick]').forEach(r => r.name = 'mode-' + group); a.querySelectorAll('[data-accent-pick]').forEach(r => r.name = 'accent-' + group); });
+function syncRadios() {
+  document.querySelectorAll('[data-theme-pick]').forEach(r => { r.checked = r.value === (html.getAttribute('data-theme') || 'system'); });
+  document.querySelectorAll('[data-accent-pick]').forEach(r => { r.checked = r.value === (html.getAttribute('data-accent') || 'blue'); });
 }
+syncRadios();
+document.querySelectorAll('[data-theme-pick]').forEach(r => r.addEventListener('change', () => { if (r.value === 'system') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', r.value); syncRadios(); }));
+document.querySelectorAll('[data-accent-pick]').forEach(r => r.addEventListener('change', () => { html.setAttribute('data-accent', r.value); syncRadios(); }));
+document.querySelectorAll('.appear-btn').forEach(b => b.addEventListener('click', () => {
+  const panel = b.nextElementSibling, open = panel.hidden; panel.hidden = !open; b.setAttribute('aria-expanded', String(open));
+}));
+function closeAppearance(refocus) { document.querySelectorAll('.appear-btn[aria-expanded="true"]').forEach(b => { b.nextElementSibling.hidden = true; b.setAttribute('aria-expanded', 'false'); if (refocus) b.focus(); }); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppearance(true); });
+document.addEventListener('click', e => { if (!e.target.closest('.appearance')) closeAppearance(false); });
+const drawer = document.getElementById('drawer'), menuBtn = document.querySelector('.menu-btn');
+menuBtn.addEventListener('click', () => { drawer.showModal(); menuBtn.setAttribute('aria-expanded', 'true'); });
+drawer.addEventListener('close', () => { menuBtn.setAttribute('aria-expanded', 'false'); menuBtn.focus(); });
+drawer.querySelector('.close-drawer').addEventListener('click', () => drawer.close());
+drawer.addEventListener('click', e => { if (e.target.closest('a')) drawer.close(); });
+function pressOnly(attr, value) { document.querySelectorAll(`[data-${attr}]`).forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(`data-${attr}`) === value))); }
 document.querySelectorAll('[data-screen]').forEach(b => b.addEventListener('click', () => {
   const which = b.getAttribute('data-screen');
   document.getElementById('screen-dash').hidden = which !== 'dash';
   document.getElementById('screen-live').hidden = which !== 'live';
-  document.getElementById('nav-dash').toggleAttribute('aria-current', which === 'dash');
-  document.getElementById('nav-live').toggleAttribute('aria-current', which === 'live');
-  document.getElementById(which === 'dash' ? 'nav-dash' : 'nav-live').setAttribute('aria-current', 'page');
+  document.querySelectorAll('[data-nav]').forEach(a => { if (a.getAttribute('data-nav') === which) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   pressOnly('screen', which);
-}));
-document.querySelectorAll('[data-theme-pick]').forEach(b => b.addEventListener('click', () => {
-  document.documentElement.setAttribute('data-theme', b.getAttribute('data-theme-pick')); pressOnly('theme-pick', b.getAttribute('data-theme-pick'));
-}));
-document.querySelectorAll('[data-font-pick]').forEach(b => b.addEventListener('click', () => {
-  document.body.setAttribute('data-font', b.getAttribute('data-font-pick')); pressOnly('font-pick', b.getAttribute('data-font-pick'));
 }));
 </script>
 </body>

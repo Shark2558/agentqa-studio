@@ -1,0 +1,20 @@
+/* Live View: agent cards whose border + glyph + label carry the state, and the event stream. */
+.agents { display: grid; gap: var(--space-3); } .agents.one-col { grid-template-columns: 1fr; }
+.agent { position: relative; border: 1px solid var(--color-line); border-radius: var(--radius-sm); padding: var(--space-3); background: var(--color-surface); min-height: 84px; }
+.agent .name { font-weight: var(--weight-semibold); font-size: var(--text-sm); display: flex; align-items: center; gap: 6px; }
+.agent .name svg { width: var(--icon-sm); height: var(--icon-sm); flex: none; }
+.agent .state { font-size: var(--text-xs); color: var(--color-muted); margin-top: 4px; overflow-wrap: anywhere; }
+.agent .meta { font-size: var(--text-xs); color: var(--color-muted); margin-top: 8px; font-family: var(--font-mono); }
+.agent.done .name svg { color: var(--color-ok); }
+.agent.running { border-color: var(--color-primary); box-shadow: 0 0 0 1px var(--color-primary); } .agent.running .name svg { color: var(--color-primary); }
+.agent.waiting { border-color: var(--color-warn); box-shadow: 0 0 0 1px var(--color-warn); } .agent.waiting .name svg { color: var(--color-warn); }
+.agent.failed { border-color: var(--color-bad); } .agent.failed .name svg { color: var(--color-bad); }
+.agent.idle { border-style: dashed; border-color: var(--color-line-strong); background: transparent; } .agent.idle .name { color: var(--color-muted); } .agent.idle .name svg { color: var(--color-icon); }
+.stream { display: flex; flex-direction: column; gap: var(--space-2); max-height: 70dvh; overflow: auto; padding-right: 4px; }
+.evt { display: grid; grid-template-columns: 80px 1fr; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-line); min-width: 0; }
+.evt .k { font-family: var(--font-mono); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-info); padding-top: 2px; overflow: hidden; text-overflow: ellipsis; }
+.evt.fail .k { color: var(--color-bad); }
+.evt p { margin: 0; font-size: var(--text-sm); overflow-wrap: anywhere; } .evt .t { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-muted); margin-top: 2px; }
+.empty { display: grid; gap: var(--space-2); justify-items: start; padding: var(--space-4); border: 1px dashed var(--color-line-strong); border-radius: var(--radius-sm); color: var(--color-muted); }
+.empty .btn { margin-top: var(--space-2); }
+@media (min-width: 760px) { .evt { grid-template-columns: 96px 1fr; } }

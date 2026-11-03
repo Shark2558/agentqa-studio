@@ -8,6 +8,7 @@ import { Project } from "./pages/Project";
 import { Live } from "./pages/Live";
 import { Requirements } from "./pages/Requirements";
 import { NewProject } from "./pages/wizard/NewProject";
+import { LivePicker } from "./pages/LivePicker";
 
 export function useMe() {
   return useQuery({
@@ -41,6 +42,7 @@ export function App() {
                 <Route path="projects/:slug" element={<Project />} />
                 <Route path="projects/:slug/requirements" element={<Requirements />} />
                 <Route path="projects/:slug/live" element={<Live />} />
+                <Route path="live" element={<LivePicker />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Shell>

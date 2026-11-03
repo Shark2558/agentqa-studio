@@ -1,0 +1,30 @@
+/* Type, text helpers, fields and notices. tokens.css already sets box-sizing, fonts, focus ring and .sr-only. */
+h1 { font-size: var(--text-xl); margin: 0; letter-spacing: -.01em; }
+h2 { font-size: var(--text-md); margin: 0 0 var(--space-3); }
+.sub { color: var(--color-muted); font-size: var(--text-sm); margin: 2px 0 0; display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; min-width: 0; overflow-wrap: anywhere; }
+.muted { color: var(--color-muted); } .small { font-size: var(--text-sm); } .mt-4 { margin-top: var(--space-4); }
+.page-pad { padding: var(--space-5); }
+a { color: var(--color-primary-ink); }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: var(--color-line-strong); }
+
+/* fields: white, one line, inside their card (box-sizing: border-box in tokens.css); checkboxes and radios keep their own size */
+label { display: block; font-weight: var(--weight-semibold); font-size: var(--text-sm); margin: var(--space-3) 0 var(--space-1); }
+label.check { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; min-height: var(--target-min); font-weight: var(--weight-medium); color: var(--color-muted); cursor: pointer; }
+label.check input { accent-color: var(--color-primary); width: 1rem; height: 1rem; }
+input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select, textarea {
+  width: 100%; min-height: var(--control-h); padding: 0 var(--space-3); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-ink); font: inherit; }
+select { width: auto; max-width: 100%; }
+textarea { padding: var(--space-3); line-height: var(--leading); resize: vertical; }
+input:read-only, select:disabled { color: var(--color-muted); background: var(--color-surface-2); }
+.notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); font-size: var(--text-sm); margin: var(--space-3) 0; border-left: 4px solid transparent; overflow-wrap: anywhere; }
+.notice.bad { background: var(--color-bad-soft); color: var(--color-bad-ink); border-color: var(--color-bad); }
+.notice.warn { background: var(--color-warn-soft); color: var(--color-warn-ink); border-color: var(--color-warn); }
+.notice.ok { background: var(--color-ok-soft); color: var(--color-ok-ink); border-color: var(--color-ok); }
+.notice code { font-family: var(--font-mono); }
+
+/* sign in */
+.sign-in { min-height: 100dvh; display: grid; place-items: center; padding: var(--space-4); }
+.sign-in-card { width: min(420px, 100%); }
+.sign-in-card .brand { padding: 0 0 var(--space-4); }
+.sign-in-card .btn { width: 100%; justify-content: center; }

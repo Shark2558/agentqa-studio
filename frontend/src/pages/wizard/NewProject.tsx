@@ -64,11 +64,11 @@ export function NewProject() {
             <li key={st.key} className={i === s.step ? "current" : i < s.step ? "done" : ""} aria-current={i === s.step ? "step" : undefined}>
               <span className="num">{i < s.step ? <Check aria-hidden="true" /> : i + 1}</span>
               {i < s.step ? (
-                <button type="button" className="linkish" onClick={() => dispatch({ type: "goto", step: i })}>
+                <button type="button" className="linkish title" onClick={() => dispatch({ type: "goto", step: i })}>
                   {st.title}
                 </button>
               ) : (
-                <span>{st.title}</span>
+                <span className="title">{st.title}</span>
               )}
             </li>
           ))}

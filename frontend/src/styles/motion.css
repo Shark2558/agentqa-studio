@@ -1,0 +1,19 @@
+/* Motion that explains testing: durations from tokens, compositor-only properties, all off under reduced motion
+   (tokens.css zeroes every duration and cancels every animation there). Nothing here moves when idle. */
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { from { transform: scale(1); opacity: .6; } to { transform: scale(1.06); opacity: 0; } }
+@keyframes tick-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cross-in { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes skeleton { from { opacity: .55; } to { opacity: 1; } }
+@keyframes slide-in { from { transform: translateX(-100%); } }
+@keyframes scan { to { transform: translateY(100cqh); } }
+
+.agent.running .name svg { animation: spin var(--dur-pulse) linear infinite; }                          /* a loading indicator: may repeat */
+.agent.running::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; border: 2px solid var(--color-primary); pointer-events: none;
+  animation: pulse var(--dur-pulse) var(--ease) infinite; }
+.agent.done.changed .name svg { animation: tick-in var(--dur-draw) var(--ease) both; }                   /* once, only on cards whose state changed after mount */
+.agent.failed.changed .name svg { animation: cross-in var(--dur-draw) var(--ease) both; }
+.steps li.done .num svg { animation: tick-in var(--dur-draw) var(--ease) both; }
+[aria-busy="true"] .skel { animation: skeleton var(--dur-pulse) ease-in-out infinite alternate; }
+.frame.running::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--color-primary); opacity: .8; pointer-events: none;
+  animation: scan var(--dur-scan) linear infinite; }                                                       /* browser frames arrive with Live View v2 (M1.3) */

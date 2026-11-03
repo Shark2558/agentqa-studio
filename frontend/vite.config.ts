@@ -10,7 +10,9 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": { target: "http://127.0.0.1:8700", changeOrigin: false } },
   },
-  build: { outDir: "dist", emptyOutDir: true },
+  // Current browsers understand light-dark() and nested selectors; without these targets the CSS minifier lowers
+  // light-dark() into a variable trick that stops following the data-accent attribute (M1.2-UI).
+  build: { outDir: "dist", emptyOutDir: true, cssTarget: ["chrome123", "edge123", "firefox120", "safari17.5"] },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
