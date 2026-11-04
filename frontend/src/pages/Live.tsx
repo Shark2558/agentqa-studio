@@ -93,7 +93,7 @@ export function Live() {
       {chosen && board.data && sessions.isFetchedAfterMount && (
         <ErrorBoundary resetKey={`${session}/${attempt}`} message="This run could not be shown. Reloading the page usually helps.">
           <LiveRun key={`${slug}/${session}/${attempt}`} slug={slug} session={session} def={board.data} running={chosen.running}
-                   onReconnect={() => setAttempt((n) => n + 1)} />
+                   newest={sessions.data?.[0]?.id === session} onReconnect={() => setAttempt((n) => n + 1)} />
         </ErrorBoundary>
       )}
     </>

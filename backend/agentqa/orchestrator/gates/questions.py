@@ -50,6 +50,19 @@ def listing(store: Store, status: str | None = None, limit: int = 50, offset: in
             "total": store.scalar(f"SELECT COUNT(*) FROM questions {where}", params) or 0}
 
 
+DIVERGENCE_RULES = ("ask", "srs_wins", "app_wins")
+ACCESS_RULES = ("ask", "deny", "ignore")
+
+
+def policy(project: Project) -> dict[str, str]:
+    """The rules `replan` reconciles with: project.yaml's, as for a pipeline started from the app (Phase A item 1).
+    An empty `policy:` or an unknown value reads as "ask", which is what the Reconciler does with it."""
+    rules = project.cfg.get("policy") or {}
+    divergence, access = rules.get("divergence"), rules.get("inferred_access")
+    return {"divergence": divergence if divergence in DIVERGENCE_RULES else "ask",
+            "inferred_access": access if access in ACCESS_RULES else "ask"}
+
+
 def _get(store: Store, qid: int) -> dict:
     q = store.one(f"SELECT {COLUMNS} FROM questions WHERE id=?", [qid])
     if not q:

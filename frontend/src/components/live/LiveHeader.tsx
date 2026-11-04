@@ -1,3 +1,6 @@
+import { Link } from "react-router";
+import { liveGateText, type GateId } from "../../lib/gates";
+import type { GateCounts } from "../../lib/gatesApi";
 import type { BoardDef, BoardModel } from "../../lib/live/board";
 import { displayState } from "../../lib/live/board";
 import type { ConnStatus, Transport } from "../../lib/live/connect";
@@ -36,13 +39,28 @@ export function RunHeader({ model, status, ended, transport }: HeaderProps) {
   );
 }
 
-function gateText(id: string, b: BoardModel): string {
-  if (id === "questions") return b.gates.questions ? `${b.gates.questions} for you` : "none";
-  if (id === "defects") return b.gates.defects ? `${b.gates.defects} to confirm` : "none";
-  return b.gates.plan === "approved" ? "approved" : b.gates.plan === "waiting" ? "waiting for you" : "not yet";
+const GATE_PAGES: Readonly<Record<string, GateId>> = { questions: "questions", plan: "plan", defects: "defects" };
+
+/** A gate between stages: a link to its page (M1.4), with the recording's count and, for the newest run, what is open. */
+function Gate({ gate, b, slug, now }: { gate: BoardDef["gates"][number]; b: BoardModel; slug: string; now: GateCounts | null }) {
+  const page = Object.hasOwn(GATE_PAGES, gate.id) ? GATE_PAGES[gate.id] : null;
+  const how = page ? liveGateText(page, b.gates, now) : "";
+  const waiting = gate.id === "plan" && how === "waiting for you";
+  return (
+    <li className={`gate${waiting ? " waiting" : ""}`}>
+      {page ? (
+        <Link className="gate-link" to={`/projects/${encodeURIComponent(slug)}/${page}`}>
+          <span className="what">{gate.label}</span>
+          <span className="how">{how}</span>
+        </Link>
+      ) : (
+        <span className="what">{gate.label}</span>
+      )}
+    </li>
+  );
 }
 
-type PipelineProps = { model: Model; def: BoardDef; runOver: boolean; onJump: (agent: string) => void };
+type PipelineProps = { model: Model; def: BoardDef; runOver: boolean; slug: string; now: GateCounts | null; onJump: (agent: string) => void };
 
 /** "12 of 12 stages finished · 1 failed": a failed or skipped stage is finished, never "done". */
 function progressText(states: readonly string[]): { finished: number; text: string } {
@@ -52,8 +70,9 @@ function progressText(states: readonly string[]): { finished: number; text: stri
   return { finished, text: [`${finished} of ${states.length} stages finished`, ...extra].join(" · ") };
 }
 
-/** The pipeline as a row of stages with the three human gates between them; pressing a stage jumps the replay to it. */
-export function PipelineCard({ model, def, runOver, onJump }: PipelineProps) {
+/** The pipeline as a row of stages with the three human gates between them; pressing a stage jumps the replay to it,
+ *  pressing a gate opens its page. `now` holds the project's gate counts when the run shown is the newest. */
+export function PipelineCard({ model, def, runOver, slug, now, onJump }: PipelineProps) {
   const b = model.board;
   const stages = def.stages.map((s) => ({ ...s, card: b.cards.get(s.agent) }));
   const progress = progressText(stages.map((s) => (s.card ? displayState(s.card, b, runOver) : "queued")));
@@ -75,10 +94,7 @@ export function PipelineCard({ model, def, runOver, onJump }: PipelineProps) {
       <ol className="timeline-steps">
         {items.map((item) =>
           "gate" in item ? (
-            <li key={`gate-${item.gate.id}`} className={`gate${item.gate.id === "plan" && b.gates.plan === "waiting" ? " waiting" : ""}`}>
-              <span className="what">{item.gate.label}</span>
-              <span className="how">{gateText(item.gate.id, b)}</span>
-            </li>
+            <Gate key={`gate-${item.gate.id}`} gate={item.gate} b={b} slug={slug} now={now} />
           ) : (
             <li key={item.stage.stage}>
               <button type="button" className={`step ${item.stage.card ? displayState(item.stage.card, b, runOver) : "queued"}`}

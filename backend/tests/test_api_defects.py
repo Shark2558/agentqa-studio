@@ -233,6 +233,15 @@ def test_a_download_started_from_another_site_is_refused_and_not_logged(gates, s
     assert gates.client.get(f"{gates.base}/defects/export.csv", headers={"Sec-Fetch-Site": "same-origin"}).status_code == 200
 
 
+@pytest.mark.parametrize("site", ["cross-site", "same-site"])
+def test_evidence_asked_for_by_another_site_is_refused(gates, site):
+    """The application under test, on another port of the same machine, is same-site: it must not probe which
+    evidence exists through <img> loads (security review, Phase B)."""
+    r = gates.client.get(f"{gates.base}/defects/DEF-001/evidence/0", headers={"Sec-Fetch-Site": site})
+    assert r.status_code == 403 and r.json()["error"]["code"] == "csrf"
+    assert gates.client.get(f"{gates.base}/defects/DEF-001/evidence/0", headers={"Sec-Fetch-Site": "same-origin"}).status_code == 200
+
+
 def test_a_reason_is_kept_on_one_line_so_it_cannot_fake_a_decision(gates):
     _decide(gates, ["DEF-007"], "rejected", "dup\nviewer@example.com (owner): confirmed")
     with gates.db() as s:

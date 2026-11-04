@@ -9,6 +9,7 @@ import { AgentBoard } from "../components/live/AgentBoard";
 import { AgentFocus } from "../components/live/AgentFocus";
 import { DetailsTabs, TABS, type Tab } from "../components/live/DetailsTabs";
 import { PipelineCard, RunHeader } from "../components/live/LiveHeader";
+import { useGateCounts } from "../lib/useGateCounts";
 import { PlayerBar } from "../components/live/PlayerBar";
 import { Findings, TestTiles } from "../components/live/TestsAndFindings";
 
@@ -32,14 +33,17 @@ function RunNotices({ stream, status, skipped, onReconnect }: NoticeProps) {
   );
 }
 
-type Props = { slug: string; session: string; def: BoardDef; running: boolean; onReconnect: () => void };
+/** `newest`: the run shown is the project's newest, so its gates may say what is still open now (an older run's have moved on). */
+type Props = { slug: string; session: string; def: BoardDef; running: boolean; newest: boolean; onReconnect: () => void };
 
 /** One run in the Live View (M1.3): header, pipeline, board, what the chosen agent is doing, tests and findings,
  *  details and replay. The chosen agent and tab live in the address, so a link shows the same view; an agent the board
  *  does not know falls back to the one running. A broken part is tried again when the replay moves on. */
-export function LiveRun({ slug, session, def, running, onReconnect }: Props) {
+export function LiveRun({ slug, session, def, running, newest, onReconnect }: Props) {
   const [params, setParams] = useSearchParams();
   const view = useLive(slug, session, def, running);
+  const gates = useGateCounts(newest ? slug : null);
+  const now = newest ? gates.data ?? null : null;
   const { model, stream, pos, shownOver } = view;
   const requested = params.get("agent");
   const agent = requested && model.board.cards.has(requested) ? requested : model.board.running;
@@ -61,7 +65,7 @@ export function LiveRun({ slug, session, def, running, onReconnect }: Props) {
     <>
       <ErrorBoundary><RunHeader model={model} status={view.status} ended={stream.ended} transport={view.transport} /></ErrorBoundary>
       <RunNotices stream={stream} status={view.status} skipped={model.skipped} onReconnect={onReconnect} />
-      <ErrorBoundary resetKey={pos}><PipelineCard model={model} def={def} runOver={shownOver} onJump={jumpTo} /></ErrorBoundary>
+      <ErrorBoundary resetKey={pos}><PipelineCard model={model} def={def} runOver={shownOver} slug={slug} now={now} onJump={jumpTo} /></ErrorBoundary>
       <ErrorBoundary><PlayerBar player={view.player} pos={pos} total={stream.events.length} ended={stream.ended} dispatch={view.dispatch} /></ErrorBoundary>
       <div className="grid g-live mt-4">
         <ErrorBoundary resetKey={pos}><AgentBoard board={model.board} runOver={shownOver} selected={agent} onSelect={select} /></ErrorBoundary>

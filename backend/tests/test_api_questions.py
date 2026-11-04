@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from agentqa.agents import reconciler
 from agentqa.orchestrator.gates import questions
 from conftest import CSRF, GATES_WHO
@@ -35,6 +37,22 @@ def test_the_list_puts_open_questions_first_by_priority_with_counts(gates):
                       "value", "answered_at"}
     assert all(set(o) == {"label", "needs_value"} for o in q["options"])
     assert "context" not in q and "key" not in q
+
+
+def test_the_list_says_which_policy_a_replan_will_use(gates):
+    """'Apply my answers' reconciles with project.yaml's policy (Phase A record, item 1): the page must say which."""
+    assert _list(gates)["policy"] == {"divergence": "ask", "inferred_access": "ask"}
+
+
+@pytest.mark.parametrize("cfg, expected", [
+    ({"policy": None}, ("ask", "ask")),                                         # `policy:` left empty in project.yaml
+    ({"policy": {"divergence": "srs_wins", "inferred_access": "deny"}}, ("srs_wins", "deny")),
+    ({"policy": {"divergence": "<b>x</b>" * 50, "inferred_access": 3}}, ("ask", "ask")),   # unknown: the reconciler asks
+])
+def test_the_policy_is_read_safely(cfg, expected):
+    from types import SimpleNamespace
+    got = questions.policy(SimpleNamespace(cfg=cfg))
+    assert (got["divergence"], got["inferred_access"]) == expected
 
 
 def test_the_list_filters_by_status_and_pages(gates):

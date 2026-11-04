@@ -420,7 +420,11 @@
 "open": 15,
 "answered": 0
 },
-"total": 15
+"total": 15,
+"policy": {
+"divergence": "ask",
+"inferred_access": "ask"
+}
 },
 "plan": {
 "plan": {

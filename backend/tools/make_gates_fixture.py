@@ -188,7 +188,8 @@ def replaceable(out: Path, src: Path) -> bool:
 def frontend_view(project, store) -> dict:
     """What the API answers for these rows (the web app's tests read it instead of a running server)."""
     from agentqa.orchestrator.gates import changelog, defects, plan, questions, requirements, summary
-    return {"gates": summary.counts(project, store), "questions": questions.listing(store, limit=200),
+    return {"gates": summary.counts(project, store),
+            "questions": {**questions.listing(store, limit=200), "policy": questions.policy(project)},
             "plan": plan.overview(store), "cases": plan.cases(store, limit=200),
             "defects": defects.listing(store, limit=200), "requirements": requirements.listing(store, limit=200),
             "changes": changelog.page(store)}

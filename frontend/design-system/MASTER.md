@@ -114,11 +114,14 @@ missing, and runs in `make lint`; its own tests are `backend/tests/test_check_co
 
 ## 6. Pre-delivery checklist (run before every screen ships)
 
-- [ ] `make lint` (232/232 contrast) and `make ui-check` (the built app at six widths, both themes) are green; a
+- [ ] `make lint` (244/244 contrast) and `make ui-check` (the built app at six widths, both themes) are green; a
       screen with a stream also passes `make live-check` (live, reload, replay and the SSE fallback end at one picture).
 - [ ] Columns are sized by the room left beside the 248 px sidebar, not by the window: the sidebar and gutters take
       311 px from 760 px up (M1.3 Phase C: the Live View's middle column was 186 px in a 1149 px window).
       `check_app.py` holds the Live View's middle column at 360 px or more whenever it shares its row.
+- [ ] One breakpoint convention for new layouts (M1.4): 760 px brings the sidebar; multi-column grids and wide tables
+      switch at 1 024 / 1 400 px. KPI cards use `.g-dash` (`auto-fill`, 190 px minimum), which follows the content
+      column by itself; a table with controls or more than four columns uses `.rows` (labelled blocks under 1 024 px).
 - [ ] A replay is checked partway through, not only at its end: what the screen says must be true of the moment shown.
 - [ ] No emoji as icons; one icon family (Phosphor regular); consistent sizes 16/20/24.
 - [ ] Hover / focus / active / disabled states designed, 150–300 ms, no layout shift.

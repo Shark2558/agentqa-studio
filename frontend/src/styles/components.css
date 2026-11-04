@@ -15,7 +15,10 @@
 .card .btn { margin-top: var(--space-4); }
 .scroll-x { overflow-x: auto; }
 .grid { display: grid; gap: var(--space-3); }
-.g-dash { grid-template-columns: 1fr; } .g-two { grid-template-columns: 1fr; } .g-live { grid-template-columns: 1fr; }
+/* KPI cards fill the room the content column has, not the window's width (M1.3 C12: beside the 248 px sidebar
+   the old four columns at 1 100 px were 185 px each): as many 190 px cards as fit, never wider than the column. */
+.g-dash { grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); }
+.g-two { grid-template-columns: 1fr; } .g-live { grid-template-columns: 1fr; }
 .kpi .label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); font-weight: var(--weight-semibold); }
 .kpi .value { font-size: var(--text-2xl); font-weight: var(--weight-bold); letter-spacing: -.02em; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .kpi .small-value { font-size: var(--text-md); }
@@ -73,10 +76,10 @@ details summary { cursor: pointer; font-weight: var(--weight-semibold); font-siz
 
 @media (min-width: 760px) {
   .grid { gap: var(--space-4); }
-  .g-dash { grid-template-columns: 1fr 1fr; } .g-role { grid-template-columns: 1fr 1fr; }
+  .g-role { grid-template-columns: 1fr 1fr; }
   .review { grid-template-columns: 140px 1fr; gap: var(--space-2) var(--space-4); } .review dt { margin-top: 0; }
 }
-@media (min-width: 1100px) { .g-dash { grid-template-columns: repeat(4, 1fr); } .g-two { grid-template-columns: 1.4fr 1fr; } .g-role { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .g-two { grid-template-columns: 1.4fr 1fr; } .g-role { grid-template-columns: repeat(3, 1fr); } }
 /* Live View: from 760 px up the 248 px sidebar, 2 × 24 px gutters and a 15 px scrollbar take 311 px (296 without a
    scrollbar), so its columns follow the room left over (M1.3 Phase C:
    at 1100 px the old three columns left "what it is doing" 137 px). Board + focus with tests below from 1024 px, all

@@ -51,7 +51,6 @@ export const api = {
   uploadUrl: (slug: string, folder: "documents" | "imports") => `${BASE}/projects/${encodeURIComponent(slug)}/${folder}`,
   typedRequirements: (slug: string, text: string, answers: { question: string; answer: string; topic: string }[] = [], items: string[] = []) =>
     request<ChatResult>(`/projects/${encodeURIComponent(slug)}/requirements/typed`, { method: "POST", body: JSON.stringify({ text, answers, items }) }),
-  requirements: (slug: string) => request<RequirementsView>(`/projects/${encodeURIComponent(slug)}/requirements`),
   accounts: (slug: string) => request<AccountsView>(`/projects/${encodeURIComponent(slug)}/accounts`),
   saveAccounts: (slug: string, body: { no_login: boolean; roles: RoleInput[] }) =>
     request<AccountsView>(`/projects/${encodeURIComponent(slug)}/accounts`, { method: "PUT", body: JSON.stringify(body) }),
@@ -148,11 +147,6 @@ export interface Requirement {
   ambiguity: unknown[] | null;
   source_file: string | null;
   disposition: string | null;
-}
-
-export interface RequirementsView {
-  requirements: Requirement[];
-  documents: { name: string; kind: string; status: string; detail: string; segments: number; read_at?: string }[];
 }
 
 export interface RoleInput {

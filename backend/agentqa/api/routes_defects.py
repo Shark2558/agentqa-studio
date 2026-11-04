@@ -49,7 +49,7 @@ def export_zoho(slug: str, drafts: int = Drafts, user: User = Depends(current_us
     return _csv(slug, "zoho", drafts, user)
 
 
-@router.get("/{did}/evidence/{n}")
+@router.get("/{did}/evidence/{n}", dependencies=[Depends(download_origin_check)])   # no probing from the tested site
 def get_evidence(slug: str, did: str = Path(pattern=DEFECT_ID), n: int = Path(ge=0, le=EVIDENCE_MAX)):
     with store_or_404(slug) as (p, s):
         found = defects.evidence(p, s, did, n)

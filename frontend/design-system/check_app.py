@@ -5,7 +5,8 @@ owner, so the owner's own sign-in is never read (M1.2-UI; `make ui-check`, needs
 
 Starts `python -m agentqa ui` on a free port with generated AGENTQA_OWNER_* / AGENTQA_SECRET_KEY environment
 variables (a real variable beats backend/.env), signs in, creates the demo project through the API, then visits
-Sign in, Projects, the project page, Requirements, the wizard, Live View (no run yet), the Live picker and Live View on
+Sign in, Projects, the project page, Requirements, the four gate pages (Questions, Test plan, Defects, Change log; the
+demo project holds the gates fixture, M1.4), the wizard, Live View (no run yet), the Live picker and Live View on
 the recorded fixture run (a second project holding it as a finished session, M1.3) at
 320 / 375 / 768 / 1024 / 1200 / 1440 px in light (and 375 / 1440 in dark) and asserts:
   (a) no horizontal overflow and no overlap in the top bar;   (b) every field and button sits inside its card / form / section;
@@ -44,6 +45,7 @@ DARK_WIDTHS = (375, 1440)
 PHONE_MAX = 759
 EMAIL = "ui-check@example.com"
 PASSWORD = secrets.token_urlsafe(16)
+SECRET = secrets.token_urlsafe(48)          # the throwaway server's session key: check_gates.py mints a Viewer pass with it
 CSRF = {"X-Requested-With": "AgentQA"}
 STARTUP_S = 60
 PAUSE_S = 0.4                 # stays well under the API's 240 requests per minute
@@ -107,7 +109,7 @@ def start_server(projects: Path) -> tuple[subprocess.Popen, str]:
     from agentqa.api.auth import hash_password
     port = free_port()
     env = {**os.environ, "AGENTQA_OWNER_EMAIL": EMAIL, "AGENTQA_OWNER_PASSWORD_HASH": hash_password(PASSWORD),
-           "AGENTQA_SECRET_KEY": secrets.token_urlsafe(48)}
+           "AGENTQA_SECRET_KEY": SECRET}
     proc = subprocess.Popen([sys.executable, "-m", "agentqa", "ui", "--port", str(port), "--projects-dir", str(projects)],
                             cwd=str(BACKEND), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base = f"http://127.0.0.1:{port}"
@@ -148,8 +150,23 @@ def seed_live_run(context, base: str, projects: Path) -> str:
     return slug
 
 
+def seed_gates(projects: Path, slug: str) -> None:
+    """The demo project's store filled with the gates fixture (the owner's real No-AI demo at the plan gate, M1.4):
+    15 questions, 206 cases, 19 defects with evidence, 35 requirements, so the gate pages are measured full."""
+    sys.path.insert(0, str(BACKEND / "tests"))
+    from contextlib import closing
+    from agentqa.config import Project
+    from agentqa.store import Store
+    from gates_fixture import load
+    project = Project(projects / slug)
+    with closing(Store(project.db_path)) as store:
+        load(project, store)
+
+
 def pages_for(slug: str, run_slug: str) -> list[tuple[str, str]]:
     return [("projects", "/app/"), ("project", f"/app/projects/{slug}"), ("requirements", f"/app/projects/{slug}/requirements"),
+            ("questions", f"/app/projects/{slug}/questions"), ("plan", f"/app/projects/{slug}/plan"),
+            ("defects", f"/app/projects/{slug}/defects"), ("changes", f"/app/projects/{slug}/changes"),
             ("wizard", "/app/projects/new"), ("live", f"/app/projects/{slug}/live"), ("live-picker", "/app/live"),
             ("live-run", f"/app/projects/{run_slug}/live?session={LIVE_RUN}"), ("ai", f"/app/projects/{slug}/ai")]
 
@@ -256,6 +273,7 @@ def main(argv: list[str]) -> int:
                 browser = p.chromium.launch()
                 with browser.new_context() as context:
                     slugs = (sign_in(context, base), seed_live_run(context, base, Path(tmp) / "projects"))
+                seed_gates(Path(tmp) / "projects", slugs[0])
                 problems = run_pages(browser, base, slugs, "light", WIDTHS, shots) + run_pages(browser, base, slugs, "dark", DARK_WIDTHS, shots)
                 browser.close()
         finally:

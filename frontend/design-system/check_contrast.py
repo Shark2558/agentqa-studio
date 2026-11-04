@@ -75,6 +75,9 @@ PAIRS: list[Pair] = [
     ("--color-track", "--color-bg", NON_TEXT_MIN, "pending pipeline bar in a sunken well"),
     ("--color-primary", "--color-bad-soft", NON_TEXT_MIN, "bullet-chart bar over the 'not ready' band"),
     ("--color-primary", "--color-primary-soft", NON_TEXT_MIN, "selected accent swatch ring on its tint"),
+    # M1.4 gates: a selected case row is tinted; the "why?" panel is raised
+    ("--color-ink", "--color-primary-soft", TEXT_MIN, "case id and title in a selected row (M1.4)"),
+    ("--color-line-strong", "--color-surface-raised", NON_TEXT_MIN, "reason box boundary on the raised why panel (M1.4)"),
 ]
 
 _HEX = re.compile(r"^#([0-9a-fA-F]{6})$")

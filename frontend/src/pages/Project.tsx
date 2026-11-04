@@ -6,6 +6,7 @@ import { useMe } from "../App";
 import { ApiError, api } from "../lib/api";
 import { MODES, aiApi, capState, settingsFrom } from "../lib/ai";
 import { canWrite } from "../lib/can";
+import { GateCounts } from "../components/gates/GateCounts";
 
 const RUNNING_POLL_MS = 3000;
 
@@ -19,9 +20,9 @@ export function Project() {
     queryFn: () => api.runs(slug),
     refetchInterval: (q) => (q.state.data?.some((r) => r.status === "running") ? RUNNING_POLL_MS : false),
   });
-  // Until M1.4 brings the approval screens into this app, the gates can only be answered in the old dashboard, so
-  // the owner chooses here, visibly, whether this run approves them on its own.
-  const [autoApprove, setAutoApprove] = useState(true);
+  // The gates are answered in this app (M1.4), so a run waits at the plan gate unless the owner ticks the demo switch,
+  // which only approves the test plan; the server writes its use in the change log (decision 3).
+  const [autoApprove, setAutoApprove] = useState(false);
   const start = useMutation({
     mutationFn: () => api.startRun(slug, { scope: "pipeline", policy: "srs_wins", auto_approve: autoApprove }),
     onSuccess: (run) => {
@@ -56,8 +57,8 @@ export function Project() {
         <div className="spacer" />
         {mayRun && (
           <label className="check small">
-            <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} />
-            Approve the gates automatically
+            <input type="checkbox" checked={autoApprove} onChange={(e) => setAutoApprove(e.target.checked)} aria-describedby="auto-hint" />
+            Approve the test plan automatically (demos)
           </label>
         )}
         <Link className="btn" to={`/projects/${encodeURIComponent(slug)}/requirements`}>
@@ -75,13 +76,21 @@ export function Project() {
           </button>
         )}
       </div>
+      {mayRun && (
+        <p id="auto-hint" className="small muted">
+          Leave “Approve the test plan automatically” off to review the plan yourself. When ticked, the run only approves the
+          test plan (every proposed case and the ready imported cases), never questions or defects, and the change log records it.
+        </p>
+      )}
       {error && (
         <p className="notice bad" role="alert">
           {error.message}
         </p>
       )}
 
-      <div className="grid g-dash">
+      <GateCounts slug={slug} />
+
+      <div className="grid g-dash mt-4">
         <div className="card kpi">
           <div className="label">Readiness</div>
           <div className="value">{p.score ?? "—"}</div>

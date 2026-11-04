@@ -640,7 +640,56 @@ The seven as they were put to him:
   - the unattended demo regression: **19/19, 0 unexpected**, and its `reports/defects.csv` names no folder;
   - the fixture, regenerated: 606 rows and 6 images with fingerprinted names, checked against the passwords and the 8 delivered codes.
 
+### Phase B (4 Nov 2026; the built app on throwaway servers with a generated owner; No-AI, nothing spent)
+- **Tests first:** every new test was red before its code: `lib/gates.test.ts`, `QuestionCard`, `Questions`, `TestPlan`, `Defects`, `ChangeLog`, `NavLinks`, `Requirements`, `LiveHeader`, `App` (the page frame), the extended `Project` test, and the backend `policy`, policy-hardening and evidence-origin tests.
+- **Frontend:** **367 Vitest in 44 files**; `tsc -b` and `oxlint` (with jsx-a11y) clean. `make web-build` puts each gate page in its own file (Questions 9 kB, Test plan 12.5 kB, Defects 6 kB, Change log 2 kB).
+- **Backend:** 665 tests; **663 passed** in the full run while both browser checks ran beside it. The 2 others are the Live View stream-slot tests Phase A recorded as timing-sensitive under load (`test_api_live_ws.py::test_leaving_in_the_middle_of_a_run_frees_the_slot`, `test_live_ws_real_server.py::test_an_sse_stream_closed_early_frees_its_slot`); their two files then passed alone, 28/28, and Phase B changes no Live View code. pyflakes clean; contrast **244/244** (two new pairs; the pinned count in `test_check_contrast.py` follows).
+- **`make ui-check`:** green at 320 / 375 / 768 / 1 024 / 1 200 / 1 440 px in light and 375 / 1 440 px in dark for 13 pages, the four gate pages included, with the demo project holding the gates fixture.
+- **`make gates-check`:** green, before and after the review fixes. As the owner:
+  - answered two questions (one with a value) and reopened one with a reason;
+  - rejected three cases with a reason, approved a whole type, approved the 9 ready imported cases, approved the plan, and saw "Generate and run";
+  - confirmed 17 defects and rejected 2 with a reason;
+  - marked FR-01 "tested by hand" with a reason;
+  - downloaded the test-case Excel and the RTM (both open), the Jira CSV (header, 17 rows: no drafts and no rejected) and the Zoho CSV (byte-order mark and its Title column);
+  - found every action in the change log with "ui-check@example.com (owner)" and each reason, by the API and on the page.
+  - As a Viewer (a pass minted with the throwaway secret): no fields or decision buttons on the four pages, the downloads there, and a write answered 403 `read_only`.
+- **Demo regression:** not re-run. Phase B changes no engine code (a read-only `policy` field and an origin check on a file route); the rule applies to engine commits.
+- **Not run:** acceptance sitting 1. It needs the owner and is prepared (hand-over note).
+
 ## Review (fresh context)
+
+### Phase B (4 Nov 2026)
+`typescript-reviewer`, `react-reviewer` (with an accessibility pass, WCAG 2.2 AA) and `security-reviewer` (untrusted text) read the change in fresh contexts. Security: approve, no CRITICAL, HIGH or MEDIUM. Every HIGH and MEDIUM was fixed test-first.
+
+| # | Found by | Severity | Finding | Fixed |
+|---|---|---|---|---|
+| 1 | typescript | HIGH | `PlanGaps.unread` and `production` are objects in the API, typed as strings: a real unread document blanked the page | types as `plan.py` sends them; "Scan.pdf (no text layer)", "Not run on production: …"; a test with real-shaped gaps |
+| 2 | react, typescript | HIGH | no error boundary above the lazy routes: a stale chunk after an update or a page that throws blanked the app | `PageFrame` (ErrorBoundary + Suspense, reset on navigation; `App.test.tsx`) |
+| 3 | react | HIGH | the disposition menu opened the reason panel on change, so arrow keys could not reach the last options (WCAG 3.2.2) | the menu changes nothing; "Set…" opens the reason |
+| 4 | react | HIGH | "Select every case shown" sat in the header row that is hidden under 1 024 px | a labelled box above the table at every width; `scroll-padding-bottom` under the sticky bar (2.4.11); the bar scrolls inside 60 vh |
+| 5 | react, typescript | HIGH | the Test plan read "a run is going" from a query nothing refreshed; refusals that mean "out of date" did not reload | the polled gate counts decide; `useRefreshWhenRunEnds` reloads Test plan, Questions and Defects when a run ends; `isStale` refusals reload |
+| 6 | react | MEDIUM | a reason panel outlived its selection ("Reject 0 cases") | the panel hides when its button is disabled and is keyed by the count |
+| 7 | react, typescript | MEDIUM | focus came back through `document.activeElement` (body in Safari; stolen in StrictMode dev) | the button that opened the panel refocuses itself |
+| 8 | react | MEDIUM | the decision bar came before the list in reading order | after the list (still sticky) |
+| 9 | react | MEDIUM | each tick re-rendered every row | `CaseRow` and `DefectCard` memoised with stable callbacks |
+| 10 | react, typescript | MEDIUM | no error or empty state for the cases; tab switches blanked the counts and reset "Include drafts" | messages; `keepPreviousData`; the downloads card always mounted |
+| 11 | all three | MEDIUM / LOW | the case selection survived a filter change, so hidden cases could be decided | cleared on every filter change |
+| 12 | typescript | MEDIUM | select-all after "Show more" could send more than the API's 500 ids | decisions go in slices of 500 |
+| 13 | typescript | MEDIUM | an older error hid a newer one; casts `as CaseDecision` / `as Disposition` | one current error, cleared on the next decision; `DecisionBar<D>` generic; the menu value looked up |
+| 14 | react | MEDIUM | "Reopen" and "Save answer" repeated 15 times with the same name; Save disabled without a reason | "Reopen question N"; Save described by its question and saying what is missing |
+| 15 | react | MEDIUM | results were not announced and focus fell to the page when a card left the list | one always-present live region per page ("Answer saved.", "The test plan is approved."); focus to the list's or the Approval heading |
+| 16 | react, typescript | MEDIUM | polling stopped for good after one error | 60 s after a blip; stops only on 401 / 403 / 404 (`gatePollMs`) |
+| 17 | security | LOW | `policy:` left empty in project.yaml answered 500; any text passed through | read safely; unknown values read "ask", as the Reconciler treats them |
+| 18 | security | LOW | the tested site (same-site, another port) could probe which evidence exists | the origin check on the evidence route too |
+| 19 | security | LOW | right-to-left overrides in application text could reorder what a reviewer reads | `unicode-bidi: isolate` on that text |
+| 20 | security | LOW | no tests for a hostile defect, a `BR/01` id or the address as text | added |
+| 21 | several | LOW | a value sent for an option without one; a failed fetch worded generically; exported defects selectable; a Viewer told about buttons they lack; heading order on Defects; no "Select" column name; "verb:" labels; counts not refreshed after starting a run; "0 cases · waiting" with no plan | fixed |
+
+**Not changed, and why:**
+- **Explicit table roles on `.rows`.** The build targets current engines (`cssTarget` Safari 17.5), which keep table semantics under `display: block`, and oxlint flags the roles as redundant. A screen-reader check in sitting 1 can reopen it.
+- **A requirement id of exactly `.` or `..`** cannot be dispositioned (the browser collapses the segment). Only a hostile document does this; M1.5's ingestion should refuse such ids.
+- **LOW items kept:** the reason is lost when a confirmed decision is refused; several reason panels can be open at once; the selection boxes are 17.6 px (they pass WCAG 2.5.8 by spacing); list roles after `list-style: none` in Safari; the scrolling `<pre>` is not focusable; the breadcrumb is not a `<nav>`; raw case-type names; three page components are 55–60 lines of JSX.
+- **A second review round** was not run; the fixes are covered by the tests above and both browser checks, re-run after them.
 
 ### Phase A (4 Nov 2026)
 Three reviewers read the change in fresh contexts: `code-reviewer`, `python-reviewer` and `security-reviewer`. They read the code and probed it with throwaway scripts. Nothing was CRITICAL. Every HIGH and MEDIUM was fixed test-first: each new test failed first, then passed.
@@ -717,3 +766,29 @@ Three reviewers read the change in fresh contexts: `code-reviewer`, `python-revi
 - Evidence kinds are as above.
 
 **Still not verified:** `yamledit._commit`'s check and whether `generator` runs approved imported cases (both Phase C / sitting 1).
+
+### Phase B (4 Nov 2026, branch `claude/pensive-zhukovsky-481d45`, on Phase A `8c9d651`)
+
+**Built as planned.**
+- **Logic:** `lib/gatesApi.ts` (requests, types, download and evidence addresses), `lib/gates.ts` (pure: selection, which decisions need a reason, export links, who in words, the policy in words, error words, nav badges, "What needs you", the Live View's gate text), `lib/useGateCounts.ts` (one shared `GET /gates` query: every 5 s while a run goes, 30 s otherwise, stops on an error).
+- **Pages**, each loaded with its route (`App.tsx`, `lazy` + `Suspense`): `pages/gates/{Questions,TestPlan,Defects,ChangeLog}.tsx`, at `/projects/:slug/questions`, `/plan`, `/defects`, `/changes`.
+- **Components** in `components/gates/`: `QuestionCard`, `ReasonDialog` (+ `WhyButton`), `DecisionBar`, `CaseTable`, `TypeTable`, `PlanSummary`, `PlanApproval`, `DefectCard`, `ExportLinks`, `DispositionControl`, `GateCounts`, `GateTop`.
+- **Navigation:** Questions, Test plan, Defects (each with a badge whose spoken name says it, e.g. "Questions, 15 open") and Change log.
+- **Project page:** the "What needs you" card; the switch reads "Approve the test plan automatically (demos)", is **off** by default and says what it does.
+- **Requirements page:** dispositions limited to the four values, always with a reason; `total` and "Show more" (200 at a time); the RTM download.
+- **Live View:** the pipeline card's gates are links to their pages; for the newest run they add what is open now ("15 asked · 3 open", "19 found · 2 to confirm") and the plan gate reads the store, because an approval made in the app leaves no line in the recording (fact 12).
+- **Styles:** `styles/gates.css` (111 lines); two new contrast pairs in `check_contrast.py`; `.g-dash` fixed (C12); MASTER §6 records the breakpoint convention.
+- **Checks:** `check_app.py` measures the four gate pages (the demo project now holds the gates fixture); `check_gates.py` (`make gates-check`) is the Phase B part.
+
+**Where the code disagreed with the plan, and what was done.**
+1. **The API did not say which policy a re-plan uses** (Phase A item 1 asked the page to say it). `GET /questions` now returns `policy` (`divergence`, `inferred_access`) from project.yaml: 5 lines in `questions.policy` and the route, test first (`test_api_questions.py`). The fixture tool writes it too; the frontend fixture was patched by hand with the demo's values.
+2. **The Run button and "Apply" use different rules.** `Project.tsx` starts every pipeline with `policy: "srs_wins"`; `replan` uses project.yaml's (`ask` on the demo). After a run from the app, "Apply my answers and re-plan" can therefore bring back questions the run had settled (the 4 "Decided" divergences on the demo). The Questions page says so in plain words. **Open decision for the owner before sitting 1** (see the hand-over).
+3. **Imported manual cases have counts but no list in the API**, so the page offers "Approve the N ready imported cases" (`approve_ready`) only; per-case decisions on imported cases wait for a list route.
+4. **Visual changes and heals** are named in "What needs you" without a link until their Phase C pages exist.
+5. **Wide tables:** the `.assign` pattern turns into a table at 760 px, where the case table (7 columns) overflowed its card beside the sidebar until about 1 100 px. A `.rows` pattern stacks labelled blocks under 1 024 px and is a table from 1 024 px (the 1 024 / 1 400 convention). The type table shows one "Decided" column instead of three counts so it fits at 1 024 px.
+6. **Filter chips** are `.filters` / `.filter`: the existing `.chip` is the Live View's small label.
+7. **Requirements page** is one column (sources below the table) and shows section and source file under each requirement, so the disposition menu fits; `api.requirements` and `RequirementsView` were removed (`gatesApi.requirements` replaces them).
+8. **The "why?" box is a non-modal panel in place** (role `dialog`, focus into the box, Escape or Cancel closes it and focus returns to its opener). The Lightbox pattern is for Phase C's help dialog.
+9. **Defects list** shows the first 200 (the API's cap) and says so when there are more; the demo has 19.
+10. **`check_app.SECRET`** is a module constant so `check_gates.py` can mint a Viewer pass for the throwaway server; nothing writes it anywhere.
+11. **Test speed:** jsdom's accessible-name queries over 200 rows took more than 5 s under load, so the Test plan tests render 30 of the 206 cases (the "Show more" button proves the rest are there) and that file allows 20 s per test.

@@ -22,7 +22,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend, reviewed; branch `claude/compassionate-haslett-3eb339`, not merged); **next: Phase B** | plan `35acae8` + approval · Phase A |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **next: acceptance sitting 1** with the owner, then Phase C | plan `35acae8` + approval · Phase A `8c9d651` · Phase B |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
@@ -103,7 +103,17 @@ Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic acc
 credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
 owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
 
-## M1.4 — Phase A done; next: Phase B of the approved plan (`docs/plans/m1-4-gates.md`)
+## M1.4 — Phases A and B done; next: acceptance sitting 1, then Phase C (`docs/plans/m1-4-gates.md`)
+
+**Phase B (4 Nov 2026)** is on branch `claude/pensive-zhukovsky-481d45` (on Phase A), not merged. In the React app:
+- the Questions, Test plan and Defects pages;
+- the Change log page;
+- the Requirements page's dispositions, "Show more" and RTM download;
+- navigation badges;
+- the Project page's "What needs you" card and the switch, now "Approve the test plan automatically (demos)", off by default;
+- the Live View's gates as links.
+
+Checks: `make gates-check` (new) and `make ui-check` green; 367 Vitest; three fresh-context reviews with every HIGH and MEDIUM fixed. The plan's Phase B record lists where the code differed. **Before sitting 1 the owner decides item 2**: the Run button reconciles with "the requirements document wins", "Apply my answers" with project.yaml's rule. Sitting 1 is prepared, not run (the hand-over note in the session notes folder has the script and the steps).
 
 **Phase A (4 Nov 2026)** is on branch `claude/compassionate-haslett-3eb339`, not merged. It covers:
 - the API for questions, the test plan (with imported cases), defects with evidence, requirement dispositions, the change log and the gate counts;
