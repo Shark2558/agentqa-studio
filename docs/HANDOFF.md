@@ -22,7 +22,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **next: the owner's word on merging A+B, then Phase C** | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **A+B and the fixes merged into `main`** (fast-forward to `301fb3d`, on the owner's word, 5 Nov 2026); **next: Phase C** | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes `301fb3d` |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
@@ -103,7 +103,7 @@ Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic acc
 credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
 owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
 
-## M1.4 — Phases A and B done, sitting 1 done; next: merge A+B (owner's word), then Phase C (`docs/plans/m1-4-gates.md`)
+## M1.4 — Phases A and B done, sitting 1 done, merged into `main` (5 Nov 2026); next: Phase C (`docs/plans/m1-4-gates.md`)
 
 **Sitting 1 (4 Nov 2026, with the owner; v10)** passed all seven steps on a throwaway server in No-AI mode: the run stopped at the plan gate,
 he answered, reopened with a reason and re-planned, rejected a case, approved the plan and the imported cases, `check_demo` before Gate 3
@@ -119,7 +119,10 @@ reasons, and a Viewer saw no decision anywhere. Record: plan Verification → Si
 - **The owner's design wishes (O1–O4)**: a Live View showing every agent's work, a livelier look with more themes and animation, numbered
   same-size agent cards, the workflow drawn as it runs. **He chose a design slice of its own right after M1.4**, planned with a mock he
   approves before any code; it starts after the follow-up branch (`AgentBoard.tsx`, `board.ts`) merges. Memory: `owner-visual-direction`.
-- **Still to decide by him:** merging Phases A+B (and these fixes) into `main`. "Real later" for vague answers needs its own plan.
+- **Merged:** the owner said yes on 5 Nov 2026; `main` was fast-forwarded to `301fb3d` (four Drive ghost files re-read first, as the
+  memory note says) and the main folder's `frontend/dist` rebuilt. He then looked at the fixes on a fresh server built from `main`.
+- **Open, small:** a defect's evidence picture whose file is missing shows a broken-image icon; it should say the file is missing (seen
+  with the gates fixture, which keeps only 6 pictures). "Real later" for vague answers needs its own plan.
 
 **Phase B (4 Nov 2026)** is on branch `claude/pensive-zhukovsky-481d45` (on Phase A), not merged. In the React app:
 - the Questions, Test plan and Defects pages;

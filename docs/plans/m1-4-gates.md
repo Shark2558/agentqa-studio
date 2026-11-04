@@ -905,3 +905,10 @@ Three reviewers read the change in fresh contexts: `code-reviewer`, `python-revi
   - backend: `test_answer_notes.py` (new);
   - frontend: `SelectAll.test.tsx` and `WhyButton.test.tsx` (new);
   - extended: `QuestionCard`, `Defects`, `ChangeLog`, `Project`, `lib/gates` and `TestPlan` (label).
+
+**Merged.** The owner said yes on 5 Nov 2026: `main` was fast-forwarded to `301fb3d` (Phases A and B plus these fixes). He then
+looked at the fixes on a fresh throwaway server built from `main`, with the gates fixture seeded: the note on the three vague questions,
+"Select the 19 defects shown", the Reject buttons without stray rules.
+
+**Open (small, for Phase C or D):** a defect's evidence picture whose file is missing (404) shows a broken-image icon. It should say
+that the file is missing. This was seen with the gates fixture, which keeps 6 pictures; a real run has them all.
