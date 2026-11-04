@@ -11,13 +11,14 @@ from __future__ import annotations
 
 import csv
 import re
+from pathlib import Path
 
 import httpx
 
 from agentqa import live
 from agentqa.config import Project
 from agentqa.store import Store, now
-from agentqa.util import log, warn
+from agentqa.util import log, spreadsheet_safe, warn
 
 SEVERITY_PRIORITY = {"Critical": "P1", "High": "P1", "Medium": "P2", "Low": "P3"}
 SEV_ORDER = ["Critical", "High", "Medium", "Low"]
@@ -334,10 +335,19 @@ def export_csv(project: Project, store: Store, include_drafts: bool = False) -> 
         w.writerow(["Defect ID", "Summary", "Severity", "Priority", "Role", "URL", "Steps to reproduce",
                     "Expected result", "Actual result", "Requirement IDs", "Test cases", "Evidence", "Status"])
         for d in rows:
-            w.writerow([d["id"], d["title"], d["severity"], d["priority"], d["role"], d["url"], d["steps"],
-                        d["expected"], d["actual"], ", ".join(d["req_ids"] or []), ", ".join(d["case_ids"] or []),
-                        "; ".join(e["path"] for e in d["evidence"] or []), d["status"]])
+            w.writerow([spreadsheet_safe(v) for v in (
+                d["id"], d["title"], d["severity"], d["priority"], d["role"], d["url"], d["steps"], d["expected"],
+                d["actual"], ", ".join(d["req_ids"] or []), ", ".join(d["case_ids"] or []),
+                "; ".join(_inside(project, e["path"]) for e in d["evidence"] or []), d["status"])])
     return str(path)
+
+
+def _inside(project: Project, path: str) -> str:
+    """An evidence path as the part inside the project folder (the owner's folder names never leave the machine)."""
+    try:
+        return Path(path).resolve().relative_to(project.root).as_posix()
+    except (OSError, ValueError):
+        return Path(str(path)).name
 
 
 # Zoho BugTracker / Zoho Projects / Zoho Sprints import: these are the column names the Zoho bug importer maps
@@ -365,8 +375,9 @@ def export_zoho_csv(project: Project, store: Store, include_drafts: bool = True)
         for d in rows:
             module = (d.get("url") or "").split("//")[-1].split("/", 1)
             mod = ("/" + module[1].split("?")[0]) if len(module) > 1 and module[1] else "General"
-            w.writerow([d["title"][:250], _zoho_description(d), ZOHO_SEVERITY.get(d["severity"], "Major"),
-                        "Functionality Issue", "Always", mod, "Open", "Internal", "", d["id"]])
+            w.writerow([spreadsheet_safe(v) for v in (
+                d["title"][:250], _zoho_description(d), ZOHO_SEVERITY.get(d["severity"], "Major"),
+                "Functionality Issue", "Always", mod, "Open", "Internal", "", d["id"])])
     return str(path)
 
 

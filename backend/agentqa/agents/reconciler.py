@@ -179,7 +179,7 @@ def _ask(store: Store, key: str, kind: str, question: str, rule_id=None, req_id=
     return None
 
 
-def answer_question(store: Store, qid: int, choice: int, value: str = "") -> None:
+def answer_question(store: Store, qid: int, choice: int, value: str = "", *, by: str = "dashboard") -> None:
     q = store.one("SELECT * FROM questions WHERE id=?", [qid])
     if not q:
         raise KeyError(f"No question {qid}")
@@ -191,7 +191,7 @@ def answer_question(store: Store, qid: int, choice: int, value: str = "") -> Non
     store.insert("change_log", {"at": now(), "agent": "person", "object": "question", "object_id": str(qid),
                                 "change": f"answered '{label}'" + (f" ({value})" if value else "") + " for "
                                           + str(q.get("req_id") or q.get("rule_id") or "the plan"),
-                                "justification": (q.get("question") or "")[:300], "by": "dashboard"})
+                                "justification": (q.get("question") or "")[:300], "by": by})
 
 
 def _choice(ans: dict) -> tuple[int, str]:

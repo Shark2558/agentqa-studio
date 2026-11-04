@@ -3,11 +3,11 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from agentqa.cli import STAGES
 
-Scope = Literal["pipeline", "continue", *STAGES]
+Scope = Literal["pipeline", "continue", "replan", *STAGES]
 EMAIL_RE = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
 
@@ -26,6 +26,15 @@ class ProjectIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     url: str = Field(pattern=URL_PATTERN, max_length=400)
     environment: Environment = "Test / QA"
+
+    @field_validator("url")
+    @classmethod
+    def _no_user_name_or_password(cls, url: str) -> str:
+        from agentqa.orchestrator.projects import address_problem
+        problem = address_problem(url.strip())
+        if problem:
+            raise ValueError(problem)
+        return url
 
 
 class PreflightIn(BaseModel):

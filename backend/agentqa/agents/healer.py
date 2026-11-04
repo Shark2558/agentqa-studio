@@ -117,7 +117,8 @@ def heal(project: Project, store: Store, run_id: str | None = None) -> dict:
     return {"proposed": proposed, "needs_review": needs_review}
 
 
-def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Project | None = None) -> str:
+def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Project | None = None, *,
+                 by: str = "dashboard") -> str:
     """Apply an approved heal to the stored cases (and to project.yaml for workflows). Returns a note."""
     from agentqa import yamledit
     h = store.one("SELECT * FROM heals WHERE id=?", [heal_id])
@@ -128,7 +129,7 @@ def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Proj
     store.insert("change_log", {"at": _now(), "agent": "healer", "object": "case", "object_id": h["case_id"] or "-",
                                 "change": f"{'approved' if approve else 'rejected'} {h['kind']} fix: {json.dumps(h['old'])[:150]} "
                                           f"-> {json.dumps(h['new'])[:150]}",
-                                "justification": h["reason"] or "", "by": "dashboard"})
+                                "justification": h["reason"] or "", "by": by})
     if approve and h["kind"] == "workflow":
         wf, step, key = h["old"]["workflow"], int(h["old"]["step"]), h["old"]["key"]
         old_v, new_v = h["old"]["value"], h["new"]["value"]

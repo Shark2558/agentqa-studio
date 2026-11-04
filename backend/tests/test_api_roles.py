@@ -72,10 +72,19 @@ def test_a_viewer_may_read_every_live_endpoint(app):
 def test_every_write_route_refuses_a_viewer(app):
     viewer = client_as(app, "viewer")
     routes = write_routes(app)
-    assert len(routes) >= 15                                  # projects, documents, accounts, runs, AI keys, policy…
+    assert len(routes) >= 24          # …, AI keys, policy, and the gates' 9 decisions (M1.4 A); Phase C takes it past 30
     for method, path in routes:
         r = viewer.request(method, path, headers=CSRF, json={})
         assert r.status_code == 403 and r.json()["error"]["code"] == "read_only", (method, path, r.status_code)
+
+
+GATE_READS = ("questions", "plan", "plan/cases", "plan/testcases.xlsx", "defects", "defects/export.csv",
+              "defects/zoho.csv", "requirements", "requirements/rtm.xlsx", "changes", "gates")
+
+
+@pytest.mark.parametrize("path", GATE_READS)
+def test_a_viewer_reads_every_gate_page_and_download(app, path):
+    assert client_as(app, "viewer").get(f"/api/v1/projects/demo/{path}").status_code == 200
 
 
 def test_the_old_dashboards_forms_refuse_a_viewer_too(app):

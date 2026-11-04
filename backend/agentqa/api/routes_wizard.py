@@ -1,4 +1,5 @@
-"""The onboarding wizard's endpoints: documents, typed requirements, accounts, preflight and the requirements list."""
+"""The onboarding wizard's endpoints: documents, typed requirements, accounts and preflight (the requirements list
+moved to routes_gates in M1.4)."""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, UploadFile
@@ -6,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from agentqa.api.auth import current_user
 from agentqa.api.errors import ApiError, ok
-from agentqa.api.routes_projects import open_or_404
+from agentqa.api.routes_projects import project_or_404, store_or_404
 from agentqa.api.schemas import AccountsIn, PreflightIn, TypedIn
 from agentqa.orchestrator import NotFound, intake, preflight
 
@@ -29,7 +30,7 @@ async def _read_limited(up: UploadFile) -> bytes:
 async def _store_all(slug: str, files: list[UploadFile], folder: str):
     """Every file is checked (name, size) before any is written, so one bad file refuses the whole batch and
     nothing half-done is left behind; the readers then run in a worker thread, never on the event loop."""
-    p, _ = open_or_404(slug)
+    p = project_or_404(slug)
     refused = []
     for up in files:
         try:
@@ -56,8 +57,8 @@ async def run_preflight(body: PreflightIn):
 
 @router.get("/documents")
 def list_documents(slug: str):
-    p, s = open_or_404(slug)
-    return ok(intake.list_documents(p, s))
+    with store_or_404(slug) as (p, s):
+        return ok(intake.list_documents(p, s))
 
 
 @router.post("/documents", status_code=201)
@@ -72,7 +73,7 @@ async def upload_imports(slug: str, files: list[UploadFile]):
 
 @router.delete("/documents/{name:path}")
 def delete_document(slug: str, name: str):
-    p, _ = open_or_404(slug)
+    p = project_or_404(slug)
     try:
         intake.delete_document(p, name)
     except NotFound as exc:
@@ -83,32 +84,21 @@ def delete_document(slug: str, name: str):
 @router.post("/requirements/typed")
 def typed_requirements(slug: str, body: TypedIn):
     from agentqa.agents import req_chat
-    p, _ = open_or_404(slug)
+    p = project_or_404(slug)
     intake.save_typed(p, body.text, [a.model_dump() for a in body.answers], items=body.items)
     return ok(req_chat.chat(p, body.text))
 
 
-@router.get("/requirements")
-def list_requirements(slug: str):
-    p, s = open_or_404(slug)
-    reqs = s.all("SELECT id, seq, section, text, kind, priority, roles, ambiguity, source_file, disposition "
-                 "FROM requirements ORDER BY seq")
-    docs = s.all("SELECT name, kind, size, pages, segments, status, detail, read_at FROM documents ORDER BY name")
-    return ok({"requirements": reqs, "documents": docs})
-
-
 @router.get("/accounts")
 def get_accounts(slug: str):
-    p, _ = open_or_404(slug)
-    return ok(intake.accounts_view(p))
+    return ok(intake.accounts_view(project_or_404(slug)))
 
 
 @router.put("/accounts")
 def put_accounts(slug: str, body: AccountsIn):
-    p, _ = open_or_404(slug)
+    p = project_or_404(slug)
     try:
         intake.save_accounts(p, [r.model_dump(exclude_none=True) for r in body.roles], no_login=body.no_login)
     except ValueError as exc:
         raise ApiError(422, "validation", str(exc)) from exc
-    fresh, _ = open_or_404(slug)                        # project.yaml changed: answer from a re-read, not the old cfg
-    return ok(intake.accounts_view(fresh))
+    return ok(intake.accounts_view(project_or_404(slug)))   # project.yaml changed: answer from a re-read

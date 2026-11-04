@@ -14,6 +14,7 @@ from pathlib import Path
 from agentqa import contracts
 from agentqa.config import Project
 from agentqa.store import Store
+from agentqa.util import spreadsheet_safe, without_userinfo
 
 SRS_FUNCTIONAL = {"form_valid": "Forms (SRS rules)", "field_rejects": "Forms (SRS rules)", "field_accepts": "Forms (SRS rules)",
                   "field_options": "Forms (SRS rules)", "field_attribute": "Forms (SRS rules)", "workflow": "Workflows",
@@ -131,6 +132,11 @@ def _remarks(r: dict) -> str:
     return " ".join(bits)
 
 
+def _safe(values: list) -> list:
+    """Text from the application under test (titles, steps, messages) is shown as text, never run as a formula."""
+    return [spreadsheet_safe(v) for v in values]
+
+
 def workbook(project: Project, store: Store, include_srs: bool = True, all_types: bool = True) -> bytes:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -142,11 +148,11 @@ def workbook(project: Project, store: Store, include_srs: bool = True, all_types
     ws = wb.active
     ws.title = "Test cases"
     blue, thin = "1D4ED8", Side(style="thin", color="D5DEEC")
-    ws.append([f"{project.name}: test cases"])
+    ws.append(_safe([f"{project.name}: test cases"]))
     ws["A1"].font = Font(bold=True, size=14, color=blue)
     run = store.get_meta("last_run") or "no run yet"
-    ws.append([f"Applications: {', '.join(a['name'] + ' ' + a['base_url'] for a in project.applications().values())} · "
-               f"last run {run} · {len(data)} case(s) · drafted by AgentQA Studio"])
+    ws.append(_safe([f"Applications: {', '.join(a['name'] + ' ' + without_userinfo(a['base_url']) for a in project.applications().values())} · "
+                     f"last run {run} · {len(data)} case(s) · drafted by AgentQA Studio"]))
     ws["A2"].font = Font(italic=True, size=9, color="64748B")
     ws.append([])
     ws.append(head)
@@ -159,7 +165,7 @@ def workbook(project: Project, store: Store, include_srs: bool = True, all_types
     fills = {"Passed": "DCFCE7", "Failed": "FEE2E2", "Blocked": "FEF3C7", "Not Run": "F1F5F9"}
     scol = head.index("Test Result") + 1
     for r in data:
-        ws.append([fn(r) for _, fn in cols])
+        ws.append(_safe([fn(r) for _, fn in cols]))
         row = ws.max_row
         for col in range(1, len(head) + 1):
             c = ws.cell(row=row, column=col)
@@ -182,7 +188,7 @@ def workbook(project: Project, store: Store, include_srs: bool = True, all_types
         m["n"] += 1
         m[r["status"]] += 1
     for name, m in mods.items():
-        sm.append([name, m["n"]] + [m[k] for k in contracts.STATUSES])
+        sm.append(_safe([name, m["n"]] + [m[k] for k in contracts.STATUSES]))
     sm.append(["Total", len(data)] + [sum(m[k] for m in mods.values()) for k in contracts.STATUSES])
     sm.cell(row=sm.max_row, column=1).font = Font(bold=True)
     buf = io.BytesIO()

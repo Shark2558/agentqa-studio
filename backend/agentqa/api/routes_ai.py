@@ -10,7 +10,7 @@ from agentqa.ai import budget, catalog as C, local, modes, usage
 from agentqa.ai import settings as ai_settings
 from agentqa.api.auth import current_user
 from agentqa.api.errors import ApiError, ok
-from agentqa.api.routes_projects import open_or_404
+from agentqa.api.routes_projects import project_or_404, store_or_404
 from agentqa.api.schemas_ai import KeyIn, KeyPatch, PolicyIn, ProjectAiIn
 from agentqa.orchestrator import preflight
 
@@ -137,9 +137,9 @@ def put_policy(body: PolicyIn):
 
 def _project_view(slug: str) -> dict:
     from agentqa.ai.client import effective
-    p, s = open_or_404(slug)
+    with store_or_404(slug) as (p, s):
+        st = budget.status(s, ai_settings.AiSettings.from_cfg(p.cfg))
     block = {k: v for k, v in (p.cfg.get("ai") or {}).items() if k not in HIDDEN}
-    st = budget.status(s, ai_settings.AiSettings.from_cfg(p.cfg))
     return {"settings": block, "effective": effective(p), "notice": ai_settings.migration_notice(p.cfg.get("ai") or {}),
             "budget": st}
 
@@ -151,7 +151,7 @@ def get_project_ai(slug: str):
 
 @projects.put("")
 def put_project_ai(slug: str, body: ProjectAiIn):
-    p, _ = open_or_404(slug)
+    p = project_or_404(slug)
     kept = {k: v for k, v in (p.cfg.get("ai") or {}).items() if k == "last_mode"}      # the old dashboard's toggle memory
     try:
         ai_settings.save_ai(p.config_path, {**body.model_dump(), **kept})
@@ -162,6 +162,6 @@ def put_project_ai(slug: str, body: ProjectAiIn):
 
 @projects.get("/usage")
 def project_usage(slug: str, month: str | None = Query(default=None, pattern=usage.MONTH_RE.pattern)):
-    p, s = open_or_404(slug)
     month = month or usage.month_key()
-    return ok({**usage.summary(s, month), "budget": budget.status(s, ai_settings.AiSettings.from_cfg(p.cfg), month)})
+    with store_or_404(slug) as (p, s):
+        return ok({**usage.summary(s, month), "budget": budget.status(s, ai_settings.AiSettings.from_cfg(p.cfg), month)})

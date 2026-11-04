@@ -177,3 +177,42 @@ def _int(v) -> int | None:
 def slug(text: str, n: int = 40) -> str:
     s = re.sub(r"[^a-z0-9]+", "_", (text or "").lower()).strip("_")
     return s[:n] or "x"
+
+
+FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def spreadsheet_safe(value):
+    """A cell value a spreadsheet will show as text, never run: text that would start a formula (=, +, -, @, a tab or
+    a carriage return, also after leading spaces; a lone "-" excepted) gets a leading apostrophe. Text from the
+    application under test reaches every export (M1.4)."""
+    if not isinstance(value, str) or value.strip() == "-":
+        return value
+    return "'" + value if value.startswith(FORMULA_START) or value.lstrip(" ").startswith(FORMULA_START) else value
+
+
+ADDRESS_RE = re.compile(r"^https?://[^\s/]+")
+USERINFO_REFUSED = ("The portal address must not contain a user name or password (user:password@); "
+                    "add the accounts on the Accounts step instead")
+
+
+def address_problem(url: str) -> str | None:
+    """Why a portal address cannot be a project's address, or None. Never quotes the address: it may hold a secret."""
+    from urllib.parse import urlsplit
+    if not ADDRESS_RE.match(url):
+        return "The portal address must be a full URL starting with http:// or https://"
+    try:
+        netloc = urlsplit(url).netloc
+    except ValueError:
+        return "The portal address is not a valid URL"
+    return USERINFO_REFUSED if "@" in netloc else None
+
+
+def without_userinfo(url: str) -> str:
+    """The address without a `user:password@` part (one saved before M1.4 refused them is never shown)."""
+    from urllib.parse import urlsplit, urlunsplit
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return url
+    return urlunsplit(parts._replace(netloc=parts.netloc.rsplit("@", 1)[-1])) if "@" in parts.netloc else url

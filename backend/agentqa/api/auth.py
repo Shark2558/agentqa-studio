@@ -140,6 +140,18 @@ def csrf_check(request: Request) -> None:
         raise ApiError(403, "csrf", f"Missing or wrong {CSRF_HEADER.title()} header")
 
 
+DOWNLOAD_SITES = frozenset({"same-origin", "none"})    # a click in AgentQA's own pages, or an address typed in
+
+
+def download_origin_check(request: Request) -> None:
+    """A download that is also logged must start from AgentQA's own pages: a link on another site (the application
+    under test on another port counts as one) is refused. Browsers say where a request comes from in Sec-Fetch-Site;
+    a client that sends none (a script, the tests) is let through, as the old dashboard's Origin check does."""
+    site = request.headers.get("sec-fetch-site")
+    if site is not None and site not in DOWNLOAD_SITES:
+        raise ApiError(403, "csrf", "Start downloads from AgentQA's own pages")
+
+
 def authenticate(settings: Settings, limiter: LoginLimiter, key: str, email: str, password: str) -> User:
     """The owner, or an ApiError. A wrong email costs the same argon2 check as a wrong password, so the response
     time does not say which one it was; every outcome is logged without the password."""

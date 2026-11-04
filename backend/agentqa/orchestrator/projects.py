@@ -5,12 +5,15 @@ import logging
 import os
 import re
 import shutil
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from agentqa import readiness
 from agentqa.config import Project, init_project
 from agentqa.orchestrator import Conflict, NotFound
 from agentqa.store import Store
+from agentqa.util import address_problem, without_userinfo
 
 log = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -38,8 +41,35 @@ def find_project(slug: str) -> Project:
 
 
 def open_project(slug: str) -> tuple[Project, Store]:
+    """The project and an open store the caller must close (the old dashboard and scripts); the API uses
+    `project_store`, which closes it."""
     p = find_project(slug)
     return p, Store(p.db_path)
+
+
+@contextmanager
+def project_store(slug: str) -> Iterator[tuple[Project, Store]]:
+    """The project and its store for one request: the store is closed when the block ends, raised or not."""
+    p = find_project(slug)
+    s = Store(p.db_path)
+    try:
+        yield p, s
+    finally:
+        s.close()
+
+
+def _counts(p: Project, row: dict) -> None:
+    st = Store(p.db_path)
+    try:
+        run = st.one("SELECT * FROM runs WHERE status='done' ORDER BY started_at DESC LIMIT 1")
+        row.update(cases=st.scalar("SELECT COUNT(*) FROM cases"),
+                   defects=st.scalar("SELECT COUNT(*) FROM defects WHERE status NOT IN ('rejected','resolved')"),
+                   last=(run["started_at"][:16].replace("T", " ") if run else None))
+        if run:
+            r = readiness.compute(p, st)
+            row.update(score=r["score"], verdict=r["verdict"])
+    finally:
+        st.close()
 
 
 def summary(d: Path) -> dict:
@@ -47,17 +77,10 @@ def summary(d: Path) -> dict:
     try:
         p = Project(d)
         apps = p.applications()
-        row = {"slug": d.name, "name": p.name, "url": p.base_url,
+        row = {"slug": d.name, "name": p.name, "url": without_userinfo(p.base_url),
                "environment": next(iter(apps.values()))["environment"] if apps else ""}
         if p.db_path.exists():
-            st = Store(p.db_path)
-            run = st.one("SELECT * FROM runs WHERE status='done' ORDER BY started_at DESC LIMIT 1")
-            row.update(cases=st.scalar("SELECT COUNT(*) FROM cases"),
-                       defects=st.scalar("SELECT COUNT(*) FROM defects WHERE status NOT IN ('rejected','resolved')"),
-                       last=(run["started_at"][:16].replace("T", " ") if run else None))
-            if run:
-                r = readiness.compute(p, st)
-                row.update(score=r["score"], verdict=r["verdict"])
+            _counts(p, row)
         return row
     except Exception:  # noqa: BLE001 - one broken project must not hide the others
         log.exception("project %s cannot be read", d.name)          # the detail (paths included) goes to the log only
@@ -74,8 +97,9 @@ def create_project(name: str, url: str) -> tuple[str, bool]:
     name, url = name.strip(), url.strip()
     if not name:
         raise ValueError("Give the project a name")
-    if not URL_RE.match(url):
-        raise ValueError("The portal address must be a full URL starting with http:// or https://")
+    problem = address_problem(url)
+    if problem:
+        raise ValueError(problem)
     slug = slug_for(name)
     if (projects_dir() / slug / "project.yaml").exists():
         if Project(projects_dir() / slug).base_url.rstrip("/") != url.rstrip("/"):

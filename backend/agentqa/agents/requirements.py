@@ -20,7 +20,7 @@ import re
 from agentqa import live
 from agentqa.config import Project
 from agentqa.store import Store
-from agentqa.util import norm, similarity, warn
+from agentqa.util import norm, similarity, spreadsheet_safe, warn
 
 DISPOSITIONS = {"covered": "Covered by tests", "clarify": "Needs clarification", "not_testable": "Not testable",
                 "out_of_scope": "Out of scope", "gap": "Gap: no test yet", "manual": "Manual test only"}
@@ -294,7 +294,7 @@ def check(project: Project, store: Store) -> dict:
     return {"requirements": len(reqs), "duplicates": len(dup_pairs), "contradictions": len(contradictions), **counts}
 
 
-def set_disposition(store: Store, req_id: str, disposition: str, note: str = "") -> None:
+def set_disposition(store: Store, req_id: str, disposition: str, note: str = "", *, by: str = "dashboard") -> None:
     if disposition not in DISPOSITIONS:
         raise ValueError(disposition)
     ov = store.get_meta("req_dispositions") or {}
@@ -304,7 +304,7 @@ def set_disposition(store: Store, req_id: str, disposition: str, note: str = "")
     from agentqa.store import now
     store.insert("change_log", {"at": now(), "agent": "person", "object": "requirement", "object_id": req_id,
                                 "change": f"disposition set to {DISPOSITIONS[disposition]}", "justification": note,
-                                "by": "dashboard"})
+                                "by": by})
 
 
 def rtm(project: Project, store: Store) -> list[dict]:
@@ -390,7 +390,7 @@ def write_rtm(project: Project, store: Store) -> tuple[str, str]:
         w = csv.writer(f)
         w.writerow(names)
         for r in rows:
-            w.writerow([r.get(k, "") for k in head])
+            w.writerow([spreadsheet_safe(r.get(k, "")) for k in head])
     xlsx_path = project.reports_dir / "rtm.xlsx"
     try:
         from openpyxl import Workbook
@@ -406,7 +406,7 @@ def write_rtm(project: Project, store: Store) -> tuple[str, str]:
             ws.cell(row=1, column=i).fill = PatternFill("solid", fgColor="1D4ED8")
         fills = {"Passed": "DCFCE7", "Failed": "FEE2E2", "Blocked": "FEF3C7", "Not run": "F1F5F9"}
         for r in rows:
-            ws.append([r.get(k, "") for k in head])
+            ws.append([spreadsheet_safe(r.get(k, "")) for k in head])
             for c in ws[ws.max_row]:
                 c.alignment = Alignment(vertical="top", wrap_text=True)
             if r.get("result") in fills:
@@ -419,7 +419,7 @@ def write_rtm(project: Project, store: Store) -> tuple[str, str]:
             if not isinstance(v, (list, dict)):
                 sm.append([k.replace("_", " ").capitalize(), v])
         for d in cov["documents_not_fully_read"]:
-            sm.append(["Document not fully read", f"{d['name']}: {d['status']} - {d['detail']}"])
+            sm.append(["Document not fully read", spreadsheet_safe(f"{d['name']}: {d['status']} - {d['detail']}")])
         wb.save(xlsx_path)
     except Exception as exc:  # noqa: BLE001
         warn(f"could not write rtm.xlsx: {exc}")

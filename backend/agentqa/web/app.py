@@ -152,6 +152,9 @@ def new_project(name: str = Form(...), url: str = Form(...)):
         raise HTTPException(400, "Give the project a name")
     if not re.match(r"^https?://[^\s/]+", url):
         raise HTTPException(400, "The portal address must be a full URL starting with http:// or https://")
+    problem = _proj.address_problem(url)                            # user:password@ in the address (M1.3 #19)
+    if problem:
+        raise HTTPException(422, problem)
     slug = "".join(ch if ch.isalnum() else "-" for ch in name.lower()).strip("-")[:40] or "project"
     if (PROJECTS / slug / "project.yaml").exists():
         return RedirectResponse(f"/p/{slug}", status_code=303)
@@ -1119,6 +1122,8 @@ async def testdata_app(request: Request, slug: str):
     url = str(f.get("base_url") or "").strip().rstrip("/")
     if not aid or not url.startswith(("http://", "https://")):
         raise HTTPException(400, "Give the application an id and a full http(s) URL")
+    if _proj.address_problem(url):                                  # user:password@ in the address (M1.4 review)
+        raise HTTPException(422, _proj.address_problem(url))
     raw = dict(p.cfg.get("applications") or {})
     if not raw:     # the project so far had one site: keep it as the primary application
         raw = {"main": {"name": p.name, "base_url": p.base_url}}

@@ -253,6 +253,8 @@ def _plan_gate(s: Store, args, pid: str) -> bool:
         return True
     plan = s.one("SELECT approved FROM plan WHERE id=1")
     if plan and plan["approved"]:
+        from agentqa.orchestrator.gates.plan import say_approved_earlier
+        say_approved_earlier(s)                   # the Live View's plan gate reads "approved", not "not yet" (M1.4)
         return True
     s.insert("stage_runs", {"pipeline": pid, "stage": "generate", "status": "waiting for plan approval",
                             "started_at": now(), "finished_at": None, "outputs": None, "error": None})
@@ -656,6 +658,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--resume", action="store_true", help="continue the last pipeline from the first stage it did not finish")
     sp.add_argument("--llm", action="store_true", default=None)
     sp.set_defaults(func=cmd_pipeline)
+
+    from agentqa.replan import cmd_replan
+    sp = with_project(sub.add_parser("replan", help="apply answered questions: Reconciler then Designer, in one run"))
+    sp.add_argument("--policy", choices=["ask", "srs_wins", "app_wins"])
+    sp.set_defaults(func=cmd_replan)
 
     sp = with_project(sub.add_parser("teach-login", help="log in once yourself in AgentQA's browser; it learns the steps"))
     sp.add_argument("--role", required=True)

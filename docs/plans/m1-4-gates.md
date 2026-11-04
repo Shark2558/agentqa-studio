@@ -621,12 +621,99 @@ The seven as they were put to him:
 
 ## Verification
 
-*(to be filled per phase)*
+### Phase A (4 Nov 2026, No-AI, nothing spent; demo portals on 8800/8810)
+- **Pinning tests first:** `test_gates_engine.py` 16/16 green on the unchanged code, then kept green.
+- **Every new test was red before its code:**
+  - `test_project_store`, `test_changelog`, `test_gates_fixture` and `test_replan`;
+  - `test_spreadsheet_safe` and `test_api_{questions,plan,defects,requirements,gates_summary}`;
+  - the extended `test_api_roles`.
+  - Together: 155 tests across the 12 files.
+- **Full backend suite:** **621 passed** (`pytest -q tests`).
+- **pyflakes** (`agentqa demo tools tests`): clean.
+- **Demo regression, unattended,** on a fresh copy (`pipeline --policy srs_wins --auto-approve`, then `tools/check_demo.py`): **19/19, 0 unexpected**. Its `reports/defects.csv` holds evidence as `runs/…/evidence/…` and no folder names.
+- **Demo run, gated, for the fixture:** a fresh copy stopped at the plan gate (15 open questions, 206 proposed cases, 9 of 10 imported cases ready). The plan and the ready imported cases were then approved, and the run continued with `--from generate`: **19/19, 0 unexpected**.
+- **Fixture:** `tools/make_gates_fixture.py` on that copy wrote 606 rows in 13 tables and 6 images. It checked the 3 demo passwords and the 8 one-time codes the inbox delivered.
+- **Flaky under load:** `test_live_ws_real_server.py::test_an_sse_stream_closed_early_frees_its_slot` failed once while a demo pipeline ran beside the suite. It passed alone (4/4) and in the full run above.
+- **After the review fixes** (below), everything was run again on a third fresh copy:
+  - the full suite: **659 passed**;
+  - pyflakes: clean;
+  - the unattended demo regression: **19/19, 0 unexpected**, and its `reports/defects.csv` names no folder;
+  - the fixture, regenerated: 606 rows and 6 images with fingerprinted names, checked against the passwords and the 8 delivered codes.
 
 ## Review (fresh context)
 
-*(to be filled per phase)*
+### Phase A (4 Nov 2026)
+Three reviewers read the change in fresh contexts: `code-reviewer`, `python-reviewer` and `security-reviewer`. They read the code and probed it with throwaway scripts. Nothing was CRITICAL. Every HIGH and MEDIUM was fixed test-first: each new test failed first, then passed.
+
+| # | Found by | Severity | Finding | Fixed |
+|---|---|---|---|---|
+| 1 | python | HIGH | `CASE_TYPE` refused digits, so `a11y_basic` could not be filtered or decided | `^[a-z0-9_]{1,40}$`; a test checks every fixture type |
+| 2 | python, security | HIGH / LOW | the CSV download name used the raw slug: a Hindi or Japanese project name answered 500 | `exports.download_name` (ASCII only) for all four downloads |
+| 3 | code, python | MEDIUM | requirement and imported-case ids from documents (`BR/01`, `TC 001`) were refused | `DOC_ID`: any text up to 200 characters without control characters; `PATCH requirements/{rid:path}` |
+| 4 | code | MEDIUM | "approved earlier … by" could name the person behind an older approval | a log row counts only if it is not older than `plan.approved_at` |
+| 5 | code, python, security | MEDIUM | downloads rewrote `reports/` and could serve a stale or swapped file (Excel holding `rtm.xlsx`, a report stage beside them) | `gates/exports.build`: the engine writer runs into a temporary folder of its own; a missing file or `OSError` answers 503 and nothing is logged |
+| 6 | security | MEDIUM | `user:password@` still reached `project.yaml` through the old add-application form and `agentqa init` | `config.init_project` refuses it, and so does the form; a saved one is never shown (`summary`, the Excel header) |
+| 7 | security | MEDIUM | downloads are logged GETs, so a link on another site (the portal under test on its own port included) could start one | `auth.download_origin_check`: `Sec-Fetch-Site` must be `same-origin` or `none` (403 `csrf`); the same download by the same person is logged once a minute |
+| 8 | python | MEDIUM | `decide_cases([])` in the service would approve every case (the `designer.approve` trap) | `known_ids` refuses an empty list |
+| 9 | python | MEDIUM | confirming an exported defect again would file it twice in Jira | 409 `exported` for a defect with `status='exported'` or an `external_key` |
+| 10 | python | MEDIUM | a failed `replan` left no traceback in its log | `traceback.print_exc()` |
+| 11 | security | LOW | a double-click on "apply" could start two jobs | `jobs.spawn` checks and starts under one lock (`test_jobs_spawn.py`) |
+| 12 | all three | LOW | a huge id answered 500 | `Path(ge=1, le=2**31-1)` / `Query(le=…)` for questions, runs and `before` |
+| 13 | code | LOW | "approved 0 … case(s)" rows | no row when nothing changed |
+| 14 | security | LOW | a newline in a reason could fake a decision line in a defect's notes | reasons are one line (`clean_why`) in the log, the note and the schemas |
+| 15 | security, python | LOW | one bad evidence entry broke the whole defect list; NTFS streams; other drives and network shares | type guards; `:` in a name refused; another drive refused before anything is read |
+| 16 | security | LOW | `" =1"` passed `spreadsheet_safe` | spaces before the sign count |
+| 17 | python | LOW | fixture tool: a failed write lost the old fixture; image names could clash; "demo" was cut from "demo2"; no email or `/tmp` check; `--frontend` could be any file | build in `<out>.new` and swap; fingerprinted names; a folder-boundary match; email and POSIX-root checks; `.json` outside the project only |
+| 18 | python | LOW | tests: open files and stores, a silent `raising=False`, an unchecked sign-in | fixed; the `demo` fixture now closes its store |
+| 19 | python, code | LOW | small repeats (`XLSX`, file-name regex, `WHY_MAX`, the filter builder) and `GateError(ValueError)` | one each; `GateError(Exception)`; open questions report no answer time |
+
+**Not changed, and why:**
+- **The apostrophe also in Excel cells.** The plan's choice; it is cosmetic (`-1` shows as `'-1`). A test pins exactly which values change.
+- **Plan decisions check "no job runs" and then write in separate steps.** The window is milliseconds, and a command-line run is not a job anyway (plan Risks). Accepted.
+- **Defect, answer and disposition writes do not wait for a running job,** as planned. A Triage stage could overwrite a person's change in that small window. Accepted and recorded.
+- **Trace, video and log-JSON evidence downloads are open to every signed-in role.** Only the owner exists until M2.1, which must restrict them to owner and tester.
+- **The Requirements page shows the first 200 rows** until Phase B adds "Show more". The response carries `total`, and **Phase B must show it**.
+- **The old dashboard's `/p/{slug}/files/{rel:path}`** still serves any type. Phase D removes it.
+- **A second review round** of the fixes was not run. The fixes are covered by the tests listed under Verification.
 
 ## Record of changes
 
-*(to be filled per phase)*
+### Phase A (4 Nov 2026, branch `claude/compassionate-haslett-3eb339`)
+
+**Built as planned.**
+- **Store per request (#16).** `orchestrator/projects.project_store` and `api/routes_projects.store_or_404` / `project_or_404`. Every route moved; an AST test refuses `open_project`, `open_or_404` or `Store(` in any `routes_*.py`. `store_or_404` also turns a gate refusal (`GateError`) and `Busy` into the answer, so every gate route answers alike.
+- **Address check (#19).** `projects.address_problem` is the one rule: `ProjectIn` (422), `create_project` and the old `/new` form (422). It refuses any user name, not only `user:password@`, and never repeats the address.
+- **Change log.** `orchestrator/gates/changelog.py`: `who`, `clean_why`, `record` (`agent="person"`), `page`, `last`. `by=` on `answer_question`, `approve_heal` and `set_disposition` (keyword-only, default "dashboard").
+- **Services** in `orchestrator/gates/`: `questions`, `plan` (with imported cases), `defects`, `requirements`, `summary`, `files`, plus shared `need_why` / `known_ids`.
+- **Routers:** `routes_questions`, `routes_plan`, `routes_defects`, `routes_gates` (requirements, change log, gate counts). `schemas_gates.py` sets ids by pattern and count, decisions from fixed lists, `extra="forbid"`, reasons of at most 500 characters, and lists of at most 200 rows.
+- **Exports.** `util.spreadsheet_safe` in `case_export.workbook`, `triage.export_csv` / `export_zoho_csv` and `requirements.write_rtm`. The Jira CSV's evidence paths are relative to the project. Each download runs the engine's writer into a temporary folder of its own (`gates/exports.py`), so `reports/` is never touched by a download (review row 5).
+- **`replan`** (`agentqa/replan.py`, 4 lines in `cli.py`'s parser) and the run-shell line "Test plan approved earlier, on <at> by <who>" (2 lines in `_plan_gate`; `cli.py` 778 → 785).
+- **Logged:** starting a run with `auto_approve`.
+- **Rate bucket:** `SHOT_PATH` now also covers `defects/{did}/evidence/{n}`. Visual and assist images join it in Phase C.
+- **Fixture.** `tools/make_gates_fixture.py` writes `backend/tests/fixtures/gates/` (rows.json about 530 KB, 6 images of at most 3 KB each) and `frontend/src/test-fixtures/gates-demo.json`.
+
+**Where the code disagreed with the plan, and what was done.**
+1. **`replan` and the policy (fact 5 was incomplete).** `reconcile` without `--policy` uses `project.yaml`'s policy (the demo's is `ask`). No run stores the policy it used. So `replan` without `--policy` reconciles as a pipeline started from the app does (that also passes no policy). `replan --policy …` exists on the command line, and the runs API passes `policy` for `scope: replan`. A pipeline started *with* `--policy srs_wins` (the unattended demo) and then re-planned from the app would reconcile with `ask`, re-opening the divergences the policy had decided. "Apply my answers" stays `{}` as planned; Phase B's page should say the policy it uses.
+2. **`projects.summary()` never closed its store** (the projects list and the project page). It now closes it, in the same fix as #16.
+3. **The requirements list moved** from `routes_wizard.py` to `routes_gates.py`, where the plan puts it. The response keeps `{requirements, documents}` and adds `total` and `disposition_note`; the default `limit` is 200.
+4. **A disposition needs a reason** for all four values: each replaces AgentQA's computed status with a person's claim, so it is treated as an override (decision 4).
+5. **Defect note format.** The note reads `"<who>: <decision> (<why>)"` rather than `"<who>: <why>"`, so a confirmation without a reason still says what was done.
+6. **Imported-case decisions** answer 422 when `ids` is empty (except `approve_ready`). "Review" counts as undoing, so it needs a reason. An unknown case type on `POST plan/types/{ctype}` answers 422.
+7. **Roles floor.** Phase A has 24 write routes (15 before, plus 9 decisions). The plan's 30 counts Phase C's writes, so the floor is 24 now and rises in Phase C.
+8. **Fixture contents.** A No-AI demo run proposes no heals, and a first run's visual rows are all `baseline`. The fixture therefore has no heals or changed screens; Phase C's own copies make them, as the plan's demo rule already says. Evidence kinds are screenshot `.png`, trace `.zip` and log `.json`; no video.
+9. **Fixture checks.** Besides the YAML passwords, the tool refuses the one-time codes the run actually received: the mock inbox keeps each one in `.agentqa/inbox.db`. A pattern for "six digits after OTP" was tried and dropped: it matched the Test Designer's deliberate wrong OTP and a postal PIN code. Paths and secrets are checked on each value, not on the JSON text, where a regex's `\b` looked like a network share.
+10. **The old dashboard's downloads** call the same engine functions, so they also get safe cells and relative evidence paths. They still include drafts until Phase D removes them.
+11. **`triage.py` is 411 lines** (was 400; ceiling 800).
+
+**Pinned (`test_gates_engine.py`), so later phases do not trip on them.**
+- `designer.approve(s, reject=True)` with no ids or types rejects every proposed case *and* marks the plan approved. The service never calls it that way, and `ids` is never empty.
+- `answer_question` keeps the label in a JSON column, so a numeric label reads back as a number. The API returns it as text.
+- `set_defect_status` writes no log; the service writes one row per defect.
+
+**"Not yet verified" items now settled.**
+- openpyxl does store a leading `=` as a formula (`test_spreadsheet_safe.py`).
+- A gated run, with the ready imported cases approved at the gate, still gives **19/19 and 0 extra** (approved through the engine at the gate, the same functions the Test plan page calls).
+- The demo reaches the plan gate in about 40 s of stage time (No-AI).
+- Evidence kinds are as above.
+
+**Still not verified:** `yamledit._commit`'s check and whether `generator` runs approved imported cases (both Phase C / sitting 1).

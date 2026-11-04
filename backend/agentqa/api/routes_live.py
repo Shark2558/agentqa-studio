@@ -17,7 +17,7 @@ from agentqa.api import auth
 from agentqa.api.auth import current_user
 from agentqa.api.errors import ApiError, ok
 from agentqa.api.live_feed import live_feed
-from agentqa.api.routes_projects import open_or_404
+from agentqa.api.routes_projects import store_or_404
 from agentqa.config import Project
 from agentqa.orchestrator import NotFound, board, live, projects
 
@@ -40,11 +40,8 @@ def open_run(slug: str, session: str) -> tuple[Project, Path]:
 
 @router.get("/sessions")
 def list_sessions(slug: str):
-    p, s = open_or_404(slug)
-    try:
+    with store_or_404(slug) as (p, s):
         return ok(live.sessions(p, s, count_shots=False))
-    finally:
-        s.close()
 
 
 @router.get("/board")

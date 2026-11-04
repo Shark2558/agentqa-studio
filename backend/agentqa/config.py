@@ -467,6 +467,9 @@ exploratory:
 
 
 def init_project(root: str | Path, name: str, url: str) -> Path:
+    from agentqa.util import USERINFO_REFUSED, without_userinfo
+    if without_userinfo(url) != url:                          # user:password@ never reaches project.yaml (M1.4)
+        raise ValueError(USERINFO_REFUSED)
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     cfg = root / "project.yaml"

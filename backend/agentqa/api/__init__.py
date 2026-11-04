@@ -20,7 +20,8 @@ from agentqa.api.schemas import LoginIn
 from agentqa.api.settings import Settings
 
 API_PREFIX = "/api/v1"
-SHOT_PATH = re.compile(rf"^{API_PREFIX}/projects/[^/]+/live/[^/]+/shots/[^/]+$")   # their own rate bucket
+# Screenshots and evidence files have their own rate bucket (a page may show many at once).
+SHOT_PATH = re.compile(rf"^{API_PREFIX}/projects/[^/]+/(?:live/[^/]+/shots/[^/]+|defects/[^/]+/evidence/\d+)$")
 OPEN_WRITES = frozenset({f"{API_PREFIX}/auth/login", f"{API_PREFIX}/auth/logout"})   # any role may sign in or out
 APP_PREFIX = "/app"
 SIGN_IN_PAGE = f"{APP_PREFIX}/sign-in"
@@ -74,9 +75,11 @@ def create_app(settings: Settings | None = None, legacy: bool = False, frontend_
     def docs(user: _auth.User = Depends(_auth.current_user)):
         return get_swagger_ui_html(openapi_url=f"{API_PREFIX}/openapi.json", title="AgentQA Studio API")
 
-    from agentqa.api import routes_ai, routes_live, routes_live_ws, routes_projects, routes_runs, routes_wizard
+    from agentqa.api import (routes_ai, routes_defects, routes_gates, routes_live, routes_live_ws, routes_plan,
+                             routes_projects, routes_questions, routes_runs, routes_wizard)
     for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_live_ws.router,
-                   routes_wizard.router, routes_wizard.tools, routes_ai.router, routes_ai.projects):
+                   routes_wizard.router, routes_wizard.tools, routes_ai.router, routes_ai.projects,
+                   routes_questions.router, routes_plan.router, routes_defects.router, routes_gates.router):
         app.include_router(router, prefix=API_PREFIX)
 
     _serve_frontend(app, frontend_dist)

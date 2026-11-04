@@ -1,0 +1,4721 @@
+{
+"gates": {
+"questions_open": 15,
+"plan": {
+"exists": true,
+"approved": true,
+"proposed": 0,
+"cases": 206,
+"digest": "2db35a677bfb"
+},
+"imported_ready": 0,
+"defects_draft": 19,
+"defects_open": 19,
+"visual_changed": 0,
+"heals_proposed": 0,
+"assist_pending": 0,
+"paused": false,
+"running": false
+},
+"questions": {
+"items": [
+{
+"id": 1,
+"kind": "srs_only_field",
+"question": "The SRS describes a field 'Remarks' (tbd), but no matching field was found on any screen. Is it missing from the app?",
+"options": [
+{
+"label": "Missing from the app (log a defect)",
+"needs_value": false
+},
+{
+"label": "Exists under another name: enter it",
+"needs_value": true
+},
+{
+"label": "Not applicable: drop the rule",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "High",
+"req_id": "FR-13",
+"rule_id": "R-0015",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 3,
+"kind": "srs_only_field",
+"question": "The SRS describes a field 'Citizen login' (digits only, exact length, format mobile, starts with), but no matching field was found on any screen. Is it missing from the app?",
+"options": [
+{
+"label": "Missing from the app (log a defect)",
+"needs_value": false
+},
+{
+"label": "Exists under another name: enter it",
+"needs_value": true
+},
+{
+"label": "Not applicable: drop the rule",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "High",
+"req_id": "FR-18",
+"rule_id": "R-0017",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 6,
+"kind": "srs_only_feature",
+"question": "FR-11: 'The Citizen shall be able to download the approved certificate as a PDF.' - no matching screen, link or button was found for citizen. Is the feature missing?",
+"options": [
+{
+"label": "Missing from the app (log a defect)",
+"needs_value": false
+},
+{
+"label": "Exists elsewhere: enter the page path",
+"needs_value": true
+},
+{
+"label": "Out of scope for this release",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "High",
+"req_id": "FR-11",
+"rule_id": "R-0014",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 7,
+"kind": "srs_only_feature",
+"question": "FR-19: 'The Citizen shall be able to request a new OTP with Resend OTP on the OTP screen.' - no matching screen, link or button was found for citizen. Is the feature missing?",
+"options": [
+{
+"label": "Missing from the app (log a defect)",
+"needs_value": false
+},
+{
+"label": "Exists elsewhere: enter the page path",
+"needs_value": true
+},
+{
+"label": "Out of scope for this release",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "High",
+"req_id": "FR-19",
+"rule_id": "R-0021",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 2,
+"kind": "ambiguous",
+"question": "FR-13: the value for 'Remarks' is TBD in the SRS. What is the rule?",
+"options": [
+{
+"label": "Use the proposed interpretation (manual check)",
+"needs_value": false
+},
+{
+"label": "Enter a precise rule",
+"needs_value": true
+},
+{
+"label": "Not testable: leave for manual review",
+"needs_value": false
+}
+],
+"proposed": "e.g. 'max 250 characters'",
+"priority": "Medium",
+"req_id": "FR-13",
+"rule_id": "R-0015",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 4,
+"kind": "workflow",
+"question": "FR-07 describes a status change ('Verified'). Describe the multi-role flow in project.yaml so it can be tested end to end?",
+"options": [
+{
+"label": "I will describe the flow in project.yaml (workflows)",
+"needs_value": false
+},
+{
+"label": "Leave for manual testing",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": "FR-07",
+"rule_id": "R-0010",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 5,
+"kind": "workflow",
+"question": "FR-09 describes a status change ('Approved'). Describe the multi-role flow in project.yaml so it can be tested end to end?",
+"options": [
+{
+"label": "I will describe the flow in project.yaml (workflows)",
+"needs_value": false
+},
+{
+"label": "Leave for manual testing",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": "FR-09",
+"rule_id": "R-0012",
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 8,
+"kind": "ambiguous",
+"question": "FR-12 is not testable as written: \"Appropriate error messages shall be displayed for invalid inputs.\" (appropriate: does not say which behaviour is correct).",
+"options": [
+{
+"label": "Use the proposed interpretation (manual check)",
+"needs_value": false
+},
+{
+"label": "Enter a precise rule",
+"needs_value": true
+},
+{
+"label": "Not testable: leave for manual review",
+"needs_value": false
+}
+],
+"proposed": "Each invalid input shows a visible error message that names the field and the problem.",
+"priority": "Medium",
+"req_id": "FR-12",
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 9,
+"kind": "ambiguous",
+"question": "NFR-01 is not testable as written: \"The system shall respond quickly to user actions.\" (quickly: no measurable time limit).",
+"options": [
+{
+"label": "Use the proposed interpretation (manual check)",
+"needs_value": false
+},
+{
+"label": "Enter a precise rule",
+"needs_value": true
+},
+{
+"label": "Not testable: leave for manual review",
+"needs_value": false
+}
+],
+"proposed": "Every page loads within 3 seconds on the test environment.",
+"priority": "Medium",
+"req_id": "NFR-01",
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 12,
+"kind": "inferred_access",
+"question": "'Apply for Certificate' (/apply) is only linked for citizen. Must clerk, officer, admin be blocked from opening it directly?",
+"options": [
+{
+"label": "Yes: block these roles",
+"needs_value": false
+},
+{
+"label": "No: they may open it",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": null,
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 13,
+"kind": "inferred_access",
+"question": "'My Applications' (/my-applications) is only linked for citizen. Must clerk, officer, admin be blocked from opening it directly?",
+"options": [
+{
+"label": "Yes: block these roles",
+"needs_value": false
+},
+{
+"label": "No: they may open it",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": null,
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 14,
+"kind": "inferred_access",
+"question": "'Application 1001' (/applications/1001) is only linked for citizen. Must clerk, officer, admin be blocked from opening it directly?",
+"options": [
+{
+"label": "Yes: block these roles",
+"needs_value": false
+},
+{
+"label": "No: they may open it",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": null,
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 15,
+"kind": "inferred_access",
+"question": "'Application 1002' (/applications/1002) is only linked for citizen. Must clerk, officer, admin be blocked from opening it directly?",
+"options": [
+{
+"label": "Yes: block these roles",
+"needs_value": false
+},
+{
+"label": "No: they may open it",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Medium",
+"req_id": null,
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 10,
+"kind": "ambiguous",
+"question": "NFR-04 is not testable as written: \"The portal should support multiple languages as applicable.\" (as applicable: condition not defined; multiple languages: languages not listed).",
+"options": [
+{
+"label": "Use the proposed interpretation (manual check)",
+"needs_value": false
+},
+{
+"label": "Enter a precise rule",
+"needs_value": true
+},
+{
+"label": "Not testable: leave for manual review",
+"needs_value": false
+}
+],
+"proposed": "List the languages (for example English and Malayalam) and the screens that must be translated.",
+"priority": "Low",
+"req_id": "NFR-04",
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+},
+{
+"id": 11,
+"kind": "app_only",
+"question": "Fields on /apply that the SRS never mentions: I declare the information is true. Are they expected?",
+"options": [
+{
+"label": "Expected: test them as the app declares",
+"needs_value": false
+},
+{
+"label": "Unexpected (log a defect)",
+"needs_value": false
+},
+{
+"label": "Ignore",
+"needs_value": false
+}
+],
+"proposed": null,
+"priority": "Low",
+"req_id": null,
+"rule_id": null,
+"status": "open",
+"answer": null,
+"choice": null,
+"value": "",
+"answered_at": null
+}
+],
+"counts": {
+"open": 15,
+"answered": 0
+},
+"total": 15
+},
+"plan": {
+"plan": {
+"approved": true,
+"approved_at": "2026-11-04T03:48:26",
+"digest": "2db35a677bfb",
+"summary": {
+"digest": "2db35a677bfb",
+"cases": 206,
+"by_type": {
+"functional": 56,
+"access_denied": 22,
+"api_access": 8,
+"record_isolation": 1,
+"security_headers": 1,
+"security_csrf": 1,
+"security_session": 1,
+"security_otp": 1,
+"page_smoke": 27,
+"form_valid": 1,
+"field_accepts": 6,
+"field_rejects": 25,
+"field_options": 2,
+"api_smoke": 5,
+"performance_load": 3,
+"field_attribute": 6,
+"links_ok": 5,
+"a11y_basic": 15,
+"visual_snapshot": 20
+},
+"by_priority": {
+"P1": 83,
+"P2": 63,
+"P3": 60
+},
+"by_role": {
+"citizen": 96,
+"clerk": 30,
+"officer": 18,
+"admin": 18,
+"anonymous": 44
+},
+"by_status": {
+"proposed": 206
+},
+"requirements": 35,
+"requirements_covered": 30,
+"rules_by_status": {
+"Ambiguous": 2,
+"App-only": 1,
+"Confirmed": 32,
+"Decided": 4,
+"Not automated": 2,
+"SRS-only": 6,
+"Workflow": 2
+},
+"open_questions": 15,
+"risk_notes": [
+"P1: logins (valid and wrong details, OTP), access control, multi-role workflows, page failures and each form's happy path.",
+"P2: server-side field validation, option lists and internal links.",
+"P3: client-side form attributes, accessibility and visual snapshots.",
+"Not tested until answered: rules that are Divergent, SRS-only, App-only, Ambiguous or Proposed."
+]
+}
+},
+"types": [
+{
+"type": "a11y_basic",
+"cases": 15,
+"approved": 15,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "access_denied",
+"cases": 22,
+"approved": 22,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "api_access",
+"cases": 8,
+"approved": 8,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "api_smoke",
+"cases": 5,
+"approved": 5,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "field_accepts",
+"cases": 6,
+"approved": 6,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "field_attribute",
+"cases": 6,
+"approved": 6,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "field_options",
+"cases": 2,
+"approved": 2,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "field_rejects",
+"cases": 25,
+"approved": 25,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "form_valid",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "functional",
+"cases": 56,
+"approved": 56,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "links_ok",
+"cases": 5,
+"approved": 5,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "page_smoke",
+"cases": 27,
+"approved": 27,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "performance_load",
+"cases": 3,
+"approved": 3,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "record_isolation",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "security_csrf",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "security_headers",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "security_otp",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "security_session",
+"cases": 1,
+"approved": 1,
+"rejected": 0,
+"proposed": 0
+},
+{
+"type": "visual_snapshot",
+"cases": 20,
+"approved": 20,
+"rejected": 0,
+"proposed": 0
+}
+],
+"gaps": {
+"untested": [],
+"clarify": [
+"FR-11",
+"FR-13",
+"TBL-031",
+"NFR-01",
+"NFR-04"
+],
+"unread": [],
+"missed": 0,
+"workflow": [
+{
+"req_id": "-",
+"why": "no rejection or return action is in the SRS or on the actors' screens, so no rejection workflow was generated"
+}
+],
+"production": []
+},
+"imported": {
+"ready": 0,
+"review": 1,
+"approved": 9,
+"rejected": 0
+},
+"running": false
+},
+"cases": {
+"items": [
+{
+"id": "TC-0001",
+"type": "functional",
+"title": "Citizen logs in with valid mobile number and OTP",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01"
+],
+"status": "approved"
+},
+{
+"id": "TC-0002",
+"type": "functional",
+"title": "Get OTP with the mobile number left empty shows an error",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0003",
+"type": "functional",
+"title": "A 9-digit mobile number is refused with an error",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0004",
+"type": "functional",
+"title": "Letters in the mobile number are refused",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0005",
+"type": "functional",
+"title": "A mobile number starting with 5 is refused",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0006",
+"type": "functional",
+"title": "A valid but unregistered mobile number is refused",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0007",
+"type": "functional",
+"title": "The Mobile Number box takes at most 10 digits",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0008",
+"type": "functional",
+"title": "A wrong OTP is refused",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0009",
+"type": "functional",
+"title": "Verify with the OTP left empty shows an error",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0010",
+"type": "functional",
+"title": "The OTP screen shows only the last digits of the mobile number",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0011",
+"type": "functional",
+"title": "An OTP used after it expires (5 minutes) is refused",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12",
+"FR-15"
+],
+"status": "approved"
+},
+{
+"id": "TC-0012",
+"type": "functional",
+"title": "'Resend OTP' sends a new OTP",
+"role": "citizen",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12",
+"FR-19"
+],
+"status": "approved"
+},
+{
+"id": "TC-0013",
+"type": "functional",
+"title": "Clerk logs in with valid username and password",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01"
+],
+"status": "approved"
+},
+{
+"id": "TC-0014",
+"type": "functional",
+"title": "Officer logs in with valid username, password and OTP",
+"role": "officer",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-14"
+],
+"status": "approved"
+},
+{
+"id": "TC-0015",
+"type": "functional",
+"title": "Admin logs in with valid username and password",
+"role": "admin",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01"
+],
+"status": "approved"
+},
+{
+"id": "TC-0016",
+"type": "functional",
+"title": "A wrong password is refused",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0017",
+"type": "functional",
+"title": "The password is case-sensitive",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0018",
+"type": "functional",
+"title": "An unknown username is refused",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0019",
+"type": "functional",
+"title": "Sign in with both boxes empty shows an error",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0020",
+"type": "functional",
+"title": "Sign in with 'Password' empty shows an error",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0021",
+"type": "functional",
+"title": "Sign in with 'Username' empty shows an error",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0022",
+"type": "functional",
+"title": "The Password box hides what is typed",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0023",
+"type": "functional",
+"title": "Officer: a wrong OTP after the password is refused",
+"role": "officer",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-12",
+"FR-14"
+],
+"status": "approved"
+},
+{
+"id": "TC-0024",
+"type": "functional",
+"title": "Citizen: the session ends after 15 minutes without activity",
+"role": "citizen",
+"path": "",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"NFR-03"
+],
+"status": "approved"
+},
+{
+"id": "TC-0025",
+"type": "functional",
+"title": "Citizen: Logout ends the session; Back does not bring it back",
+"role": "citizen",
+"path": "",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-20"
+],
+"status": "approved"
+},
+{
+"id": "TC-0026",
+"type": "functional",
+"title": "Clerk: the session ends after 15 minutes without activity",
+"role": "clerk",
+"path": "",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"NFR-03"
+],
+"status": "approved"
+},
+{
+"id": "TC-0027",
+"type": "functional",
+"title": "Clerk: Logout ends the session; Back does not bring it back",
+"role": "clerk",
+"path": "",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-20"
+],
+"status": "approved"
+},
+{
+"id": "TC-0028",
+"type": "functional",
+"title": "Officer: Logout ends the session; Back does not bring it back",
+"role": "officer",
+"path": "",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-20"
+],
+"status": "approved"
+},
+{
+"id": "TC-0029",
+"type": "functional",
+"title": "Admin: Logout ends the session; Back does not bring it back",
+"role": "admin",
+"path": "",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-20"
+],
+"status": "approved"
+},
+{
+"id": "TC-0030",
+"type": "functional",
+"title": "Citizen: 'Services ▾' shows a menu with Apply for Certificate, My Applications",
+"role": "citizen",
+"path": "/",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0031",
+"type": "functional",
+"title": "Citizen: 'Services ▾ > Apply for Certificate' opens Apply for Certificate",
+"role": "citizen",
+"path": "/",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0032",
+"type": "functional",
+"title": "Citizen: 'Services ▾ > My Applications' opens My Applications",
+"role": "citizen",
+"path": "/",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-03"
+],
+"status": "approved"
+},
+{
+"id": "TC-0033",
+"type": "functional",
+"title": "Visitor: 'Login' shows a pop-up with Citizen Login, Department Login",
+"role": "anonymous",
+"path": "/",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-17"
+],
+"status": "approved"
+},
+{
+"id": "TC-0034",
+"type": "functional",
+"title": "Visitor: 'Login > Citizen Login' opens Citizen Login",
+"role": "anonymous",
+"path": "/",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-17",
+"FR-18"
+],
+"status": "approved"
+},
+{
+"id": "TC-0035",
+"type": "functional",
+"title": "Visitor: 'Login > Department Login' opens Department Login",
+"role": "anonymous",
+"path": "/",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-17"
+],
+"status": "approved"
+},
+{
+"id": "TC-0036",
+"type": "functional",
+"title": "Citizen: the 'Dashboard' link opens Dashboard",
+"role": "citizen",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0037",
+"type": "functional",
+"title": "Citizen: the 'Help' link opens Help",
+"role": "citizen",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0038",
+"type": "functional",
+"title": "Citizen: the 'Back to My Applications' link opens My Applications",
+"role": "citizen",
+"path": "/applications/1001",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-03"
+],
+"status": "approved"
+},
+{
+"id": "TC-0039",
+"type": "functional",
+"title": "Clerk: the 'Verification Queue' link opens Verification Queue",
+"role": "clerk",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-06"
+],
+"status": "approved"
+},
+{
+"id": "TC-0040",
+"type": "functional",
+"title": "Clerk: the 'Dashboard' link opens Dashboard",
+"role": "clerk",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0041",
+"type": "functional",
+"title": "Officer: the 'Dashboard' link opens Dashboard",
+"role": "officer",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0042",
+"type": "functional",
+"title": "Officer: the 'Approval Queue' link opens Approval Queue",
+"role": "officer",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-08"
+],
+"status": "approved"
+},
+{
+"id": "TC-0043",
+"type": "functional",
+"title": "Admin: the 'Reports' link opens Reports",
+"role": "admin",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0044",
+"type": "functional",
+"title": "Admin: the 'User Management' link opens User Management",
+"role": "admin",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0045",
+"type": "functional",
+"title": "Admin: the 'Dashboard' link opens Dashboard",
+"role": "admin",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0046",
+"type": "functional",
+"title": "Visitor: the 'Home' link opens Home - Demo Certificate Portal",
+"role": "anonymous",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0047",
+"type": "functional",
+"title": "Visitor: the 'Help' link opens Help",
+"role": "anonymous",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0048",
+"type": "functional",
+"title": "Visitor: the 'Home' link opens Department Portal",
+"role": "anonymous",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0049",
+"type": "functional",
+"title": "Visitor: the 'Staff Login' link opens Department Login",
+"role": "anonymous",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [
+"FR-01",
+"FR-17"
+],
+"status": "approved"
+},
+{
+"id": "TC-0050",
+"type": "functional",
+"title": "Apply for Certificate: submitting the empty form shows errors",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0051",
+"type": "functional",
+"title": "Apply for Certificate: 'I declare the information is true' is mandatory",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "tester",
+"req_ids": [
+"FR-12"
+],
+"status": "approved"
+},
+{
+"id": "TC-0052",
+"type": "functional",
+"title": "End to end: application submitted by citizen, then verified by clerk, then approved by officer; citizen sees 'Approved'",
+"role": "citizen",
+"path": "/apply",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-03",
+"FR-07",
+"FR-09"
+],
+"status": "approved"
+},
+{
+"id": "TC-0053",
+"type": "functional",
+"title": "Search for a word that matches nothing says so",
+"role": "anonymous",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0054",
+"type": "functional",
+"title": "Search shows special characters as plain text",
+"role": "anonymous",
+"path": "/",
+"priority": "P1",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0055",
+"type": "functional",
+"title": "An empty search does not cause an error",
+"role": "anonymous",
+"path": "/",
+"priority": "P3",
+"oracle_source": "tester",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0056",
+"type": "functional",
+"title": "Citizen shall receive a confirmation email when an application is submitted",
+"role": "citizen",
+"path": "/",
+"priority": "P2",
+"oracle_source": "requirement",
+"req_ids": [
+"FR-16"
+],
+"status": "approved"
+},
+{
+"id": "TC-0057",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening Application 1001 (/applications/1001)",
+"role": "anonymous",
+"path": "/applications/1001",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0058",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening Application 1002 (/applications/1002)",
+"role": "anonymous",
+"path": "/applications/1002",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0059",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening Apply for Certificate (/apply)",
+"role": "anonymous",
+"path": "/apply",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0060",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening Dashboard (/dashboard)",
+"role": "anonymous",
+"path": "/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0061",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening My Applications (/my-applications)",
+"role": "anonymous",
+"path": "/my-applications",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0062",
+"type": "access_denied",
+"title": "Anonymous visitor is blocked from Reports (@department/admin/reports)",
+"role": "anonymous",
+"path": "@department/admin/reports",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0063",
+"type": "access_denied",
+"title": "Citizen is blocked from Reports (@department/admin/reports)",
+"role": "citizen",
+"path": "@department/admin/reports",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0064",
+"type": "access_denied",
+"title": "Clerk is blocked from Reports (@department/admin/reports)",
+"role": "clerk",
+"path": "@department/admin/reports",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0065",
+"type": "access_denied",
+"title": "Officer is blocked from Reports (@department/admin/reports)",
+"role": "officer",
+"path": "@department/admin/reports",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0066",
+"type": "access_denied",
+"title": "Anonymous visitor is blocked from User Management (@department/admin/users)",
+"role": "anonymous",
+"path": "@department/admin/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0067",
+"type": "access_denied",
+"title": "Citizen is blocked from User Management (@department/admin/users)",
+"role": "citizen",
+"path": "@department/admin/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0068",
+"type": "access_denied",
+"title": "Clerk is blocked from User Management (@department/admin/users)",
+"role": "clerk",
+"path": "@department/admin/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0069",
+"type": "access_denied",
+"title": "Officer is blocked from User Management (@department/admin/users)",
+"role": "officer",
+"path": "@department/admin/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0070",
+"type": "access_denied",
+"title": "Admin is blocked from Verification Queue (@department/clerk/queue)",
+"role": "admin",
+"path": "@department/clerk/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-06"
+],
+"status": "approved"
+},
+{
+"id": "TC-0071",
+"type": "access_denied",
+"title": "Anonymous visitor is blocked from Verification Queue (@department/clerk/queue)",
+"role": "anonymous",
+"path": "@department/clerk/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-06"
+],
+"status": "approved"
+},
+{
+"id": "TC-0072",
+"type": "access_denied",
+"title": "Citizen is blocked from Verification Queue (@department/clerk/queue)",
+"role": "citizen",
+"path": "@department/clerk/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-06"
+],
+"status": "approved"
+},
+{
+"id": "TC-0073",
+"type": "access_denied",
+"title": "Officer is blocked from Verification Queue (@department/clerk/queue)",
+"role": "officer",
+"path": "@department/clerk/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-06"
+],
+"status": "approved"
+},
+{
+"id": "TC-0074",
+"type": "access_denied",
+"title": "Anonymous visitor must log in before opening Dashboard (@department/dashboard)",
+"role": "anonymous",
+"path": "@department/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0075",
+"type": "access_denied",
+"title": "Admin is blocked from Approval Queue (@department/officer/queue)",
+"role": "admin",
+"path": "@department/officer/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-08"
+],
+"status": "approved"
+},
+{
+"id": "TC-0076",
+"type": "access_denied",
+"title": "Anonymous visitor is blocked from Approval Queue (@department/officer/queue)",
+"role": "anonymous",
+"path": "@department/officer/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-08"
+],
+"status": "approved"
+},
+{
+"id": "TC-0077",
+"type": "access_denied",
+"title": "Citizen is blocked from Approval Queue (@department/officer/queue)",
+"role": "citizen",
+"path": "@department/officer/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-08"
+],
+"status": "approved"
+},
+{
+"id": "TC-0078",
+"type": "access_denied",
+"title": "Clerk is blocked from Approval Queue (@department/officer/queue)",
+"role": "clerk",
+"path": "@department/officer/queue",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-08"
+],
+"status": "approved"
+},
+{
+"id": "TC-0079",
+"type": "api_access",
+"title": "GET /api/applications/{n} refuses callers who are not logged in",
+"role": "anonymous",
+"path": "/api/applications/1001",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0080",
+"type": "api_access",
+"title": "GET /api/me refuses callers who are not logged in",
+"role": "anonymous",
+"path": "/api/me",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0081",
+"type": "api_access",
+"title": "GET /api/my-applications refuses callers who are not logged in",
+"role": "anonymous",
+"path": "/api/my-applications",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0082",
+"type": "api_access",
+"title": "GET @department/api/me refuses callers who are not logged in",
+"role": "anonymous",
+"path": "@department/api/me",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0083",
+"type": "api_access",
+"title": "GET @department/api/users refuses callers who are not logged in",
+"role": "anonymous",
+"path": "@department/api/users",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0084",
+"type": "api_access",
+"title": "Citizen is refused by GET @department/api/users, like the User Management screen that uses it",
+"role": "citizen",
+"path": "@department/api/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0085",
+"type": "api_access",
+"title": "Clerk is refused by GET @department/api/users, like the User Management screen that uses it",
+"role": "clerk",
+"path": "@department/api/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0086",
+"type": "api_access",
+"title": "Officer is refused by GET @department/api/users, like the User Management screen that uses it",
+"role": "officer",
+"path": "@department/api/users",
+"priority": "P1",
+"oracle_source": "srs",
+"req_ids": [
+"FR-10"
+],
+"status": "approved"
+},
+{
+"id": "TC-0087",
+"type": "record_isolation",
+"title": "Another citizen cannot read /api/applications/1001 (a record that belongs to the first citizen)",
+"role": "citizen",
+"path": "/api/applications/1001",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0088",
+"type": "security_headers",
+"title": "Responses send the standard security headers",
+"role": "anonymous",
+"path": "/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0089",
+"type": "security_csrf",
+"title": "Forms that change data carry an anti-forgery token",
+"role": "citizen",
+"path": "/apply",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0090",
+"type": "security_session",
+"title": "Logging in issues a new session, and logging out ends it on the server",
+"role": "citizen",
+"path": "/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0091",
+"type": "security_otp",
+"title": "A one-time password works only once (login as citizen)",
+"role": "citizen",
+"path": "/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0092",
+"type": "page_smoke",
+"title": "/ loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0093",
+"type": "page_smoke",
+"title": "/ loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0094",
+"type": "page_smoke",
+"title": "/applications/1001 loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/applications/1001",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0095",
+"type": "page_smoke",
+"title": "/applications/1002 loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/applications/1002",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0096",
+"type": "page_smoke",
+"title": "/apply loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/apply",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0097",
+"type": "page_smoke",
+"title": "/citizen/login loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0098",
+"type": "page_smoke",
+"title": "/dashboard loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0099",
+"type": "page_smoke",
+"title": "/help loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "/help",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0100",
+"type": "page_smoke",
+"title": "/help loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/help",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0101",
+"type": "page_smoke",
+"title": "/help/contact loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "/help/contact",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0102",
+"type": "page_smoke",
+"title": "/help/contact loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/help/contact",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0103",
+"type": "page_smoke",
+"title": "/my-applications loads for citizen without errors within 3000 ms",
+"role": "citizen",
+"path": "/my-applications",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0104",
+"type": "page_smoke",
+"title": "@department/ loads for admin without errors within 3000 ms",
+"role": "admin",
+"path": "@department/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0105",
+"type": "page_smoke",
+"title": "@department/ loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "@department/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0106",
+"type": "page_smoke",
+"title": "@department/ loads for clerk without errors within 3000 ms",
+"role": "clerk",
+"path": "@department/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0107",
+"type": "page_smoke",
+"title": "@department/ loads for officer without errors within 3000 ms",
+"role": "officer",
+"path": "@department/",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0108",
+"type": "page_smoke",
+"title": "@department/admin/reports loads for admin without errors within 3000 ms",
+"role": "admin",
+"path": "@department/admin/reports",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0109",
+"type": "page_smoke",
+"title": "@department/admin/users loads for admin without errors within 3000 ms",
+"role": "admin",
+"path": "@department/admin/users",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0110",
+"type": "page_smoke",
+"title": "@department/clerk/queue loads for clerk without errors within 3000 ms",
+"role": "clerk",
+"path": "@department/clerk/queue",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0111",
+"type": "page_smoke",
+"title": "@department/dashboard loads for admin without errors within 3000 ms",
+"role": "admin",
+"path": "@department/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0112",
+"type": "page_smoke",
+"title": "@department/dashboard loads for clerk without errors within 3000 ms",
+"role": "clerk",
+"path": "@department/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0113",
+"type": "page_smoke",
+"title": "@department/dashboard loads for officer without errors within 3000 ms",
+"role": "officer",
+"path": "@department/dashboard",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0114",
+"type": "page_smoke",
+"title": "@department/department/login loads for admin without errors within 3000 ms",
+"role": "admin",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0115",
+"type": "page_smoke",
+"title": "@department/department/login loads for anonymous without errors within 3000 ms",
+"role": "anonymous",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0116",
+"type": "page_smoke",
+"title": "@department/department/login loads for clerk without errors within 3000 ms",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0117",
+"type": "page_smoke",
+"title": "@department/department/login loads for officer without errors within 3000 ms",
+"role": "officer",
+"path": "@department/department/login",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0118",
+"type": "page_smoke",
+"title": "@department/officer/queue loads for officer without errors within 3000 ms",
+"role": "officer",
+"path": "@department/officer/queue",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0119",
+"type": "form_valid",
+"title": "Apply for Certificate: a fully valid submission is accepted",
+"role": "citizen",
+"path": "/apply",
+"priority": "P1",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0120",
+"type": "field_accepts",
+"title": "Address accepts exactly 200 characters",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-029"
+],
+"status": "approved"
+},
+{
+"id": "TC-0121",
+"type": "field_accepts",
+"title": "Applicant Name accepts exactly 50 characters",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "decided",
+"req_ids": [
+"FR-04",
+"TBL-021"
+],
+"status": "approved"
+},
+{
+"id": "TC-0122",
+"type": "field_accepts",
+"title": "Supporting Document accepts a file just under 2 MB",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-030"
+],
+"status": "approved"
+},
+{
+"id": "TC-0123",
+"type": "field_accepts",
+"title": "Supporting Document accepts PDF, JPG, PNG files",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-030"
+],
+"status": "approved"
+},
+{
+"id": "TC-0124",
+"type": "field_accepts",
+"title": "Email Address accepts exactly 100 characters",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-023"
+],
+"status": "approved"
+},
+{
+"id": "TC-0125",
+"type": "field_accepts",
+"title": "Purpose of Certificate accepts exactly 300 characters",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-028"
+],
+"status": "approved"
+},
+{
+"id": "TC-0126",
+"type": "field_rejects",
+"title": "Address rejects 201 characters (limit 200)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-029"
+],
+"status": "approved"
+},
+{
+"id": "TC-0127",
+"type": "field_rejects",
+"title": "Address rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-029"
+],
+"status": "approved"
+},
+{
+"id": "TC-0128",
+"type": "field_rejects",
+"title": "Applicant Name rejects 51 characters (limit 50)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "decided",
+"req_ids": [
+"FR-04",
+"TBL-021"
+],
+"status": "approved"
+},
+{
+"id": "TC-0129",
+"type": "field_rejects",
+"title": "Applicant Name rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-04",
+"TBL-021"
+],
+"status": "approved"
+},
+{
+"id": "TC-0130",
+"type": "field_rejects",
+"title": "Certificate Type rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-026"
+],
+"status": "approved"
+},
+{
+"id": "TC-0131",
+"type": "field_rejects",
+"title": "Date of Birth rejects a date 30 days in the future",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-025"
+],
+"status": "approved"
+},
+{
+"id": "TC-0132",
+"type": "field_rejects",
+"title": "Date of Birth rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-025"
+],
+"status": "approved"
+},
+{
+"id": "TC-0133",
+"type": "field_rejects",
+"title": "Documents Attached rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-027"
+],
+"status": "approved"
+},
+{
+"id": "TC-0134",
+"type": "field_rejects",
+"title": "Supporting Document rejects a 2.1 MB file (limit 2 MB)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-030"
+],
+"status": "approved"
+},
+{
+"id": "TC-0135",
+"type": "field_rejects",
+"title": "Supporting Document rejects a .exe file (allowed: pdf, jpg, png)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-030"
+],
+"status": "approved"
+},
+{
+"id": "TC-0136",
+"type": "field_rejects",
+"title": "Email Address rejects missing domain, missing @",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-023"
+],
+"status": "approved"
+},
+{
+"id": "TC-0137",
+"type": "field_rejects",
+"title": "Email Address rejects 101 characters (limit 100)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-023"
+],
+"status": "approved"
+},
+{
+"id": "TC-0138",
+"type": "field_rejects",
+"title": "Mobile Number rejects letters mixed with digits",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0139",
+"type": "field_rejects",
+"title": "Mobile Number rejects 9 characters (must be exactly 10), 11 characters (must be exactly 10)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0140",
+"type": "field_rejects",
+"title": "Mobile Number rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0141",
+"type": "field_rejects",
+"title": "Mobile Number rejects starts with 0 (allowed: 6, 7, 8, 9)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0142",
+"type": "field_rejects",
+"title": "PIN Code rejects letters mixed with digits",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-024"
+],
+"status": "approved"
+},
+{
+"id": "TC-0143",
+"type": "field_rejects",
+"title": "PIN Code rejects 5 characters (must be exactly 6), 7 characters (must be exactly 6)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-024"
+],
+"status": "approved"
+},
+{
+"id": "TC-0144",
+"type": "field_rejects",
+"title": "PIN Code rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-024"
+],
+"status": "approved"
+},
+{
+"id": "TC-0145",
+"type": "field_rejects",
+"title": "Purpose of Certificate rejects 301 characters (limit 300)",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-028"
+],
+"status": "approved"
+},
+{
+"id": "TC-0146",
+"type": "field_rejects",
+"title": "Purpose of Certificate rejects empty",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-028"
+],
+"status": "approved"
+},
+{
+"id": "TC-0147",
+"type": "field_rejects",
+"title": "Mobile Number rejects letters mixed with digits",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0148",
+"type": "field_rejects",
+"title": "Mobile Number rejects 9 characters (must be exactly 10), 11 characters (must be exactly 10)",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0149",
+"type": "field_rejects",
+"title": "Mobile Number rejects empty",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0150",
+"type": "field_rejects",
+"title": "Mobile Number rejects starts with 0 (allowed: 6, 7, 8, 9)",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0151",
+"type": "field_options",
+"title": "Certificate Type offers exactly: Income, Caste, Residence",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "decided",
+"req_ids": [
+"TBL-026"
+],
+"status": "approved"
+},
+{
+"id": "TC-0152",
+"type": "field_options",
+"title": "Documents Attached offers exactly: Aadhaar, Ration Card, Voter ID, Passport",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "decided",
+"req_ids": [
+"TBL-027"
+],
+"status": "approved"
+},
+{
+"id": "TC-0153",
+"type": "api_smoke",
+"title": "GET /api/applications/{n} answers citizen with the expected fields within 2000 ms",
+"role": "citizen",
+"path": "/api/applications/1001",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0154",
+"type": "api_smoke",
+"title": "GET /api/me answers citizen with the expected fields within 2000 ms",
+"role": "citizen",
+"path": "/api/me",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0155",
+"type": "api_smoke",
+"title": "GET /api/my-applications answers citizen with the expected fields within 2000 ms",
+"role": "citizen",
+"path": "/api/my-applications",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0156",
+"type": "api_smoke",
+"title": "GET @department/api/me answers clerk with the expected fields within 2000 ms",
+"role": "clerk",
+"path": "@department/api/me",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0157",
+"type": "api_smoke",
+"title": "GET @department/api/users answers admin with the expected fields within 2000 ms",
+"role": "admin",
+"path": "@department/api/users",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0158",
+"type": "performance_load",
+"title": "/apply stays under 3000 ms for 5 users at once",
+"role": "citizen",
+"path": "/apply",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0159",
+"type": "performance_load",
+"title": "/dashboard stays under 3000 ms for 5 users at once",
+"role": "citizen",
+"path": "/dashboard",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0160",
+"type": "performance_load",
+"title": "@department/clerk/queue stays under 3000 ms for 5 users at once",
+"role": "clerk",
+"path": "@department/clerk/queue",
+"priority": "P2",
+"oracle_source": "srs",
+"req_ids": [
+"NFR-02"
+],
+"status": "approved"
+},
+{
+"id": "TC-0161",
+"type": "field_attribute",
+"title": "Address input is limited to 200 characters in the form",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-029"
+],
+"status": "approved"
+},
+{
+"id": "TC-0162",
+"type": "field_attribute",
+"title": "Applicant Name input is limited to 50 characters in the form",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "decided",
+"req_ids": [
+"FR-04",
+"TBL-021"
+],
+"status": "approved"
+},
+{
+"id": "TC-0163",
+"type": "field_attribute",
+"title": "Email Address input is limited to 100 characters in the form",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-023"
+],
+"status": "approved"
+},
+{
+"id": "TC-0164",
+"type": "field_attribute",
+"title": "Mobile Number input is limited to 10 characters in the form",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0165",
+"type": "field_attribute",
+"title": "PIN Code input is limited to 6 characters in the form",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "srs",
+"req_ids": [
+"TBL-024"
+],
+"status": "approved"
+},
+{
+"id": "TC-0166",
+"type": "field_attribute",
+"title": "Mobile Number input is limited to 10 characters in the form",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P3",
+"oracle_source": "srs",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"status": "approved"
+},
+{
+"id": "TC-0167",
+"type": "links_ok",
+"title": "Every internal link seen by admin opens without error",
+"role": "admin",
+"path": "",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0168",
+"type": "links_ok",
+"title": "Every internal link seen by anonymous opens without error",
+"role": "anonymous",
+"path": "",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0169",
+"type": "links_ok",
+"title": "Every internal link seen by citizen opens without error",
+"role": "citizen",
+"path": "",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0170",
+"type": "links_ok",
+"title": "Every internal link seen by clerk opens without error",
+"role": "clerk",
+"path": "",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0171",
+"type": "links_ok",
+"title": "Every internal link seen by officer opens without error",
+"role": "officer",
+"path": "",
+"priority": "P2",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0172",
+"type": "a11y_basic",
+"title": "/ meets basic accessibility checks",
+"role": "citizen",
+"path": "/",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0173",
+"type": "a11y_basic",
+"title": "/applications/1001 meets basic accessibility checks",
+"role": "citizen",
+"path": "/applications/1001",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0174",
+"type": "a11y_basic",
+"title": "/applications/1002 meets basic accessibility checks",
+"role": "citizen",
+"path": "/applications/1002",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0175",
+"type": "a11y_basic",
+"title": "/apply meets basic accessibility checks",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0176",
+"type": "a11y_basic",
+"title": "/citizen/login meets basic accessibility checks",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0177",
+"type": "a11y_basic",
+"title": "/dashboard meets basic accessibility checks",
+"role": "citizen",
+"path": "/dashboard",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0178",
+"type": "a11y_basic",
+"title": "/help meets basic accessibility checks",
+"role": "citizen",
+"path": "/help",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0179",
+"type": "a11y_basic",
+"title": "/help/contact meets basic accessibility checks",
+"role": "citizen",
+"path": "/help/contact",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0180",
+"type": "a11y_basic",
+"title": "/my-applications meets basic accessibility checks",
+"role": "citizen",
+"path": "/my-applications",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0181",
+"type": "a11y_basic",
+"title": "@department/ meets basic accessibility checks",
+"role": "clerk",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0182",
+"type": "a11y_basic",
+"title": "@department/admin/users meets basic accessibility checks",
+"role": "admin",
+"path": "@department/admin/users",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0183",
+"type": "a11y_basic",
+"title": "@department/clerk/queue meets basic accessibility checks",
+"role": "clerk",
+"path": "@department/clerk/queue",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0184",
+"type": "a11y_basic",
+"title": "@department/dashboard meets basic accessibility checks",
+"role": "clerk",
+"path": "@department/dashboard",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0185",
+"type": "a11y_basic",
+"title": "@department/department/login meets basic accessibility checks",
+"role": "clerk",
+"path": "@department/department/login",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0186",
+"type": "a11y_basic",
+"title": "@department/officer/queue meets basic accessibility checks",
+"role": "officer",
+"path": "@department/officer/queue",
+"priority": "P3",
+"oracle_source": "baseline",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0187",
+"type": "visual_snapshot",
+"title": "/ looks the same for anonymous as its approved snapshot",
+"role": "anonymous",
+"path": "/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0188",
+"type": "visual_snapshot",
+"title": "/ looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0189",
+"type": "visual_snapshot",
+"title": "/apply looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/apply",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0190",
+"type": "visual_snapshot",
+"title": "/citizen/login looks the same for anonymous as its approved snapshot",
+"role": "anonymous",
+"path": "/citizen/login",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0191",
+"type": "visual_snapshot",
+"title": "/dashboard looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/dashboard",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0192",
+"type": "visual_snapshot",
+"title": "/help looks the same for anonymous as its approved snapshot",
+"role": "anonymous",
+"path": "/help",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0193",
+"type": "visual_snapshot",
+"title": "/help looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/help",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0194",
+"type": "visual_snapshot",
+"title": "/help/contact looks the same for anonymous as its approved snapshot",
+"role": "anonymous",
+"path": "/help/contact",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0195",
+"type": "visual_snapshot",
+"title": "/help/contact looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/help/contact",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0196",
+"type": "visual_snapshot",
+"title": "/my-applications looks the same for citizen as its approved snapshot",
+"role": "citizen",
+"path": "/my-applications",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0197",
+"type": "visual_snapshot",
+"title": "@department/ looks the same for admin as its approved snapshot",
+"role": "admin",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0198",
+"type": "visual_snapshot",
+"title": "@department/ looks the same for anonymous as its approved snapshot",
+"role": "anonymous",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0199",
+"type": "visual_snapshot",
+"title": "@department/ looks the same for clerk as its approved snapshot",
+"role": "clerk",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+},
+{
+"id": "TC-0200",
+"type": "visual_snapshot",
+"title": "@department/ looks the same for officer as its approved snapshot",
+"role": "officer",
+"path": "@department/",
+"priority": "P3",
+"oracle_source": "snapshot",
+"req_ids": [],
+"status": "approved"
+}
+],
+"total": 206
+},
+"defects": {
+"items": [
+{
+"id": "DEF-001",
+"severity": "Critical",
+"priority": "P1",
+"title": "API GET @department/api/users is open to roles that must be blocked (the User Management screen is protected)",
+"role": "clerk, officer",
+"url": "http://127.0.0.1:8810/api/users",
+"steps": "Log in as officer.\nSend GET http://127.0.0.1:8810/api/users (for example, open it in the browser's address bar).",
+"expected": "FR-10: Only the Administrator shall be able to access User Management and Reports.",
+"actual": "Role 'officer' read GET @department/api/users (HTTP 200, a list of 5 with fields name, role, username); the API must refuse this role\nRole 'clerk' read GET @department/api/users (HTTP 200, a list of 5 with fields name, role, username); the API must refuse this role",
+"req_ids": [
+"FR-10"
+],
+"case_ids": [
+"TC-0086",
+"TC-0085"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "officer",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "officer",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "clerk",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "clerk",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-002",
+"severity": "Critical",
+"priority": "P1",
+"title": "Approval Queue (@department/officer/queue) is open to roles that must be blocked",
+"role": "admin, anonymous, citizen, clerk",
+"url": "http://127.0.0.1:8810/officer/queue",
+"steps": "As any of: admin, anonymous, citizen, clerk (log in, or stay logged out for anonymous)\nOpen http://127.0.0.1:8810/officer/queue directly.",
+"expected": "FR-08: Only the Officer shall be able to access the Approval Queue and approve applications.",
+"actual": "Role 'admin' opened @department/officer/queue (HTTP 200, ended on @department/officer/queue); access should be denied\nAn anonymous visitor opened @department/officer/queue (HTTP 200, ended on @department/officer/queue); access should be denied\nRole 'citizen' opened @department/officer/queue (HTTP 200, ended on @department/officer/queue); access should be denied\nRole 'clerk' opened @department/officer/queue (HTTP 200, ended on @department/officer/queue); access should be denied\nAn anonymous visitor opened @department/officer/queue by typing its address (HTTP 200, ended on @department/officer/queue).\nRole 'citizen' opened @department/officer/queue by typing its address (HTTP 200, ended on @department/officer/queue).\nRole 'clerk' opened @department/officer/queue by typing its address (HTTP 200, ended on @department/officer/queue).\nRole 'admin' opened @department/officer/queue by typing its address (HTTP 200, ended on @department/officer/queue).",
+"req_ids": [
+"FR-08"
+],
+"case_ids": [
+"TC-0075",
+"TC-0076",
+"TC-0077",
+"TC-0078"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "admin",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "admin",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 6,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 7,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 8,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 9,
+"kind": "screenshot",
+"role": "clerk",
+"image": true
+},
+{
+"n": 10,
+"kind": "trace",
+"role": "clerk",
+"image": false
+},
+{
+"n": 11,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-003",
+"severity": "Critical",
+"priority": "P1",
+"title": "Users can read other users' records through GET /api/applications/{n}",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/api/applications/1001",
+"steps": "Log in as the first citizen user and note the record address http://127.0.0.1:8800/api/applications/1001.\nLog in as a different citizen user (citizen account 2).\nOpen http://127.0.0.1:8800/api/applications/1001: the other user's record is returned.",
+"expected": "Another citizen cannot read /api/applications/1001 (a record that belongs to the first citizen)",
+"actual": "A second citizen account read /api/applications/1001, a record that belongs to another user (HTTP 200; fields exposed: address, applicant_name, cert_type, dob, email, id, mobile, pincode, status)",
+"req_ids": [],
+"case_ids": [
+"TC-0087"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "screenshot",
+"role": "citizen__peer",
+"image": true
+},
+{
+"n": 3,
+"kind": "trace",
+"role": "citizen__peer",
+"image": false
+},
+{
+"n": 4,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-004",
+"severity": "High",
+"priority": "P1",
+"title": "Mobile Number on /citizen/login accepts invalid input",
+"role": "anonymous, citizen",
+"url": "http://127.0.0.1:8800/citizen/login",
+"steps": "Stay logged out.\nOpen http://127.0.0.1:8800/citizen/login.\nFill the form with valid data ().\nSet Mobile Number to each value: starts with 0 (allowed: 6, 7, 8, 9)\nSubmit the form (browser validation bypassed, so the server's own validation is tested).",
+"expected": "FR-05: The Mobile Number shall be a 10-digit mobile number starting with 6, 7, 8 or 9.; FR-12: Appropriate error messages shall be displayed for invalid inputs.; FR-18: The Citizen login shall show an error when the mobile number is not a valid 10-digit number starting with 6, 7, 8 or 9.; TBL-022: Mobile Number - Type: Numeric; Mandatory: Yes; Length: 10; Validation: 10-digit mobile number starting with 6-9",
+"actual": "Mobile Number accepted invalid input: starts with 0 (allowed: 6, 7, 8, 9) ('0876543210')\nstep 6 ('Check the OTP screen does not open'): moved on to the OTP screen although the value must be refused (now on /citizen/login, 'demo certificate portal home help login മലയാളം citizen login otp sent enter the ')",
+"req_ids": [
+"FR-05",
+"FR-12",
+"FR-18",
+"TBL-022"
+],
+"case_ids": [
+"TC-0150",
+"TC-0003"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-005",
+"severity": "High",
+"priority": "P1",
+"title": "'Resend OTP' on the Citizen Login OTP screen does nothing (no new OTP is sent)",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/citizen/login",
+"steps": "Precondition: Logged out. Citizen Login is reached from the home page: Login > Citizen Login.\nTest data: The registered mobile number\n1. Open / (the home page)\n2. Click 'Login'\n3. Click 'Citizen Login'\n4. Type the registered mobile number in 'Mobile Number'\n5. Click 'Get OTP'\n6. Check the OTP screen opens\n7. Click 'Resend OTP'\n8. Check a new OTP SMS arrives (AgentQA asks you on a live portal)",
+"expected": "FR-12: Appropriate error messages shall be displayed for invalid inputs.; FR-19: The Citizen shall be able to request a new OTP with Resend OTP on the OTP screen.",
+"actual": "step 8 ('Check a new OTP SMS arrives (AgentQA asks you on a live port'): no new OTP SMS reached ******2345 within 25.0 s after clicking 'Resend OTP' (1 SMS in this test)",
+"req_ids": [
+"FR-12",
+"FR-19"
+],
+"case_ids": [
+"TC-0012"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-006",
+"severity": "High",
+"priority": "P1",
+"title": "The 'Reports' link does not open Reports for Admin",
+"role": "admin",
+"url": "http://127.0.0.1:8810/",
+"steps": "Precondition: Logged in as Admin.\n1. Open @department/\n2. Click 'Reports' in the menu\n3. Check the address is @department/admin/reports\n4. Check the Reports page is shown",
+"expected": "FR-10: Only the Administrator shall be able to access User Management and Reports.",
+"actual": "step 4 ('Check the Reports page is shown'): expected the Reports page; got '' at @department/admin/reports\n@department/admin/reports -> HTTP 500 (linked from @department/)\n@department/admin/reports: HTTP 500; server error text on page ('internal server error')\n@department/admin/reports answered HTTP 500",
+"req_ids": [
+"FR-10"
+],
+"case_ids": [
+"TC-0043",
+"TC-0167",
+"TC-0108"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "admin",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "admin",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "admin",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "admin",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 6,
+"kind": "screenshot",
+"role": "admin",
+"image": true
+},
+{
+"n": 7,
+"kind": "trace",
+"role": "admin",
+"image": false
+},
+{
+"n": 8,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 9,
+"kind": "screenshot",
+"role": "admin",
+"image": true
+}
+]
+},
+{
+"id": "DEF-007",
+"severity": "High",
+"priority": "P1",
+"title": "A used one-time password (OTP) is accepted again",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/login",
+"steps": "Log in as citizen with the password and the OTP sent by SMS; note the OTP.\nLog out.\nLog in again with the password, and on the OTP screen type the OTP from the first login.\nThe portal accepts it and opens the dashboard.",
+"expected": "A one-time password works only once (login as citizen)",
+"actual": "a one-time password that was already used was accepted again for citizen: the second login with the first login's OTP opened /dashboard",
+"req_ids": [],
+"case_ids": [
+"TC-0091"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-008",
+"severity": "High",
+"priority": "P1",
+"title": "Session is not ended on the server at logout",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/dashboard",
+"steps": "Log in as citizen.\nCopy the session cookie, then log out through http://127.0.0.1:8800/logout.\nPut the copied cookie back and open http://127.0.0.1:8800/dashboard: it still works.",
+"expected": "Logging in issues a new session, and logging out ends it on the server",
+"actual": "Session handling: after logout, a copy of the old session cookie still opens /dashboard; the session is not ended on the server",
+"req_ids": [],
+"case_ids": [
+"TC-0090"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen__sec",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen__sec",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-009",
+"severity": "High",
+"priority": "P1",
+"title": "Search shows typed HTML as part of the page (special characters are not escaped)",
+"role": "anonymous, citizen",
+"url": "http://127.0.0.1:8800/",
+"steps": "Precondition: Logged out.\nTest data: <b>aq-test</b>\n1. Open /\n2. Type '<b>aq-test</b>' in 'Search services'\n3. Click 'Search'\n4. Check the page works\n5. Check the words are shown exactly as typed, tags included",
+"expected": "The search term is shown as typed (<b>aq-test</b>), not turned into bold text.; Whatever users type is shown as plain text (HTML-escaped).",
+"actual": "step 5 ('Check the words are shown exactly as typed, tags included'): the typed HTML was turned into page content (not escaped): '<b>aq-test</b>'\nTyped x<b>aq61750</b> into Search services on /; the result page /search?q=x%3Cb%3Eaq61750%3C%2Fb%3E rendered it in bold, so the input was inserted as HTML instead of text.\nTyped x<b>aq47959</b> into Search services on /; the result page /search?q=x%3Cb%3Eaq47959%3C%2Fb%3E rendered it in bold, so the input was inserted as HTML instead of text.",
+"req_ids": [],
+"case_ids": [
+"TC-0054"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+}
+]
+},
+{
+"id": "DEF-010",
+"severity": "Medium",
+"priority": "P2",
+"title": "Applicant Name on /apply accepts invalid input",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/apply.\nFill the form with valid data (mobile='9876543210', email='qa.tester@example.com', pincode='695001', dob='1990-05-15', cert_type='income', docs='aadhaar', purpose='12 Test Street, Test Nagar', address='12 Test Street, Test Nagar', document='@file:document.pdf', declaration='on').\nSet Applicant Name to each value: 51 characters (limit 50)\nSubmit the form (browser validation bypassed, so the server's own validation is tested).",
+"expected": "FR-04: The Applicant Name field is mandatory and shall not exceed 50 characters.; TBL-021: Applicant Name - Type: Text; Mandatory: Yes; Length: Max 50; Validation: -",
+"actual": "Applicant Name accepted invalid input: 51 characters (limit 50) ('Test User abcdefghijabcdefghijabcdefghij... (51 chars)')\nApplicant Name: the form sets maxlength='100'; expected '50'",
+"req_ids": [
+"FR-04",
+"TBL-021"
+],
+"case_ids": [
+"TC-0128",
+"TC-0162"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-011",
+"severity": "Medium",
+"priority": "P2",
+"title": "Certificate Type offers the wrong options on /apply",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/apply.\nInspect the Certificate Type field.",
+"expected": "TBL-026: Certificate Type - Type: Dropdown; Mandatory: Yes; Length: -; Validation: Values: Income, Caste, Residence",
+"actual": "Certificate Type options are ['Income', 'Residence', 'Nativity']; expected ['Income', 'Caste', 'Residence']; missing ['Caste']; unexpected ['Nativity']",
+"req_ids": [
+"TBL-026"
+],
+"case_ids": [
+"TC-0151"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-012",
+"severity": "Medium",
+"priority": "P2",
+"title": "Documents Attached offers the wrong options on /apply",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/apply.\nInspect the Documents Attached field.",
+"expected": "TBL-027: Documents Attached - Type: Multi-select; Mandatory: Yes; Length: -; Validation: Values: Aadhaar, Ration Card, Voter ID, Passport",
+"actual": "Documents Attached options are ['Aadhaar', 'Ration Card', 'Voter ID', 'Driving Licence']; expected ['Aadhaar', 'Ration Card', 'Voter ID', 'Passport']; missing ['Passport']; unexpected ['Driving Licence']",
+"req_ids": [
+"TBL-027"
+],
+"case_ids": [
+"TC-0152"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-013",
+"severity": "Medium",
+"priority": "P2",
+"title": "Supporting Document on /apply accepts invalid input",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/apply.\nFill the form with valid data (applicant_name='Test User', mobile='9876543210', email='qa.tester@example.com', pincode='695001', dob='1990-05-15', cert_type='income', docs='aadhaar', purpose='12 Test Street, Test Nagar', address='12 Test Street, Test Nagar', declaration='on').\nSet Supporting Document to each value: a .exe file (allowed: pdf, jpg, png)\nSubmit the form (browser validation bypassed, so the server's own validation is tested).",
+"expected": "TBL-030: Supporting Document - Type: File; Mandatory: No; Length: Max 2 MB; Validation: PDF, JPG or PNG only",
+"actual": "Supporting Document accepted invalid input: a .exe file (allowed: pdf, jpg, png) ('@file:sample.exe')",
+"req_ids": [
+"TBL-030"
+],
+"case_ids": [
+"TC-0135"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-014",
+"severity": "Medium",
+"priority": "P2",
+"title": "Mobile Number on /apply accepts invalid input",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/apply.\nFill the form with valid data (applicant_name='Test User', email='qa.tester@example.com', pincode='695001', dob='1990-05-15', cert_type='income', docs='aadhaar', purpose='12 Test Street, Test Nagar', address='12 Test Street, Test Nagar', document='@file:document.pdf', declaration='on').\nSet Mobile Number to each value: letters mixed with digits\nSubmit the form (browser validation bypassed, so the server's own validation is tested).",
+"expected": "FR-05: The Mobile Number shall be a 10-digit mobile number starting with 6, 7, 8 or 9.; TBL-022: Mobile Number - Type: Numeric; Mandatory: Yes; Length: 10; Validation: 10-digit mobile number starting with 6-9",
+"actual": "Mobile Number accepted invalid input: letters mixed with digits ('98765abcde')\nMobile Number accepted invalid input: starts with 0 (allowed: 6, 7, 8, 9) ('0876543210')",
+"req_ids": [
+"FR-05",
+"TBL-022"
+],
+"case_ids": [
+"TC-0138",
+"TC-0141"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-015",
+"severity": "Medium",
+"priority": "P2",
+"title": "Broken link to /help/faq (HTTP 404) on /help",
+"role": "anonymous, citizen",
+"url": "http://127.0.0.1:8800/",
+"steps": "Stay logged out.\nOpen the page listed under Actual and click the broken link.",
+"expected": "Every internal link seen by anonymous opens without error; Every internal link seen by citizen opens without error; Every link opens a working page.",
+"actual": "/help/faq -> HTTP 404 (linked from /help)",
+"req_ids": [],
+"case_ids": [
+"TC-0168",
+"TC-0169"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 3,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 4,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 5,
+"kind": "log",
+"role": null,
+"image": false
+},
+{
+"n": 6,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+}
+]
+},
+{
+"id": "DEF-016",
+"severity": "Medium",
+"priority": "P2",
+"title": "Security headers are missing",
+"role": "anonymous",
+"url": "http://127.0.0.1:8800/",
+"steps": "Open http://127.0.0.1:8800/ with the browser's developer tools (F12), Network tab.\nRead the response headers.",
+"expected": "Responses send the standard security headers; Responses send Content-Security-Policy, X-Frame-Options or frame-ancestors, X-Content-Type-Options: nosniff and Referrer-Policy.",
+"actual": "Security headers missing on /: Content-Security-Policy; X-Frame-Options (clickjacking protection); X-Content-Type-Options: nosniff; Referrer-Policy\nMissing: Content-Security-Policy; X-Frame-Options (or CSP frame-ancestors): pages can be framed (clickjacking); X-Content-Type-Options: nosniff; Referrer-Policy",
+"req_ids": [],
+"case_ids": [
+"TC-0088"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-017",
+"severity": "Low",
+"priority": "P3",
+"title": "Accessibility gaps on /",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/.\nInspect images, form labels, page title and the html lang attribute.",
+"expected": "/ meets basic accessibility checks",
+"actual": "/: image-alt (critical): Images must have alternative text - 1 element(s), e.g. img",
+"req_ids": [],
+"case_ids": [
+"TC-0172"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+},
+{
+"id": "DEF-018",
+"severity": "Low",
+"priority": "P3",
+"title": "JavaScript error on /my-applications",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/my-applications",
+"steps": "Log in as citizen.\nOpen http://127.0.0.1:8800/my-applications.\nOpen the browser console (F12).",
+"expected": "The page runs without JavaScript errors.",
+"actual": "Uncaught appCount is not defined",
+"req_ids": [],
+"case_ids": [],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+}
+]
+},
+{
+"id": "DEF-019",
+"severity": "Low",
+"priority": "P3",
+"title": "Forms that change data have no anti-forgery (CSRF) token",
+"role": "citizen",
+"url": "http://127.0.0.1:8800/apply",
+"steps": "Log in as citizen.\nOpen each listed form and look for a hidden anti-forgery token field: there is none.",
+"expected": "Forms that change data carry an anti-forgery token",
+"actual": "3 form(s) that change data have no anti-forgery token: /apply (on /apply); /citizen/login (on /citizen/login); /clerk/verify/{id} (on @department/clerk/queue) (mitigated: session cookie is SameSite=Lax)",
+"req_ids": [],
+"case_ids": [
+"TC-0089"
+],
+"status": "draft",
+"created_at": "2026-11-04T03:53:40",
+"notes": "",
+"external_key": null,
+"evidence": [
+{
+"n": 0,
+"kind": "screenshot",
+"role": "citizen",
+"image": true
+},
+{
+"n": 1,
+"kind": "trace",
+"role": "citizen",
+"image": false
+},
+{
+"n": 2,
+"kind": "screenshot",
+"role": "anonymous",
+"image": true
+},
+{
+"n": 3,
+"kind": "trace",
+"role": "anonymous",
+"image": false
+},
+{
+"n": 4,
+"kind": "screenshot",
+"role": "clerk",
+"image": true
+},
+{
+"n": 5,
+"kind": "trace",
+"role": "clerk",
+"image": false
+},
+{
+"n": 6,
+"kind": "log",
+"role": null,
+"image": false
+}
+]
+}
+],
+"counts": {
+"open_by_severity": {
+"Critical": 3,
+"High": 6,
+"Low": 3,
+"Medium": 7
+},
+"by_status": {
+"draft": 19
+}
+},
+"total": 19
+},
+"requirements": {
+"requirements": [
+{
+"id": "FR-01",
+"seq": 1,
+"section": "2. Functional requirements",
+"text": "Citizens shall log in with their registered 10-digit mobile number and a 6-digit OTP sent by SMS. Department users (Clerk, Officer and Administrator) shall log in with a username and password.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen",
+"clerk",
+"officer",
+"admin"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "19 test case(s)"
+},
+{
+"id": "FR-02",
+"seq": 2,
+"section": "2. Functional requirements",
+"text": "Citizens shall be able to apply for a certificate online.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-03",
+"seq": 3,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to view the status of submitted applications in My Applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "3 test case(s)"
+},
+{
+"id": "FR-04",
+"seq": 4,
+"section": "2. Functional requirements",
+"text": "The Applicant Name field is mandatory and shall not exceed 50 characters.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "FR-05",
+"seq": 5,
+"section": "2. Functional requirements",
+"text": "The Mobile Number shall be a 10-digit mobile number starting with 6, 7, 8 or 9.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "8 test case(s)"
+},
+{
+"id": "FR-06",
+"seq": 6,
+"section": "2. Functional requirements",
+"text": "Only the Clerk shall be able to access the Verification Queue and verify applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"clerk"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "5 test case(s)"
+},
+{
+"id": "FR-07",
+"seq": 7,
+"section": "2. Functional requirements",
+"text": "When the Clerk verifies an application, its status shall change to Verified.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"clerk"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-08",
+"seq": 8,
+"section": "2. Functional requirements",
+"text": "Only the Officer shall be able to access the Approval Queue and approve applications.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "5 test case(s)"
+},
+{
+"id": "FR-09",
+"seq": 9,
+"section": "2. Functional requirements",
+"text": "When the Officer approves an application, its status shall change to Approved.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-10",
+"seq": 10,
+"section": "2. Functional requirements",
+"text": "Only the Administrator shall be able to access User Management and Reports.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"admin"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "13 test case(s)"
+},
+{
+"id": "FR-11",
+"seq": 11,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to download the approved certificate as a PDF.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "clarify",
+"disposition_note": "an open question or contradiction must be answered first"
+},
+{
+"id": "FR-12",
+"seq": 12,
+"section": "2. Functional requirements",
+"text": "Appropriate error messages shall be displayed for invalid inputs.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [
+{
+"term": "appropriate",
+"reason": "does not say which behaviour is correct"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "21 test case(s)"
+},
+{
+"id": "FR-13",
+"seq": 13,
+"section": "2. Functional requirements",
+"text": "The Remarks field length is TBD.",
+"kind": "functional",
+"priority": "Low",
+"roles": [],
+"ambiguity": [
+{
+"term": "tbd",
+"reason": "value not yet decided"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "clarify",
+"disposition_note": "an open question or contradiction must be answered first"
+},
+{
+"id": "FR-14",
+"seq": 14,
+"section": "2. Functional requirements",
+"text": "Officers shall log in with their password and a one-time password (OTP) sent by SMS to their registered mobile number.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"officer"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "2 test case(s)"
+},
+{
+"id": "FR-15",
+"seq": 15,
+"section": "2. Functional requirements",
+"text": "An OTP shall be valid for 5 minutes and shall be accepted only once.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-16",
+"seq": 16,
+"section": "2. Functional requirements",
+"text": "The Citizen shall receive a confirmation email when an application is submitted.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-17",
+"seq": 17,
+"section": "2. Functional requirements",
+"text": "The home page shall offer a Login button with two options: Citizen Login and Department Login.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "FR-18",
+"seq": 18,
+"section": "2. Functional requirements",
+"text": "The Citizen login shall show an error when the mobile number is not a valid 10-digit number starting with 6, 7, 8 or 9.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "6 test case(s)"
+},
+{
+"id": "FR-19",
+"seq": 19,
+"section": "2. Functional requirements",
+"text": "The Citizen shall be able to request a new OTP with Resend OTP on the OTP screen.",
+"kind": "functional",
+"priority": "High",
+"roles": [
+"citizen"
+],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "1 test case(s)"
+},
+{
+"id": "FR-20",
+"seq": 20,
+"section": "2. Functional requirements",
+"text": "Logout shall end the session and return the user to the home page.",
+"kind": "functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-021",
+"seq": 21,
+"section": "3. Application form fields",
+"text": "Applicant Name - Type: Text; Mandatory: Yes; Length: Max 50; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-022",
+"seq": 22,
+"section": "3. Application form fields",
+"text": "Mobile Number - Type: Numeric; Mandatory: Yes; Length: 10; Validation: 10-digit mobile number starting with 6-9",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "10 test case(s)"
+},
+{
+"id": "TBL-023",
+"seq": 23,
+"section": "3. Application form fields",
+"text": "Email Address - Type: Email; Mandatory: No; Length: Max 100; Validation: Valid email format",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-024",
+"seq": 24,
+"section": "3. Application form fields",
+"text": "PIN Code - Type: Numeric; Mandatory: Yes; Length: 6; Validation: 6-digit PIN code",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-025",
+"seq": 25,
+"section": "3. Application form fields",
+"text": "Date of Birth - Type: Date; Mandatory: Yes; Length: -; Validation: Cannot be a future date",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "2 test case(s)"
+},
+{
+"id": "TBL-026",
+"seq": 26,
+"section": "3. Application form fields",
+"text": "Certificate Type - Type: Dropdown; Mandatory: Yes; Length: -; Validation: Values: Income, Caste, Residence",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "2 test case(s)"
+},
+{
+"id": "TBL-027",
+"seq": 27,
+"section": "3. Application form fields",
+"text": "Documents Attached - Type: Multi-select; Mandatory: Yes; Length: -; Validation: Values: Aadhaar, Ration Card, Voter ID, Passport",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "2 test case(s)"
+},
+{
+"id": "TBL-028",
+"seq": 28,
+"section": "3. Application form fields",
+"text": "Purpose of Certificate - Type: Rich text; Mandatory: Yes; Length: Max 300; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "3 test case(s)"
+},
+{
+"id": "TBL-029",
+"seq": 29,
+"section": "3. Application form fields",
+"text": "Address - Type: Text area; Mandatory: Yes; Length: Max 200; Validation: -",
+"kind": "field-spec",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-030",
+"seq": 30,
+"section": "3. Application form fields",
+"text": "Supporting Document - Type: File; Mandatory: No; Length: Max 2 MB; Validation: PDF, JPG or PNG only",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "4 test case(s)"
+},
+{
+"id": "TBL-031",
+"seq": 31,
+"section": "3. Application form fields",
+"text": "Remarks - Type: Text; Mandatory: No; Length: TBD; Validation: -",
+"kind": "field-spec",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [
+{
+"term": "tbd",
+"reason": "value not yet decided"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "clarify",
+"disposition_note": "an open question or contradiction must be answered first"
+},
+{
+"id": "NFR-01",
+"seq": 32,
+"section": "4. Non-functional requirements",
+"text": "The system shall respond quickly to user actions.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [
+{
+"term": "quickly",
+"reason": "no measurable time limit"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "clarify",
+"disposition_note": "an open question or contradiction must be answered first"
+},
+{
+"id": "NFR-02",
+"seq": 33,
+"section": "4. Non-functional requirements",
+"text": "Pages shall load within 3 seconds.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "30 test case(s)"
+},
+{
+"id": "NFR-03",
+"seq": 34,
+"section": "4. Non-functional requirements",
+"text": "The session shall expire after 15 minutes of inactivity.",
+"kind": "non-functional",
+"priority": "High",
+"roles": [],
+"ambiguity": [],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "covered",
+"disposition_note": "2 test case(s)"
+},
+{
+"id": "NFR-04",
+"seq": 35,
+"section": "4. Non-functional requirements",
+"text": "The portal should support multiple languages as applicable.",
+"kind": "non-functional",
+"priority": "Medium",
+"roles": [],
+"ambiguity": [
+{
+"term": "as applicable",
+"reason": "condition not defined"
+},
+{
+"term": "multiple languages",
+"reason": "languages not listed"
+}
+],
+"source_file": "Demo_Certificate_Portal_SRS.docx",
+"disposition": "clarify",
+"disposition_note": "an open question or contradiction must be answered first"
+}
+],
+"documents": [
+{
+"name": "Demo_Certificate_Portal_SRS.docx",
+"kind": "docx",
+"size": 38006,
+"pages": null,
+"segments": 33,
+"status": "read",
+"detail": "",
+"read_at": "2026-11-04T03:47:11"
+}
+],
+"total": 35
+},
+"changes": {
+"items": [
+{
+"id": 1,
+"at": "2026-11-04T03:47:50",
+"agent": "designer",
+"object": "plan",
+"object_id": "-",
+"change": "first design: 206 case(s)",
+"why": "derived from the SRS rules, the app map and the recorded logins",
+"by": "agents"
+}
+],
+"next_before": null
+}
+}

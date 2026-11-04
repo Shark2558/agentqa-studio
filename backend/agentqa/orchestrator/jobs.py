@@ -6,6 +6,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import threading
 from contextlib import closing
 from pathlib import Path
 
@@ -21,6 +22,7 @@ STILL_ACTIVE = 259
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 MAX_PID = 2 ** 31 - 1
 PEEK_TIMEOUT_S = 2
+_SPAWN_LOCK = threading.Lock()     # "nothing runs" and "record the job" as one step: a double-click starts one job
 
 
 def pid_alive(pid: int) -> bool:
@@ -101,8 +103,13 @@ def child_env(extra: dict[str, str]) -> dict[str, str]:
 
 def spawn(p: Project, s: Store, args: list[str], label: str, headed: bool = False, shots: bool | None = None) -> int:
     """Start `python -m agentqa <args>` for the project as a tracked job; returns the job id."""
-    if running(s):
-        raise Busy("A stage is already running for this project.")
+    with _SPAWN_LOCK:                 # held until the process is known, so a second request sees it alive
+        if running(s):
+            raise Busy("A stage is already running for this project.")
+        return _start(p, s, args, label, headed, shots)
+
+
+def _start(p: Project, s: Store, args: list[str], label: str, headed: bool, shots: bool | None) -> int:
     log_path = p.state / "logs" / f"{label}-{now().replace(':', '')}.log"
     job_id = s.insert("jobs", {"stage": label, "status": "running", "started_at": now(), "log_path": str(log_path)})
     lc = p.cfg.get("live", {})

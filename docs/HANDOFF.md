@@ -22,7 +22,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | **plan approved 4 Nov 2026** (all seven decisions as recommended); **next: Phase A** | plan `35acae8` + approval |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend, reviewed; branch `claude/compassionate-haslett-3eb339`, not merged); **next: Phase B** | plan `35acae8` + approval · Phase A |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
@@ -103,7 +103,16 @@ Facts the next milestones should know: on 4 Nov 2026 the owner's **Anthropic acc
 credit himself if he wants it back. Two follow-ups came from it (below). The browser pane's width is whatever the
 owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses too.
 
-## M1.4 — next: build Phase A of the approved plan (`docs/plans/m1-4-gates.md`)
+## M1.4 — Phase A done; next: Phase B of the approved plan (`docs/plans/m1-4-gates.md`)
+
+**Phase A (4 Nov 2026)** is on branch `claude/compassionate-haslett-3eb339`, not merged. It covers:
+- the API for questions, the test plan (with imported cases), defects with evidence, requirement dispositions, the change log and the gate counts;
+- who and why on every decision;
+- one closing store per request;
+- formula-safe exports built in a folder of their own;
+- the `replan` command and the "approved earlier" line.
+
+Checks: 19/19 with 0 extra, the full suite green, three fresh-context reviews with every HIGH and MEDIUM fixed. The plan's record lists where the code differed from it; read item 1 (`replan` uses project.yaml's policy) before building the Questions page. **Phase B must show the Requirements page's `total`**: the list now comes 200 rows at a time.
 
 The plan was approved on 4 Nov 2026 with all seven decisions as recommended. Four phases, each a commit: **A** the three
 gates' API (questions, test plan, defects, requirements dispositions), who/why in the change log, one store per
@@ -119,7 +128,9 @@ same day for the gateway's "credit balance is too low" handling and provider swi
 
 Playwright `e2e/wizard.spec.ts` and a `NewProject` container test (M1.1 review) · CI Docker build cache (M0.2) ·
 old dashboard's `testdata_account` keeps its own copy of the account rules (M1.4 retires the page) · `web/app.py`
-is 1 400 lines (M1.4 replaces it) · `list_requirements` has no LIMIT (M1.4) · proxy-aware client address and a full
+is 1 400 lines (M1.4 replaces it) · the old dashboard's `/p/{slug}/files/{rel:path}` serves any file type (M1.4
+Phase D removes it) · trace, video and log-JSON evidence is downloadable by every signed-in role (M2.1: owner and
+tester only) · proxy-aware client address and a full
 access log (cloud edition, M3) · from M1.3 Phase C: the gateway reads Anthropic's "credit balance is too low" (HTTP
 400) as a refused request, so the empty key stays "ok" and is tried before every call — classify it as billing
 (`ai/providers.classify`, 🔒 gateway) · the Live View shows no line when the gateway switches provider and a card
