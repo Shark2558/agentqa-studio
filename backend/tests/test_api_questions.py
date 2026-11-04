@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from agentqa import replan
 from agentqa.agents import reconciler
 from agentqa.orchestrator.gates import questions
 from conftest import CSRF, GATES_WHO
@@ -40,19 +41,24 @@ def test_the_list_puts_open_questions_first_by_priority_with_counts(gates):
 
 
 def test_the_list_says_which_policy_a_replan_will_use(gates):
-    """'Apply my answers' reconciles with project.yaml's policy (Phase A record, item 1): the page must say which."""
-    assert _list(gates)["policy"] == {"divergence": "ask", "inferred_access": "ask"}
+    """'Apply my answers' reconciles with the rule the last run used, else project.yaml's: the page must say which."""
+    assert _list(gates)["policy"] == {"divergence": "ask", "inferred_access": "ask", "source": "project"}
+    with gates.db() as s:
+        s.set_meta(replan.POLICY_KEY, "srs_wins")                  # a run started with --policy srs_wins
+    assert _list(gates)["policy"] == {"divergence": "srs_wins", "inferred_access": "ask", "source": "run"}
 
 
-@pytest.mark.parametrize("cfg, expected", [
-    ({"policy": None}, ("ask", "ask")),                                         # `policy:` left empty in project.yaml
-    ({"policy": {"divergence": "srs_wins", "inferred_access": "deny"}}, ("srs_wins", "deny")),
-    ({"policy": {"divergence": "<b>x</b>" * 50, "inferred_access": 3}}, ("ask", "ask")),   # unknown: the reconciler asks
+@pytest.mark.parametrize("cfg, remembered, expected", [
+    ({"policy": None}, None, ("ask", "ask", "project")),                       # `policy:` left empty in project.yaml
+    ({"policy": {"divergence": "srs_wins", "inferred_access": "deny"}}, None, ("srs_wins", "deny", "project")),
+    ({"policy": {"divergence": "<b>x</b>" * 50, "inferred_access": 3}}, None, ("ask", "ask", "project")),   # unknown: "ask"
+    ({"policy": {"divergence": "ask"}}, "app_wins", ("app_wins", "ask", "run")),
+    ({"policy": {"divergence": "ask"}}, "<script>", ("ask", "ask", "project")),     # a junk remembered value is ignored
 ])
-def test_the_policy_is_read_safely(cfg, expected):
+def test_the_policy_is_read_safely(cfg, remembered, expected):
     from types import SimpleNamespace
-    got = questions.policy(SimpleNamespace(cfg=cfg))
-    assert (got["divergence"], got["inferred_access"]) == expected
+    got = questions.policy(SimpleNamespace(cfg=cfg), SimpleNamespace(get_meta=lambda key, default=None: remembered))
+    assert (got["divergence"], got["inferred_access"], got["source"]) == expected
 
 
 def test_the_list_filters_by_status_and_pages(gates):

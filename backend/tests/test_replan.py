@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from agentqa import cli, live
+from agentqa import cli, live, replan
 from agentqa.api.routes_runs import _args
 from agentqa.api.schemas import RunIn
 from agentqa.orchestrator.gates import changelog
@@ -55,6 +55,45 @@ def test_replan_runs_reconcile_then_design_in_one_recording(run):
 def test_replan_passes_the_policy_to_the_reconciler(run):
     run("replan", "--policy", "srs_wins")
     assert run.calls[0] == ("reconcile", "srs_wins")
+
+
+def test_the_reconcile_stage_remembers_the_rule_it_ran_with(demo, monkeypatch):
+    """The owner's decision (4 Nov 2026): a re-plan reuses the rule of the run that made the plan."""
+    from argparse import Namespace
+    p, s = demo
+    seen: list[str | None] = []
+    monkeypatch.setattr("agentqa.agents.reconciler.reconcile", lambda project, store, policy=None: seen.append(policy) or {"ok": True})
+    cli._stage("reconcile", p, s, Namespace(policy="srs_wins"))
+    assert seen == ["srs_wins"] and s.get_meta(replan.POLICY_KEY) == "srs_wins"
+    cli._stage("reconcile", p, s, Namespace(policy=None))          # project.yaml's rule: nothing to reuse
+    assert seen == ["srs_wins", None] and s.get_meta(replan.POLICY_KEY) is None
+
+
+def test_a_failed_reconcile_keeps_the_rule_the_plan_was_made_with(demo, monkeypatch):
+    from argparse import Namespace
+    p, s = demo
+    s.set_meta(replan.POLICY_KEY, "srs_wins")
+
+    def boom(project, store, policy=None):
+        raise RuntimeError("No screens recorded. Run the Explorer first.")
+    monkeypatch.setattr("agentqa.agents.reconciler.reconcile", boom)
+    with pytest.raises(RuntimeError):
+        cli._stage("reconcile", p, s, Namespace(policy=None))
+    assert replan.remembered_policy(s) == "srs_wins"
+    s.set_meta(replan.POLICY_KEY, "junk")
+    assert replan.remembered_policy(s) is None                      # only the three real rules are reused
+
+
+def test_replan_reuses_the_rule_of_the_run_that_made_the_plan(run):
+    run.store.set_meta(replan.POLICY_KEY, "srs_wins")
+    run("replan")
+    assert run.calls[0] == ("reconcile", "srs_wins")
+
+
+def test_a_policy_given_to_replan_wins_over_the_remembered_one(run):
+    run.store.set_meta(replan.POLICY_KEY, "srs_wins")
+    run("replan", "--policy", "ask")
+    assert run.calls[0] == ("reconcile", "ask")
 
 
 def test_replan_marks_its_job_done(run):

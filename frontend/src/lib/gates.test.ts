@@ -76,10 +76,11 @@ describe("who made a change, in words", () => {
 
 describe("the re-plan policy, in words", () => {
   it("says what project.yaml's rule does, and names an unknown rule as written", () => {
-    expect(policyWords({ divergence: "ask", inferred_access: "ask" })).toMatch(/asks you/);
-    expect(policyWords({ divergence: "srs_wins", inferred_access: "ask" })).toMatch(/requirements document wins/);
-    expect(policyWords({ divergence: "app_wins", inferred_access: "ask" })).toMatch(/application does wins/);
-    expect(policyWords({ divergence: "<b>odd</b>", inferred_access: "ask" })).toContain("“<b>odd</b>”");
+    const rule = (divergence: string) => ({ divergence, inferred_access: "ask", source: "project" as const });
+    expect(policyWords(rule("ask"))).toMatch(/asks you/);
+    expect(policyWords(rule("srs_wins"))).toMatch(/requirements document wins/);
+    expect(policyWords(rule("app_wins"))).toMatch(/application does wins/);
+    expect(policyWords(rule("<b>odd</b>"))).toContain("“<b>odd</b>”");
   });
 });
 

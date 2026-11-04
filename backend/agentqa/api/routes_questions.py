@@ -21,7 +21,7 @@ QuestionId = Path(ge=1, le=ID_MAX)
 def list_questions(slug: str, status: Literal["open", "answered"] | None = None, limit: int = Limit,
                    offset: int = Offset):
     with store_or_404(slug) as (p, s):
-        return ok({**questions.listing(s, status, limit, offset), "policy": questions.policy(p)})
+        return ok({**questions.listing(s, status, limit, offset), "policy": questions.policy(p, s)})
 
 
 @router.post("/apply", status_code=202)

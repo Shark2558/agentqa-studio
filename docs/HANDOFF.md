@@ -113,7 +113,7 @@ owner makes it (seen: 800, 1149, 1918 px), so check pages at the widths he uses 
 - the Project page's "What needs you" card and the switch, now "Approve the test plan automatically (demos)", off by default;
 - the Live View's gates as links.
 
-Checks: `make gates-check` (new) and `make ui-check` green; 367 Vitest; three fresh-context reviews with every HIGH and MEDIUM fixed. The plan's Phase B record lists where the code differed. **Before sitting 1 the owner decides item 2**: the Run button reconciles with "the requirements document wins", "Apply my answers" with project.yaml's rule. Sitting 1 is prepared, not run (the hand-over note in the session notes folder has the script and the steps).
+Checks: `make gates-check` (new) and `make ui-check` green; 367 Vitest; three fresh-context reviews with every HIGH and MEDIUM fixed. The plan's Phase B record lists where the code differed. Item 2 (Run vs "Apply my answers" rules) was decided by the owner the same day: a re-plan reuses the rule the run used (done). Sitting 1 is prepared, not run (the hand-over note in the session notes folder has the script and the steps).
 
 **Phase A (4 Nov 2026)** is on branch `claude/compassionate-haslett-3eb339`, not merged. It covers:
 - the API for questions, the test plan (with imported cases), defects with evidence, requirement dispositions, the change log and the gate counts;

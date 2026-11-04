@@ -11,7 +11,7 @@ import traceback
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
-from agentqa import live
+from agentqa import live, replan
 from agentqa.config import Project, init_project
 from agentqa.orchestrator import board
 from agentqa.store import Store, now
@@ -94,14 +94,14 @@ def stage(name: str, project: Project, store: Store, args) -> dict:
 
 
 def _stage(name: str, project: Project, store: Store, args) -> dict:
-    from agentqa.agents import (designer, executor, explorer, generator, healer, reconciler, reporter,
+    from agentqa.agents import (designer, executor, explorer, generator, healer, reporter,
                                 srs_analyst, triage)
     if name == "analyze":
         return srs_analyst.analyze(project, store, use_llm=getattr(args, "llm", None))
     if name == "explore":
         return explorer.explore(project, store, roles=getattr(args, "roles", None))
     if name == "reconcile":
-        return reconciler.reconcile(project, store, policy=getattr(args, "policy", None))
+        return replan.reconcile(project, store, getattr(args, "policy", None))      # remembers the rule for a re-plan
     if name == "write":
         from agentqa.agents import req_writer
         return req_writer.write(project, store, use_llm=getattr(args, "llm", None))

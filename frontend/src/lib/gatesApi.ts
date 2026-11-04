@@ -42,7 +42,8 @@ export interface Question {
   value: string;
   answered_at: string | null;
 }
-export interface Policy { divergence: string; inferred_access: string }
+/** The rules a re-plan will reconcile with: the last run's (`source` "run"), else project.yaml's ("project"). */
+export interface Policy { divergence: string; inferred_access: string; source: "run" | "project" }
 export interface QuestionsView {
   items: Question[];
   counts: { open: number; answered: number };

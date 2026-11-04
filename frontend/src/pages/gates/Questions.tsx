@@ -14,22 +14,17 @@ import { GateTop } from "../../components/gates/GateTop";
 type Tab = "open" | "answered";
 const KEYS = ["questions", "changes"] as const;         // a re-plan rewrites the questions
 
-/** What "Apply" does, in words: answers take effect only through a re-plan, which uses project.yaml's rule. The Run
- *  button starts runs with "the requirements document wins", so a re-plan under another rule can differ. */
+/** What "Apply" does, in words: answers take effect only through a re-plan, which reuses the rule of the run that
+ *  made the plan (the owner's decision, 4 Nov 2026), or project.yaml's when that run used it. */
 function ApplyNote({ policy }: { policy: Policy }) {
+  const whose = policy.source === "run" ? "the rule this plan was made with" : "this project's rule from project.yaml";
   return (
     <div className="notice info">
       <p>
         Answers take effect only when someone presses “Apply my answers and re-plan”. AgentQA then compares the requirements
         with the application again and designs the test plan again. It does not rewrite the requirements, so it costs nothing.
       </p>
-      <p>Re-planning uses this project's rule from project.yaml: {policyWords(policy)}.</p>
-      {policy.divergence !== "srs_wins" && (
-        <p>
-          Runs started with “Run full pipeline” use “the requirements document wins” instead, so a re-plan can bring back
-          questions such a run had settled.
-        </p>
-      )}
+      <p>Re-planning uses {whose}: {policyWords(policy)}.</p>
     </div>
   );
 }

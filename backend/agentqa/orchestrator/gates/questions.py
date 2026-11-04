@@ -54,13 +54,18 @@ DIVERGENCE_RULES = ("ask", "srs_wins", "app_wins")
 ACCESS_RULES = ("ask", "deny", "ignore")
 
 
-def policy(project: Project) -> dict[str, str]:
-    """The rules `replan` reconciles with: project.yaml's, as for a pipeline started from the app (Phase A item 1).
-    An empty `policy:` or an unknown value reads as "ask", which is what the Reconciler does with it."""
+def policy(project: Project, store: Store) -> dict[str, str]:
+    """The rules `replan` will reconcile with: the one the last run used (`source` "run", replan.POLICY_KEY), else
+    project.yaml's (`source` "project"). An empty `policy:` or an unknown value reads as "ask", as the Reconciler
+    treats it."""
+    from agentqa.replan import remembered_policy          # the one reader replan uses too (no import loop either way)
     rules = project.cfg.get("policy") or {}
-    divergence, access = rules.get("divergence"), rules.get("inferred_access")
-    return {"divergence": divergence if divergence in DIVERGENCE_RULES else "ask",
-            "inferred_access": access if access in ACCESS_RULES else "ask"}
+    remembered, divergence, access = remembered_policy(store), rules.get("divergence"), rules.get("inferred_access")
+    if remembered:                                        # `source` names where the divergence rule comes from
+        divergence, source = remembered, "run"
+    else:
+        divergence, source = (divergence if divergence in DIVERGENCE_RULES else "ask"), "project"
+    return {"divergence": divergence, "inferred_access": access if access in ACCESS_RULES else "ask", "source": source}
 
 
 def _get(store: Store, qid: int) -> dict:

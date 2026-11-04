@@ -4,10 +4,11 @@ import { fail } from "../../test-fetch";
 import { demo, renderPage } from "../../test-fixtures/gates";
 import { Questions } from "./Questions";
 
-function mount(over: { answered?: number; policy?: string; running?: boolean } = {}, extra: Record<string, unknown> = {}, role = "owner") {
+function mount(over: { answered?: number; policy?: string; source?: "run" | "project"; running?: boolean } = {}, extra: Record<string, unknown> = {}, role = "owner") {
   const d = demo();
   d.questions.counts.answered = over.answered ?? 0;
   if (over.policy) d.questions.policy.divergence = over.policy;
+  if (over.source) d.questions.policy.source = over.source;
   d.gates.running = over.running ?? false;
   return renderPage(<Questions />, "/projects/demo/questions", "/projects/:slug/questions", {
     "GET /projects/demo/questions": d.questions, "GET /projects/demo/gates": d.gates, ...extra,
@@ -24,15 +25,13 @@ describe("Questions page", () => {
     mount();
     expect(await screen.findByText("15 open · 0 answered")).toBeInTheDocument();
     expect(screen.getAllByRole("radiogroup")).toHaveLength(15);
-    expect(screen.getByText(/asks you whenever the requirements and the application disagree/)).toBeInTheDocument();
-    // The Run button starts runs with "the requirements document wins": say that a re-plan can differ.
-    expect(screen.getByText(/can bring back questions/)).toHaveTextContent(/Run full pipeline.*requirements document wins/);
+    expect(screen.getByText(/this project's rule from project.yaml: it asks you whenever the requirements and the application disagree/)).toBeInTheDocument();
   });
 
-  it("does not warn about a different rule when project.yaml already lets the requirements win", async () => {
-    mount({ policy: "srs_wins" });
-    expect(await screen.findByText(/requirements document wins whenever the two disagree/)).toBeInTheDocument();
-    expect(screen.queryByText(/can bring back questions/)).toBeNull();
+  it("says a re-plan reuses the rule of the run that made the plan (the owner's decision)", async () => {
+    mount({ policy: "srs_wins", source: "run" });
+    const note = await screen.findByText(/the rule this plan was made with: the requirements document wins whenever the two disagree/);
+    expect(note).not.toHaveTextContent(/project\.yaml/);
   });
 
   it("applies the answers only once one is given, then links to the re-plan in the Live View", async () => {
