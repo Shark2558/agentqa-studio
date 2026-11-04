@@ -1,8 +1,15 @@
 import { useParams } from "react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { byWords, when } from "../../lib/gates";
-import { gatesApi } from "../../lib/gatesApi";
+import { byWords, when, whyIsQuestion } from "../../lib/gates";
+import { gatesApi, type Change } from "../../lib/gatesApi";
 import { GateTop } from "../../components/gates/GateTop";
+
+/** The Why column. An answer's row carries the question it answers, not a person's reason, so it says so. */
+function Why({ change }: { change: Change }) {
+  if (!change.why) return <>—</>;
+  if (!whyIsQuestion(change)) return <>{change.why}</>;
+  return <><span className="muted">The question: </span><span>{change.why}</span></>;
+}
 
 /** Every decision with who made it and why, newest first, 50 at a time (FR-ACC-3). */
 export function ChangeLog() {
@@ -41,7 +48,7 @@ export function ChangeLog() {
                     <span>{c.change}</span>
                     <span className="block muted small mono">{c.object} {c.object_id !== "-" ? c.object_id : ""}</span>
                   </td>
-                  <td className="wrap" data-label="Why">{c.why || "—"}</td>
+                  <td className="wrap" data-label="Why"><Why change={c} /></td>
                 </tr>
               ))}
             </tbody>

@@ -9,6 +9,7 @@ from types import MappingProxyType
 from typing import Any, Callable
 
 from agentqa.agents import reconciler
+from agentqa.agents import requirements as reqs_agent
 from agentqa.config import Project
 from agentqa.orchestrator.gates import GateError, changelog
 from agentqa.store import Store
@@ -17,7 +18,7 @@ from agentqa.store import Store
 VALUE_OPTIONS = MappingProxyType({"divergence": (2,), "srs_only_field": (1,), "srs_only_feature": (1,),
                                   "srs_only_screen": (1,), "ambiguous": (1,)})
 PRIORITY = "CASE priority WHEN 'High' THEN 0 WHEN 'Medium' THEN 1 ELSE 2 END"
-COLUMNS = "id, kind, question, options, proposed, priority, req_id, rule_id, status, answer, answer_value, answered_at"
+COLUMNS = "id, key, kind, question, options, proposed, priority, req_id, rule_id, status, answer, answer_value, answered_at"
 
 
 def _stored(q: dict) -> tuple[int | None, str]:
@@ -35,7 +36,7 @@ def item(q: dict) -> dict[str, Any]:
             "options": [{"label": str(o), "needs_value": i in needs} for i, o in enumerate(q["options"] or [])],
             "proposed": q["proposed"], "priority": q["priority"], "req_id": q["req_id"], "rule_id": q["rule_id"],
             "status": q["status"], "answer": None if q["answer"] is None else str(q["answer"]), "choice": choice,
-            "value": value,
+            "value": value, "note_only": reqs_agent.note_only(q.get("key")),   # the key itself stays private
             "answered_at": q["answered_at"] if q["status"] == "answered" else None}
 
 

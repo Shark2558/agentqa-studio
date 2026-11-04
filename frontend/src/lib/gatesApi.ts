@@ -40,6 +40,8 @@ export interface Question {
   answer: string | null;
   choice: number | null;
   value: string;
+  /** No stage reads this answer yet ("A vague requirement", a contradiction): it is a note for a hand check. */
+  note_only: boolean;
   answered_at: string | null;
 }
 /** The rules a re-plan will reconcile with: the last run's (`source` "run"), else project.yaml's ("project"). */

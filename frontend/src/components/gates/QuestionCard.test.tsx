@@ -34,6 +34,24 @@ describe("QuestionCard", () => {
     expect(screen.queryByRole("textbox", { name: /Your value/ })).toBeNull();
   });
 
+  it("says an answer no stage reads yet is a note for checking by hand, open or answered (sitting 1, S1)", () => {
+    const vague = demo().questions.items.find((q) => q.note_only);
+    if (!vague) throw new Error("the fixture has note-only questions");
+    const NOTE = /kept as a note for checking by hand/;
+    mount(vague);
+    expect(screen.getByText(/^Your answer is kept as a note/)).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup")).toHaveAccessibleDescription(NOTE);    // read with the options, not only above them
+    cleanup();
+    mount(vague, {}, false);                                                        // a Viewer answers nothing: no "Your"
+    expect(screen.getByText(/^An answer to this question is kept as a note/)).toBeInTheDocument();
+    cleanup();
+    mount({ ...vague, status: "answered", answer: "Enter a precise rule", choice: 1, value: "3 seconds", answered_at: "2026-11-04T10:00:00" });
+    expect(screen.getByText(NOTE)).toBeInTheDocument();
+    cleanup();
+    mount(first());
+    expect(screen.queryByText(NOTE)).toBeNull();
+  });
+
   it("says an option must be chosen first", () => {
     mount(first());
     fireEvent.click(screen.getByRole("button", { name: "Save answer" }));

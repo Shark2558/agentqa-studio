@@ -12,6 +12,7 @@ from pathlib import Path
 
 from jinja2 import Environment, select_autoescape
 
+from agentqa.agents import requirements as reqs_agent
 from agentqa.agents.triage import export_csv
 from agentqa import live
 from agentqa.config import Project
@@ -135,6 +136,8 @@ def report(project: Project, store: Store) -> dict:
         passed = sum(1 for x in res if x and x["outcome"] == "passed")
         if rcases:
             gap = ""
+        elif reqs_agent.is_hand_check(r.get("disposition_note")):     # the Requirements stage's note, as the page shows it
+            gap = r["disposition_note"]
         elif r["ambiguity"]:
             gap = "ambiguous: waiting for a person"
         elif any(x["status"] in ("SRS-only", "Missing in app") for x in rrules):
@@ -184,7 +187,6 @@ def report(project: Project, store: Store) -> dict:
         ready=readiness.compute(project, store))
     html_path = project.reports_dir / "report.html"
     html_path.write_text(out, encoding="utf-8")
-    from agentqa.agents import requirements as reqs_agent
     rtm_path, _rtm_xlsx = reqs_agent.write_rtm(project, store)
     defects_csv = export_csv(project, store, include_drafts=True)
     live.emit("reporter", "write", f"Report ready: {sum(1 for r in rtm if r['cases'])}/{len(reqs)} requirements tested, "

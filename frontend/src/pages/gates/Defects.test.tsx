@@ -34,6 +34,42 @@ describe("Defects page", () => {
     await waitFor(() => expect(sentBody(fetch, "POST", "/defects/decisions")).toEqual({ ids: ["DEF-001", "DEF-002"], decision: "confirmed", why: "" }));
   });
 
+  it("selects every defect shown with one box, and decides them together (sitting 1, S2)", async () => {
+    const fetch = mount({ [DECIDE]: { changed: 19 } }).fetch;
+    const all = await screen.findByRole("checkbox", { name: "Select the 19 defects shown" });
+    fireEvent.click(all);
+    for (const box of screen.getAllByRole("checkbox", { name: /^Select DEF-/ })) expect(box).toBeChecked();
+    expect(all).toBeChecked();
+    expect(screen.getByText("19 defects selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(sentBody(fetch, "POST", "/defects/decisions")).toEqual(expect.objectContaining({
+      ids: expect.arrayContaining(["DEF-001", "DEF-019"]), decision: "confirmed",
+    })));
+    expect((sentBody(fetch, "POST", "/defects/decisions") as { ids: string[] }).ids).toHaveLength(19);
+  });
+
+  it("unticking the box clears the selection", async () => {
+    mount();
+    const all = await screen.findByRole("checkbox", { name: "Select the 19 defects shown" });
+    fireEvent.click(all);
+    fireEvent.click(all);
+    for (const box of screen.getAllByRole("checkbox", { name: /^Select DEF-/ })) expect(box).not.toBeChecked();
+    expect(screen.queryByText(/defects? selected/)).toBeNull();
+  });
+
+  it("leaves out a defect already sent to a tracker, which cannot be decided again", async () => {
+    const d = demo().defects;
+    const items = d.items.map((x, i) => (i === 1 ? { ...x, status: "exported", external_key: "QA-12" } : x));
+    const fetch = mount({ "GET /projects/demo/defects": { ...d, items }, [DECIDE]: { changed: 18 } }).fetch;
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select the 18 defects shown" }));
+    expect(screen.getByText("18 defects selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+    await waitFor(() => expect(sentBody(fetch, "POST", "/defects/decisions")).toBeDefined());
+    const sent = (sentBody(fetch, "POST", "/defects/decisions") as { ids: string[] }).ids;
+    expect(sent).toHaveLength(18);
+    expect(sent).not.toContain(items[1].id);
+  });
+
   it("announces the decision and keeps the bar after the defects in reading order", async () => {
     mount({ [DECIDE]: { changed: 2 } });
     fireEvent.click(await screen.findByRole("checkbox", { name: "Select DEF-001" }));

@@ -1,8 +1,10 @@
 import { memo } from "react";
 import type { Selection } from "../../lib/gates";
 import type { CaseStatus, TestCase, TypeRow } from "../../lib/gatesApi";
+import { SelectAll } from "./SelectAll";
 
 export type CaseFilter = { type?: string; status?: CaseStatus };
+const CASE_NOUN = ["case", "cases"] as const;
 
 const STATUS: readonly { id: CaseStatus | undefined; label: string }[] = [
   { id: undefined, label: "Any status" }, { id: "proposed", label: "To review" }, { id: "approved", label: "Approved" },
@@ -73,17 +75,10 @@ const CaseRow = memo(function CaseRow({ c, isSelected, mayWrite, onToggle }: Row
 /** The cases, filtered by type and status, with a selection box per row for a person who may decide. "Select every
  *  case shown" sits above the table, where it shows at every width (the header row is hidden under 1 024 px). */
 export function CaseTable({ types, cases, filter, onFilter, selected, onToggle, onToggleAll, mayWrite }: Props) {
-  const ids = cases.map((c) => c.id);
-  const allOn = ids.length > 0 && ids.every((id) => selected.has(id));
   return (
     <>
       <Filters types={types} filter={filter} onFilter={onFilter} />
-      {mayWrite && ids.length > 0 && (
-        <label className="check select-all">
-          <input type="checkbox" checked={allOn} onChange={(e) => onToggleAll(ids, e.target.checked)} />
-          Select every case shown
-        </label>
-      )}
+      {mayWrite && <SelectAll ids={cases.map((c) => c.id)} selected={selected} noun={CASE_NOUN} onToggleAll={onToggleAll} />}
       <table className="rows case-table">
         <caption className="sr-only">Test cases</caption>
         <thead>

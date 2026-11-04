@@ -84,6 +84,14 @@ describe("Project page: what needs you", () => {
     expect(within(card).getByRole("link", { name: "19 defects to confirm or reject" })).toHaveAttribute("href", "/projects/demo/defects");
   });
 
+  it("speaks to a Viewer about what is waiting, not what needs them (sitting 1, S5)", async () => {
+    mount({}, "viewer");
+    const card = await screen.findByRole("region", { name: "What is waiting" });
+    expect(await within(card).findByRole("link", { name: "15 open questions" })).toHaveAttribute("href", "/projects/demo/questions");
+    expect(within(card).getByRole("link", { name: "19 defects waiting for a decision" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "What needs you" })).toBeNull();
+  });
+
   it("says so when nothing waits", async () => {
     mount({}, "owner", { ...GATES, questions_open: 0, defects_draft: 0 });
     expect(await screen.findByText("Nothing needs you right now.")).toBeInTheDocument();

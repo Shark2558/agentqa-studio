@@ -188,15 +188,19 @@ def answer_question(store: Store, qid: int, choice: int, value: str = "", *, by:
     store.update("questions", "id", qid, {"status": "answered", "answer": label,
                                           "answer_value": json.dumps({"choice": choice, "value": value}),
                                           "answered_at": now()})
+    context = q.get("context") if isinstance(q.get("context"), dict) else {}
+    about = q.get("req_id") or q.get("rule_id") or context.get("path")       # a page question names its page
     store.insert("change_log", {"at": now(), "agent": "person", "object": "question", "object_id": str(qid),
-                                "change": f"answered '{label}'" + (f" ({value})" if value else "") + " for "
-                                          + str(q.get("req_id") or q.get("rule_id") or "the plan"),
+                                "change": f"answered '{label}'" + (f" ({value})" if value else "")
+                                          + (f" for {str(about)[:200]}" if about else ""),
                                 "justification": (q.get("question") or "")[:300], "by": by})
 
 
 def _choice(ans: dict) -> tuple[int, str]:
     try:
         v = json.loads(ans.get("answer_value") or "{}")
+        if not isinstance(v, dict):                     # a damaged row reads as no choice, never a crash
+            return -1, ""
         return int(v.get("choice", -1)), str(v.get("value") or "")
     except (ValueError, TypeError):
         return -1, ""

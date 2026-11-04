@@ -26,13 +26,13 @@
 .q-answer p { margin: var(--space-1) 0; overflow-wrap: anywhere; }
 
 /* The "why?" panel: in place, below the control that opened it. */
-.why { display: inline-flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); max-width: 100%; }
+.why-button { display: inline-flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); max-width: 100%; }
 .reason { width: min(100%, 420px); padding: var(--space-3); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); background: var(--color-surface-raised); }
 .reason-title { margin: 0 0 var(--space-2); font-weight: var(--weight-semibold); font-size: var(--text-sm); overflow-wrap: anywhere; }
 .reason label { font-size: var(--text-sm); }
 .reason textarea { display: block; width: 100%; resize: vertical; margin-top: var(--space-1); font: inherit; }
 .reason .row { margin-top: var(--space-2); }
-.card .why .btn, .card .reason .btn, .card .decision-bar .btn, .card .type-actions .btn { margin-top: 0; }
+.card .why-button .btn, .card .reason .btn, .card .decision-bar .btn, .card .type-actions .btn { margin-top: 0; }
 
 /* The decision bar stays in sight while the person scrolls the list it decides. */
 .decision-bar { position: sticky; bottom: var(--space-2); z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);

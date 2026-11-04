@@ -60,9 +60,15 @@ export function QuestionCard({ slug, question: q, mayWrite, onDone }: Props) {
       </div>
       <p className="q-text" id={`${id}-q`}>{q.question}</p>
       {q.proposed && <p className="small muted">AgentQA suggests: {q.proposed}</p>}
+      {q.note_only && (
+        <p className="small muted" id={`${id}-note`}>
+          {mayWrite ? "Your answer" : "An answer to this question"} is kept as a note for checking by hand: re-planning does
+          not change the automated tests for it yet.
+        </p>
+      )}
       {open && mayWrite && (
         <form noValidate onSubmit={(e) => { e.preventDefault(); save(); }}>
-          <div role="radiogroup" aria-labelledby={`${id}-q`} className="choices q-options">
+          <div role="radiogroup" aria-labelledby={`${id}-q`} aria-describedby={q.note_only ? `${id}-note` : undefined} className="choices q-options">
             {q.options.map((o, i) => (
               <label key={o.label} className={`choice${choice === i ? " selected" : ""}`}>
                 <input type="radio" name={`${id}-choice`} checked={choice === i} onChange={() => { setChoice(i); setMissing(null); }} />

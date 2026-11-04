@@ -654,9 +654,97 @@ The seven as they were put to him:
   - found every action in the change log with "ui-check@example.com (owner)" and each reason, by the API and on the page.
   - As a Viewer (a pass minted with the throwaway secret): no fields or decision buttons on the four pages, the downloads there, and a write answered 403 `read_only`.
 - **Demo regression:** not re-run. Phase B changes no engine code (a read-only `policy` field and an origin check on a file route); the rule applies to engine commits.
-- **Not run:** acceptance sitting 1. It needs the owner and is prepared (hand-over note).
+- **Acceptance sitting 1:** run with the owner on 4 Nov 2026 (below).
+
+### Sitting 1 (4 Nov 2026, with the owner; branch at `f1ad631`; No-AI, nothing spent)
+A throwaway server from `sitting1_review_server.py` (generated owner `ui-check@example.com`, `AGENTQA_HOME` and the
+projects folder in the session scratchpad, so the owner's own sign-in, vault and data were never read), the demo
+portals on 8800/8810, the built app. The owner, Akash, watched in the browser pane and made every decision and wrote
+every reason; the assistant clicked for him. All seven steps passed.
+1. **Run full pipeline, switch off:** the run stopped at "Test plan approval: waiting for you" after about 40 s
+   (5 of 12 stages); badges Questions 15, Test plan 215; the Live View linked each gate.
+2. **Gate 1:** NFR-01 answered "Enter a precise rule" with the value "Every page loads within 3 seconds on the test
+   environment."; "/apply" answered "Yes: block these roles"; FR-12 "Use the proposed interpretation"; the "/apply"
+   answer reopened with "I need to confirm this with the department first." (13 open · 2 answered). "Apply my answers
+   and re-plan" ran reconcile + design in 3 s with the remembered rule ("the requirements document wins"). The plan
+   did not change: see finding S1.
+3. **Gate 2:** TC-0022 rejected with "Already checked by hand in the last release."; the 9 ready imported cases
+   approved; the plan approved (205 approved, 1 rejected); the Excel download checked in the page (200,
+   `Demo-Certificate-Portal-test-cases.xlsx`, 30 kB, a zip); "Generate and run" ran generate → report (~6 min).
+4. **`check_demo` before Gate 3:** **19/19 seeded bugs, 0 unexpected**, on the gated run with the owner's answers, a
+   rejected case and the imported cases (settles "a gated run with imported cases approved still gives 19/0").
+5. **Gate 3:** DEF-017 (home image without alt text) rejected with "Known issue, accepted by the department for this
+   release."; the other 18 confirmed; the Zoho CSV checked in the page: byte-order mark, its header, **18 records**
+   (DEF-017 absent), all "Open".
+6. **Change log:** 30 rows, every person's action as "ui-check@example.com (owner)", the three reasons beside their
+   rows, the two downloads, the agents' "first design".
+7. **Viewer look** (a pass minted with `check_app.SECRET` for this server only, after `POST /auth/logout`): Project,
+   Requirements, Questions, Test plan and Defects show no fields or decision buttons (filters, "Include drafts" and the
+   downloads only); a write answered 403 `read_only` "Your account can watch but not change anything".
+
+**The owner's findings** (from trying v9's test server before the sitting; recorded in his words, decided at the
+sitting: **a design slice of its own right after M1.4**, planned with a mock he approves before any code):
+| # | Finding |
+|---|---|
+| O1 | "The live view should reflect the activities of all agents working, not only the browser session." |
+| O2 | "The user interface is very much basic": multiple themes, animations; using it should be fun, not a boring job. |
+| O3 | "The agent cards to have numbers and should be of the same size." |
+| O4 | "I need the workflow and the chain of commands running to visualize." |
+
+O3 touches `AgentBoard.tsx` and `board.ts`, which the follow-up branch `claude/nervous-sutherland-913fae` changes: the
+slice starts after that branch merges. O2 widens his 3 Nov choice ("purposeful motion only", five accents): the
+slice's plan must re-ask it with a mock, flat (never glass or soft shadows).
+
+**Found at the sitting** (fixed test-first below unless marked):
+| # | Severity | Finding | Decision / fix |
+|---|---|---|---|
+| S1 | MEDIUM | Answers to "A vague requirement" questions (`ambiguous:<req>`) are stored but no stage reads them (v0.8 engine): "Apply my answers" leaves the plan as it was, and the Requirements page still says NFR-01 is "Not testable: vague wording" after the owner gave a 3-second rule | **The owner, 4 Nov 2026: honest words now, real later.** Now: the Questions page says such an answer is a note for checking by hand; the Requirements page and the RTM show the answer instead of "vague wording" / "waiting for a person". Later, in its own plan: a typed rule becomes a tested rule and "use the suggestion" a hand-check case |
+| S2 | MEDIUM | The Defects page has no "Select every defect shown" (the Test plan has one): confirming 18 defects took 18 ticks | the same labelled box as the Test plan |
+| S3 | LOW | Change log: on an answer row the "Why" column holds the question's text, not a person's reason; a question without a requirement reads "answered … for the plan" | the question shown as the question; "for the plan" only where it is true |
+| S4 | LOW | Decision bars: the reason panel opens inside the sticky bar and reflows it; blue vertical rules beside "Reject" and "Back to review" read as stray lines | see the fix record |
+| S5 | LOW | A Viewer's "What needs you" says "13 questions to answer" though a Viewer cannot answer | worded for who is looking |
+
+**After the fixes (5 Nov 2026):**
+- **Tests first.** The first-round tests were red before their code:
+  - backend `test_answer_notes.py`: 5 red;
+  - frontend: 6 red in 5 files. The WhyButton class test passed at first because Vitest reads `?raw` CSS as empty; it was rewritten to name the class, then went red.
+- **The review round's tests were written before its code.** The revised backend tests: 9 red, then green; the precedence and reopen tests already passed and now pin that behaviour. The frontend review tests were not run separately while red.
+- **Backend:** **689 passed** in the full suite; pyflakes clean.
+  - In an earlier full run beside the frontend suite, `test_api_live_ws.py::test_resuming_from_a_cursor_sends_only_the_end` failed once, and once more while a reviewer ran tests beside it. Alone it passed 3 runs of 24/24. It joins the two load-sensitive Live View stream tests Phase A and B recorded. No Live View code changed.
+- **Frontend:** **383 Vitest in 46 files**; `tsc -b` and oxlint clean; `make web-build`.
+- **Browser checks:** `make ui-check` green (six widths, light and dark); `make gates-check` green (owner, then Viewer).
+- **In the sitting's server** (frontend rebuilt): a Viewer's Project page read "What is waiting · 13 open questions".
+- **Demo regression, unattended, on a fresh copy** (engine files changed): **19/19, 0 unexpected** (214 tests: 184 passed, 30 failed; the failures became the 19 seeded defects and nothing else).
 
 ## Review (fresh context)
+
+### Sitting 1 fixes (5 Nov 2026)
+`python-reviewer`, `react-reviewer` (with a WCAG 2.2 pass) and `code-reviewer` read the fixes for S1–S5 in fresh contexts.
+None found anything CRITICAL. Every HIGH and MEDIUM was fixed; its test was written before the code.
+| # | Found by | Severity | Finding | Fixed |
+|---|---|---|---|---|
+| 1 | code | HIGH | The first fix gave an answered vague requirement the disposition "manual", which the Requirements page shows as "tested by hand": no one had tested it | it stays **"not_testable"** (AgentQA cannot test it yet) with the answer in its note, `answered "…": check it by hand (AgentQA does not test this answer yet)`; the coverage buckets are as before the answer |
+| 2 | react | HIGH | "Select every defect shown" also took defects sent to a tracker, which have no box: the server refuses the whole batch (409 `exported`) | `isDecidableDefect`, shared by the card and the box; a test with an exported defect |
+| 3 | python | HIGH | An answered contradiction reached only the first requirement it names; the others kept "an open question must be answered first" with nothing left to answer | `requirements.answered_disposition`: the answer reaches every requirement in the contradiction |
+| 4 | python, code | MEDIUM | The new branch skipped unanswered contradictions and `Ambiguous` rules | any unanswered contradiction or unresolved rule (`Ambiguous`, `Divergent`, `Proposed`) keeps the requirement open |
+| 5 | python, code | MEDIUM | The report re-derived the note with weaker rules than the Requirements stage (a person's "out of scope" still read "check it by hand") | the report shows the stored note (`is_hand_check`) |
+| 6 | python | MEDIUM | "Not testable: leave for manual review" turned into "Manual test only", and coverage counted it as a gap | solved by 1 |
+| 7 | python | MEDIUM | `reconciler._choice` raised on valid JSON that is not an object (`[1]`, `null`), and now runs inside the Requirements stage and the report | reads as no choice |
+| 8 | python | MEDIUM | A stale answer (the requirement no longer vague) still counted; two answers for one requirement overwrote each other | a vague answer counts only while the requirement is vague; answers are joined with "; " |
+| 9 | react | MEDIUM | With `keepPreviousData`, a tab change or a refresh under a selection could decide rows no longer shown | `inView`: the bar's count and the ids sent are the selected rows shown now (Defects and Test plan) |
+| 10 | react | MEDIUM | "Select every … shown" reads as "all of them" on a list that shows the first 50 or 30 | "Select the 19 defects shown", "Select the 30 cases shown" |
+| 11 | react | MEDIUM | With some selected the box read as plain "not checked" (4.1.2) | part-ticked (`indeterminate`); a click selects all |
+| 12 | react | MEDIUM | The note said "Your answer" to a Viewer and was not read with the options | "An answer to this question" for a Viewer; `aria-describedby` on the radio group |
+| 13 | react, code | MEDIUM / LOW | The change log's "The question:" depended on an English prefix tested in the page | `whyIsQuestion` in `lib/gates.ts` with unit cases; the engine's "answered '…'" wording is pinned by `test_gates_engine.py` |
+| 14 | all three | LOW | curly quotes in the RTM CSV and no ellipsis; the page path in the change text uncapped; `needsYou`'s boolean defaulted; visual and heals items not worded for a Viewer; an unclosed file and casts in tests; a duplicated Viewer check; the `requirements` import name in `gates/questions.py` | fixed |
+
+**Not changed, and why:**
+- **`requirements.check()` is about 60 lines, and `requirements.py` is 483 lines.** Both were over the targets before this change; the ceiling is 800. The new rule went into `answered_disposition` rather than growing `check()`.
+- **`reconciler._choice` stays private** and `requirements` imports it in one place; making it public would touch the engine's other callers.
+- **S4's reflow.** The reason panel opens in place inside the sticky bar. That is Phase B's design (Record → Phase B item 8: a non-modal panel in place, the bar at most 60 vh). With the stray rules gone, the bar reads as one group. Sitting 2 can reopen this.
+- **`GateCounts` while the signed-in role loads.** `RequireSignIn` holds every page until it has loaded, so the heading never flips in the app.
+- **A test that parses `wizard.css`.** Vitest reads `?raw` CSS as empty, and the app's TypeScript has no Node types, so the WhyButton test names the class instead.
+- **The Test plan's "what the plan does not cover" panel and the acceptance verdict list neither `not_testable` nor `manual` requirements.** This was so before, and the fix does not widen it.
 
 ### Phase B (4 Nov 2026)
 `typescript-reviewer`, `react-reviewer` (with an accessibility pass, WCAG 2.2 AA) and `security-reviewer` (untrusted text) read the change in fresh contexts. Security: approve, no CRITICAL, HIGH or MEDIUM. Every HIGH and MEDIUM was fixed test-first.
@@ -792,3 +880,28 @@ Three reviewers read the change in fresh contexts: `code-reviewer`, `python-revi
 9. **Defects list** shows the first 200 (the API's cap) and says so when there are more; the demo has 19.
 10. **`check_app.SECRET`** is a module constant so `check_gates.py` can mint a Viewer pass for the throwaway server; nothing writes it anywhere.
 11. **Test speed:** jsdom's accessible-name queries over 200 rows took more than 5 s under load, so the Test plan tests render 30 of the 206 cases (the "Show more" button proves the rest are there) and that file allows 20 s per test.
+
+### Sitting 1 fixes (5 Nov 2026, branch `claude/pensive-zhukovsky-481d45`, on `f1ad631`)
+
+**What changed, finding by finding** (the findings are under Verification → Sitting 1; the review is under Review → Sitting 1 fixes).
+- **S1, the owner's decision "honest words now, real later".**
+  - Engine (`agents/requirements.py`): `NOTE_ONLY` (question keys `ambiguous:` and `contradiction:`, which no stage reads), `answered_notes`, `answered_disposition`, `hand_check` and `is_hand_check`.
+  - `check()`: a requirement whose open points are all answered with such notes stays **`not_testable`**, and its note quotes the answers and says "check it by hand". A person's disposition and "covered by tests" still come first. Any unanswered contradiction, open question or unresolved rule keeps it at `clarify`.
+  - `reporter.py` shows that stored note as the requirement's gap in the HTML report. `reconciler._choice` reads a damaged answer as no choice.
+  - API: `GET /questions` items carry `note_only` (the key itself stays private).
+  - App: the question card says "Your answer (An answer to this question) is kept as a note for checking by hand: re-planning does not change the automated tests for it yet", tied to the options.
+  - **Later, in its own plan:** a typed rule becomes a tested rule, and "use the suggestion" becomes a hand-check case.
+- **S2.** `components/gates/SelectAll.tsx`, shared by the Test plan (in `CaseTable`) and the Defects page:
+  - it reads "Select the N <things> shown" and is part-ticked when only some are selected;
+  - defects sent to a tracker are never in it (`isDecidableDefect`);
+  - on both pages only the selected rows still shown are counted and sent (`inView`).
+- **S3.**
+  - Engine: `reconciler.answer_question` names the question's page ("for /apply", at most 200 characters) where it has no requirement or rule, instead of "for the plan".
+  - App: the Change log shows an answer's question as "The question: …" (`whyIsQuestion`).
+- **S4.** The "why?" button's wrapper class `.why` was also the wizard's explanation box (`wizard.css`: blue left rule, padding, background). It is now `.why-button`.
+- **S5.** `needsYou(counts, slug, mayDecide)`: a Viewer's Project page reads "What is waiting", with "15 open questions", "19 defects waiting for a decision" and so on.
+- **Test fixture.** `frontend/src/test-fixtures/gates-demo.json` gained `note_only` on its 15 questions by a one-off script (the 3 "A vague requirement" ones are true). `tools/make_gates_fixture.py` writes it by itself from now on, because it uses `questions.listing`.
+- **Tests:**
+  - backend: `test_answer_notes.py` (new);
+  - frontend: `SelectAll.test.tsx` and `WhyButton.test.tsx` (new);
+  - extended: `QuestionCard`, `Defects`, `ChangeLog`, `Project`, `lib/gates` and `TestPlan` (label).

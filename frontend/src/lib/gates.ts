@@ -1,9 +1,26 @@
 /** The gates' rules as the pages use them (pure): selections, which decisions need a reason, the downloads, who made a
  *  change, the re-plan policy, error words, the navigation badges and the "What needs you" list. */
 import { ApiError } from "./api";
-import { gateFiles, type GateCounts, type Policy } from "./gatesApi";
+import { gateFiles, type Change, type Defect, type GateCounts, type Policy } from "./gatesApi";
 
 export type Selection = ReadonlySet<string>;
+
+/** The selected ids that are still shown, in the order shown: a list that refreshed or changed tab under a selection
+ *  never decides rows the person can no longer see. */
+export function inView(sel: Selection, shown: readonly string[]): string[] {
+  return shown.filter((id) => sel.has(id));
+}
+
+/** A defect sent to a tracker cannot be decided again (the server answers 409 `exported`), so it is never selectable. */
+export function isDecidableDefect(d: Pick<Defect, "status" | "external_key">): boolean {
+  return d.status !== "exported" && !d.external_key;
+}
+
+/** An answer's change-log row carries the question it answers, not a person's reason (the engine writes "answered '…'"
+ *  with the question as its justification; `test_gates_engine.py` pins that wording). */
+export function whyIsQuestion(c: Pick<Change, "object" | "change" | "why">): boolean {
+  return Boolean(c.why) && c.object === "question" && c.change.startsWith("answered");
+}
 
 /** A new set with `id` added or removed; the input is never changed. */
 export function toggle(sel: Selection, id: string): Selection {
@@ -129,23 +146,31 @@ export interface NeedItem { id: string; text: string; to: string | null }
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /** The Project page's "What needs you": every item that waits for a person, with the page that answers it. Visual
- *  review and heals get their pages in Phase C; until then they are named without a link. */
-export function needsYou(c: GateCounts, slug: string): NeedItem[] {
+ *  review and heals get their pages in Phase C; until then they are named without a link. Someone who cannot decide
+ *  (a Viewer) reads the same items as what is waiting, not as tasks for them (sitting 1, S5). */
+export function needsYou(c: GateCounts, slug: string, mayDecide: boolean): NeedItem[] {
   const base = `/projects/${encodeURIComponent(slug)}`;
+  const review = mayDecide ? "to review" : "waiting for review";
   const items: (NeedItem | false)[] = [
-    c.assist_pending > 0 && { id: "assist", text: "An agent is waiting for you", to: `${base}/live` },
-    c.questions_open > 0 && { id: "questions", text: `${plural(c.questions_open, "question", "questions")} to answer`, to: `${base}/questions` },
+    c.assist_pending > 0 && { id: "assist", text: `An agent is waiting for ${mayDecide ? "you" : "a person"}`, to: `${base}/live` },
+    c.questions_open > 0 && {
+      id: "questions", to: `${base}/questions`,
+      text: mayDecide ? `${plural(c.questions_open, "question", "questions")} to answer` : plural(c.questions_open, "open question", "open questions"),
+    },
     c.plan.exists && !c.plan.approved && {
       id: "plan", to: `${base}/plan`,
-      text: `The test plan waits for your approval${c.plan.proposed ? `: ${plural(c.plan.proposed, "case", "cases")} to review` : ""}`,
+      text: `The test plan waits for ${mayDecide ? "your " : ""}approval${c.plan.proposed ? `: ${plural(c.plan.proposed, "case", "cases")} to review` : ""}`,
     },
     c.imported_ready > 0 && {
       id: "imported", to: `${base}/plan`,
-      text: `${plural(c.imported_ready, "imported manual case is", "imported manual cases are")} ready to approve`,
+      text: `${plural(c.imported_ready, "imported manual case is", "imported manual cases are")} ${mayDecide ? "ready to approve" : "waiting for approval"}`,
     },
-    c.defects_draft > 0 && { id: "defects", text: `${plural(c.defects_draft, "defect", "defects")} to confirm or reject`, to: `${base}/defects` },
-    c.visual_changed > 0 && { id: "visual", text: `${plural(c.visual_changed, "changed screen", "changed screens")} to review (in the old dashboard for now)`, to: null },
-    c.heals_proposed > 0 && { id: "heals", text: `${plural(c.heals_proposed, "proposed fix", "proposed fixes")} to review (in the old dashboard for now)`, to: null },
+    c.defects_draft > 0 && {
+      id: "defects", to: `${base}/defects`,
+      text: `${plural(c.defects_draft, "defect", "defects")} ${mayDecide ? "to confirm or reject" : "waiting for a decision"}`,
+    },
+    c.visual_changed > 0 && { id: "visual", text: `${plural(c.visual_changed, "changed screen", "changed screens")} ${review} (in the old dashboard for now)`, to: null },
+    c.heals_proposed > 0 && { id: "heals", text: `${plural(c.heals_proposed, "proposed fix", "proposed fixes")} ${review} (in the old dashboard for now)`, to: null },
   ];
   return items.filter((i): i is NeedItem => i !== false);
 }

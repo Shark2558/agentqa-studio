@@ -45,6 +45,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -73,6 +74,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -101,6 +103,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -129,6 +132,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -157,6 +161,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -181,6 +186,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -205,6 +211,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -233,6 +240,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": true,
 "answered_at": null
 },
 {
@@ -261,6 +269,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": true,
 "answered_at": null
 },
 {
@@ -285,6 +294,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -309,6 +319,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -333,6 +344,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -357,6 +369,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 },
 {
@@ -385,6 +398,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": true,
 "answered_at": null
 },
 {
@@ -413,6 +427,7 @@
 "answer": null,
 "choice": null,
 "value": "",
+"note_only": false,
 "answered_at": null
 }
 ],

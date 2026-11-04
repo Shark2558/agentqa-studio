@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMe } from "../../App";
 import { canWrite } from "../../lib/can";
-import { errorWords, isStale, needsWhy, toggle, type Selection } from "../../lib/gates";
+import { errorWords, inView, isDecidableDefect, isStale, needsWhy, setMany, toggle, type Selection } from "../../lib/gates";
 import { gatesApi, type DefectDecision, type DefectsView } from "../../lib/gatesApi";
 import { useGateCounts, useRefreshWhenRunEnds } from "../../lib/useGateCounts";
 import { Announce } from "../../components/gates/Announce";
@@ -11,9 +11,11 @@ import { DecisionBar, type BarAction } from "../../components/gates/DecisionBar"
 import { DefectCard } from "../../components/gates/DefectCard";
 import { ExportLinks } from "../../components/gates/ExportLinks";
 import { GateTop } from "../../components/gates/GateTop";
+import { SelectAll } from "../../components/gates/SelectAll";
 
 const NONE: Selection = new Set();
 const KEYS = ["defects", "changes"] as const;
+const DEFECT_NOUN = ["defect", "defects"] as const;
 const SEVERITIES = ["Critical", "High", "Medium", "Low"] as const;
 const TABS: readonly { id: string | undefined; label: string }[] = [
   { id: undefined, label: "All" }, { id: "draft", label: "To confirm" }, { id: "confirmed", label: "Confirmed" }, { id: "rejected", label: "Rejected" },
@@ -56,9 +58,12 @@ export function Defects() {
   const [news, setNews] = useState("");
   const view = useQuery({ queryKey: ["defects", slug, status ?? ""], queryFn: () => gatesApi.defects(slug, status), placeholderData: keepPreviousData });
   useRefreshWhenRunEnds(slug, useGateCounts(slug).data?.running, KEYS);
-  const decide = useDefectDecisions(slug, () => [...selected], (text) => { setSelected(NONE); setNews(text); });
-  const onToggle = useCallback((id: string) => setSelected((s) => toggle(s, id)), []);
   const v = view.data;
+  const decidable = v?.items.filter(isDecidableDefect).map((d) => d.id) ?? [];
+  const chosen = inView(selected, decidable);               // only what is shown and decidable now is ever sent
+  const decide = useDefectDecisions(slug, () => chosen, (text) => { setSelected(NONE); setNews(text); });
+  const onToggle = useCallback((id: string) => setSelected((s) => toggle(s, id)), []);
+  const onToggleAll = useCallback((ids: readonly string[], on: boolean) => setSelected((s) => setMany(s, ids, on)), []);
   const byStatus = v?.counts.by_status ?? {};
   const all = Object.values(byStatus).reduce((n, c) => n + c, 0);
   const tabCount = (id: string | undefined) => (id ? byStatus[id] ?? 0 : all);
@@ -82,12 +87,13 @@ export function Defects() {
       <h2 className="sr-only">Defects</h2>
       {v && v.items.length === 0 && <p className="muted">No defects here.</p>}
       {v && v.total > v.items.length && <p className="small muted">Showing the first {v.items.length} of {v.total}.</p>}
+      {mayWrite && <SelectAll ids={decidable} selected={selected} noun={DEFECT_NOUN} onToggleAll={onToggleAll} />}
       <div className="defect-list">
         {v?.items.map((d) => <DefectCard key={d.id} slug={slug} defect={d} mayWrite={mayWrite} isSelected={selected.has(d.id)} onToggle={onToggle} />)}
       </div>
       {decide.error && <p className="notice bad" role="alert">{errorWords(decide.error)}</p>}
       {mayWrite && (
-        <DecisionBar count={selected.size} noun={["defect", "defects"]} actions={ACTIONS} isBusy={decide.isPending} onClear={() => setSelected(NONE)}
+        <DecisionBar count={chosen.length} noun={DEFECT_NOUN} actions={ACTIONS} isBusy={decide.isPending} onClear={() => setSelected(NONE)}
                      onDecide={(decision, why) => decide.mutate({ decision, why })} />
       )}
     </>

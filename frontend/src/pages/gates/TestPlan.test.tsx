@@ -108,9 +108,9 @@ describe("Test plan page", { timeout: 20_000 }, () => {
 
   it("selects every case shown with one box above the table, at every width", async () => {
     mount(waiting(demo()));
-    fireEvent.click(await screen.findByRole("checkbox", { name: "Select every case shown" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: `Select the ${SHOWN} cases shown` }));
     expect(screen.getByText(`${SHOWN} cases selected`)).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Select every case shown" }).closest("table")).toBeNull();
+    expect(screen.getByRole("checkbox", { name: `Select the ${SHOWN} cases shown` }).closest("table")).toBeNull();
   });
 
   it("clears the selection when the filter changes, so no hidden case is decided", async () => {

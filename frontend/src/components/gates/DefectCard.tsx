@@ -1,5 +1,5 @@
 import { memo, useId } from "react";
-import { when } from "../../lib/gates";
+import { isDecidableDefect, when } from "../../lib/gates";
 import { gateFiles, type Defect, type Evidence } from "../../lib/gatesApi";
 
 const SEVERITY_TONE: Readonly<Record<string, string>> = { Critical: "bad", High: "bad", Medium: "info", Low: "neutral" };
@@ -50,7 +50,7 @@ type Props = { slug: string; defect: Defect; mayWrite: boolean; isSelected: bool
 export const DefectCard = memo(function DefectCard({ slug, defect: d, mayWrite, isSelected, onToggle }: Props) {
   const id = useId();
   const [tone, words] = look(STATUS, d.status, ["neutral", d.status]);
-  const decidable = mayWrite && d.status !== "exported" && !d.external_key;
+  const decidable = mayWrite && isDecidableDefect(d);
   return (
     <article className={`card defect${isSelected ? " selected" : ""}`} aria-labelledby={`${id}-t`}>
       <div className="defect-head">

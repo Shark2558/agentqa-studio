@@ -27,6 +27,60 @@ DISPOSITIONS = {"covered": "Covered by tests", "clarify": "Needs clarification",
 FIELD_KINDS = {"required", "max_length", "min_length", "exact_length", "length_range", "digits_only", "alpha_only",
                "format_email", "format_mobile", "starts_with", "numeric_range", "date_not_future", "options",
                "file_types", "file_max_size"}
+# Questions whose answer no stage reads yet ("A vague requirement", a contradiction): the answer is a note for a hand
+# check until a plan makes it a tested rule (the owner, 4 Nov 2026, M1.4 sitting 1 finding S1). Such a requirement
+# stays "not_testable" (AgentQA cannot test it yet; "manual" reads as "tested by hand", and no one has) with the
+# answers in its note, which the report shows as the requirement's gap.
+VAGUE, CONTRADICTION = "ambiguous:", "contradiction:"
+NOTE_ONLY = (VAGUE, CONTRADICTION)
+UNRESOLVED = ("Ambiguous", "Divergent", "Proposed")
+HAND_CHECK = "answered "
+NOTE_MAX = 200
+
+
+def note_only(key: str | None) -> bool:
+    return bool(key) and str(key).startswith(NOTE_ONLY)
+
+
+def vague_key(req_id: str) -> str:
+    return f"{VAGUE}{req_id}"
+
+
+def contradiction_key(c: dict) -> str:
+    return f"{CONTRADICTION}{c['kind']}:{c['field']}"
+
+
+def answered_notes(store: Store) -> dict[str, str]:
+    """The answered questions no stage reads yet, by key, as "<option>: <value>"."""
+    from agentqa.agents.reconciler import _choice
+    notes: dict[str, str] = {}
+    for q in store.all("SELECT key, answer, answer_value FROM questions WHERE status='answered' ORDER BY id"):
+        if note_only(q["key"]):
+            value = _choice(q)[1]
+            notes[q["key"]] = f"{q['answer']}: {value}" if value else str(q["answer"])
+    return notes
+
+
+def hand_check(answers: list[str]) -> str:
+    text = "; ".join(answers)
+    text = text if len(text) <= NOTE_MAX else text[:NOTE_MAX - 3] + "..."
+    return f'{HAND_CHECK}"{text}": check it by hand (AgentQA does not test this answer yet)'
+
+
+def is_hand_check(note: str | None) -> bool:
+    return bool(note) and str(note).startswith(HAND_CHECK)
+
+
+def answered_disposition(req: dict, std: dict, rules: list[dict], answered: dict[str, str]) -> tuple[str, str] | None:
+    """"not_testable" with the answers, once every open point of the requirement is answered with a note no stage
+    reads; None while one is still open (an unanswered contradiction, an unresolved rule) or nothing was answered. A
+    vague answer counts only while the requirement is still vague; a contradiction reaches every requirement in it."""
+    contradictions = std.get("contradictions") or []
+    if any(contradiction_key(c) not in answered for c in contradictions) or any(r["status"] in UNRESOLVED for r in rules):
+        return None
+    keys = ([vague_key(req["id"])] if req.get("ambiguity") else []) + [contradiction_key(c) for c in contradictions]
+    texts = [answered[k] for k in keys if k in answered]
+    return ("not_testable", hand_check(texts)) if texts else None
 
 
 def _rule_text(r: dict) -> str:
@@ -257,7 +311,7 @@ def check(project: Project, store: Store) -> dict:
             contradictions.append({"kind": kind, "field": field, "values": {k: sorted(v) for k, v in vals.items()}, "reqs": ids})
     from agentqa.agents.reconciler import _ask
     for c in contradictions:
-        _ask(store, f"contradiction:{c['kind']}:{c['field']}", "ambiguous",
+        _ask(store, contradiction_key(c), "ambiguous",
              f"The SRS gives different values for {c['field']} ({c['kind'].replace('_', ' ')}): " +
              "; ".join(f"{', '.join(ids)} say {v}" for v, ids in c["values"].items()) + ". Which one is right?",
              req_id=c["reqs"][0], priority="High")
@@ -270,6 +324,7 @@ def check(project: Project, store: Store) -> dict:
     for r in rules:
         by_req.setdefault(r["req_id"], []).append(r)
     open_q = {q["req_id"] for q in store.all("SELECT req_id FROM questions WHERE status='open'") if q["req_id"]}
+    answered = answered_notes(store)
     counts = {k: 0 for k in DISPOSITIONS}
     for req in reqs:
         std = req["std"] or {}
@@ -280,6 +335,8 @@ def check(project: Project, store: Store) -> dict:
             disp, note = overrides[req["id"]]["disposition"], overrides[req["id"]].get("note", "")
         elif case_reqs.get(req["id"]):
             disp, note = "covered", f"{len(case_reqs[req['id']])} test case(s)"
+        elif req["id"] not in open_q and (decided := answered_disposition(req, std, rs, answered)):
+            disp, note = decided
         elif std["contradictions"] or req["id"] in open_q or any(r["status"] in ("Ambiguous", "Divergent", "Proposed") for r in rs):
             disp, note = "clarify", "an open question or contradiction must be answered first"
         elif any(r["status"] == "Not automated" for r in rs) or (req["ambiguity"] and not rs):

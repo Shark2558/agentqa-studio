@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "./api";
 import type { GateCounts } from "./gatesApi";
 import {
-  WHY_MAX, byWords, cleanWhy, errorWords, exportLinks, gatePollMs, isStale, liveGateText, navBadges, needsWhy, needsYou, policyWords,
-  setMany, toggle, when,
+  WHY_MAX, byWords, cleanWhy, errorWords, exportLinks, gatePollMs, inView, isDecidableDefect, isStale, liveGateText, navBadges, needsWhy,
+  needsYou, policyWords, setMany, toggle, when, whyIsQuestion,
 } from "./gates";
+import type { Change, Defect } from "./gatesApi";
 import fixture from "../test-fixtures/gates-demo.json";
 
 const COUNTS = fixture.gates as GateCounts;
@@ -113,7 +114,7 @@ describe("navigation badges", () => {
 
 describe("what needs you", () => {
   it("lists every open item with a link to its page", () => {
-    const items = needsYou(counts({ plan: { ...COUNTS.plan, approved: false, proposed: 206 }, imported_ready: 9, assist_pending: 1 }), "demo");
+    const items = needsYou(counts({ plan: { ...COUNTS.plan, approved: false, proposed: 206 }, imported_ready: 9, assist_pending: 1 }), "demo", true);
     expect(items.map((i) => [i.text, i.to])).toEqual([
       ["An agent is waiting for you", "/projects/demo/live"],
       ["15 questions to answer", "/projects/demo/questions"],
@@ -124,11 +125,50 @@ describe("what needs you", () => {
   });
 
   it("names visual changes and heals without a link until their pages arrive, and is empty when nothing waits", () => {
-    const items = needsYou(counts({ questions_open: 0, defects_draft: 0, visual_changed: 2, heals_proposed: 1 }), "demo");
-    expect(items.map((i) => [i.text, i.to])).toEqual([
+    const later = counts({ questions_open: 0, defects_draft: 0, visual_changed: 2, heals_proposed: 1 });
+    expect(needsYou(later, "demo", true).map((i) => [i.text, i.to])).toEqual([
       ["2 changed screens to review (in the old dashboard for now)", null], ["1 proposed fix to review (in the old dashboard for now)", null],
     ]);
-    expect(needsYou(counts({ questions_open: 0, defects_draft: 0 }), "demo")).toEqual([]);
+    expect(needsYou(later, "demo", false).map((i) => i.text)).toEqual([
+      "2 changed screens waiting for review (in the old dashboard for now)", "1 proposed fix waiting for review (in the old dashboard for now)",
+    ]);
+    expect(needsYou(counts({ questions_open: 0, defects_draft: 0 }), "demo", true)).toEqual([]);
+  });
+
+  it("words the same items for someone who cannot decide (a Viewer, sitting 1 S5)", () => {
+    const items = needsYou(counts({ plan: { ...COUNTS.plan, approved: false, proposed: 206 }, imported_ready: 9, assist_pending: 1 }), "demo", false);
+    expect(items.map((i) => [i.text, i.to])).toEqual([
+      ["An agent is waiting for a person", "/projects/demo/live"],
+      ["15 open questions", "/projects/demo/questions"],
+      ["The test plan waits for approval: 206 cases to review", "/projects/demo/plan"],
+      ["9 imported manual cases are waiting for approval", "/projects/demo/plan"],
+      ["19 defects waiting for a decision", "/projects/demo/defects"],
+    ]);
+    const one = needsYou(counts({ questions_open: 1, defects_draft: 1, plan: { ...COUNTS.plan, approved: false, proposed: 0 } }), "demo", false);
+    expect(one.map((i) => i.text)).toEqual(["1 open question", "The test plan waits for approval", "1 defect waiting for a decision"]);
+  });
+});
+
+describe("selection helpers (sitting 1 review)", () => {
+  const DEFECT = fixture.defects.items[0] as Defect;
+
+  it("a defect sent to a tracker cannot be decided again", () => {
+    expect(isDecidableDefect(DEFECT)).toBe(true);
+    expect(isDecidableDefect({ ...DEFECT, status: "exported" })).toBe(false);
+    expect(isDecidableDefect({ ...DEFECT, external_key: "QA-12" })).toBe(false);
+  });
+
+  it("keeps only the selected ids that are still shown, in the order shown", () => {
+    expect(inView(new Set(["B", "Z", "A"]), ["A", "B", "C"])).toEqual(["A", "B"]);
+    expect(inView(new Set(), ["A"])).toEqual([]);
+  });
+
+  it("knows an answer's row carries the question, not a reason", () => {
+    const row = (over: Partial<Change>): Change => ({ id: 1, at: "", agent: "person", object: "question", object_id: "9", change: "", why: "q?", by: null, ...over });
+    expect(whyIsQuestion(row({ change: "answered 'Yes: block these roles' for /apply" }))).toBe(true);
+    expect(whyIsQuestion(row({ change: "reopened (was 'Yes')", why: "confirm first" }))).toBe(false);
+    expect(whyIsQuestion(row({ object: "case", change: "answered" }))).toBe(false);
+    expect(whyIsQuestion(row({ change: "answered 'x'", why: "" }))).toBe(false);
   });
 });
 

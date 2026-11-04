@@ -4,7 +4,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { DownloadSimple } from "@phosphor-icons/react";
 import { useMe } from "../../App";
 import { canWrite } from "../../lib/can";
-import { errorWords, isStale, needsWhy, setMany, toggle, type Selection } from "../../lib/gates";
+import { errorWords, inView, isStale, needsWhy, setMany, toggle, type Selection } from "../../lib/gates";
 import { gateFiles, gatesApi, type CaseDecision, type PlanView } from "../../lib/gatesApi";
 import { useGateCounts, useRefreshWhenRunEnds } from "../../lib/useGateCounts";
 import { Announce } from "../../components/gates/Announce";
@@ -94,6 +94,7 @@ export function TestPlan() {
   const onToggle = useCallback((id: string) => setSelected((s) => toggle(s, id)), []);
   const onToggleAll = useCallback((ids: readonly string[], on: boolean) => setSelected((s) => setMany(s, ids, on)), []);
   const rows = list.data?.pages.flatMap((p) => p.items) ?? [];
+  const chosen = inView(selected, rows.map((c) => c.id));    // only what is shown now is ever decided
   const v = view.data;
   const running = gates.data?.running ?? v?.running ?? false;       // the polled counts: a finished run frees the page
   const busy = running || decide.busy;
@@ -126,8 +127,8 @@ export function TestPlan() {
             )}
             {decide.error !== null && <p className="notice bad" role="alert">{errorWords(decide.error)}</p>}
             {mayWrite && (
-              <DecisionBar count={selected.size} noun={["case", "cases"]} actions={CASE_ACTIONS} isBusy={busy} onClear={() => setSelected(NONE)}
-                           onDecide={(decision, why) => decide.byCase.mutate({ ids: [...selected], decision, why })} />
+              <DecisionBar count={chosen.length} noun={["case", "cases"]} actions={CASE_ACTIONS} isBusy={busy} onClear={() => setSelected(NONE)}
+                           onDecide={(decision, why) => decide.byCase.mutate({ ids: chosen, decision, why })} />
             )}
           </section>
         </>

@@ -23,6 +23,17 @@ describe("Change log page", () => {
     expect(screen.queryByRole("button", { name: "Show older" })).toBeNull();
   });
 
+  it("shows an answer's question as the question, not as a reason (sitting 1, S3)", async () => {
+    const answer = { ...PERSON, id: 10, object: "question", object_id: "9", change: "answered 'Enter a precise rule' (3 s) for NFR-01",
+                     why: "NFR-01 is not testable as written" };
+    renderPage(<ChangeLog />, "/projects/demo/changes", "/projects/:slug/changes", {
+      "GET /projects/demo/changes": { items: [answer, PERSON], next_before: null },
+    });
+    const asked = await screen.findByText("NFR-01 is not testable as written");
+    expect(asked.closest("td")).toHaveTextContent(/^The question: NFR-01 is not testable as written$/);
+    expect(screen.getByText("duplicate").closest("td")).toHaveTextContent(/^duplicate$/);
+  });
+
   it("pages back with Show older", async () => {
     let calls = 0;
     const older = { ...PERSON, id: 4, change: "answered question 2", why: "" };

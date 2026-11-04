@@ -72,7 +72,7 @@ export function WhyButton({ label, name, title, confirmLabel, isRequired = true,
     button.current?.focus();
   };
   return (
-    <span className="why">
+    <span className="why-button">
       <button ref={button} type="button" className={className} aria-label={name} aria-expanded={open && !isDisabled} disabled={isDisabled}
               onClick={() => setOpen((o) => !o)}>
         {label}
