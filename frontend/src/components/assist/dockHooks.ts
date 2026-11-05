@@ -48,13 +48,16 @@ function unsaid(slug: string, items: readonly Waiting[]): readonly Waiting[] {
 
 /** Every new question is said once (in the dock's live region, which sits outside the page a dialog closes), and
  *  notified; a list that is only asked again says nothing. Nothing is said before the role is known: what a Viewer
- *  hears differs from what the owner hears. The words are worked out while rendering, when the list changes (React's
- *  pattern for adjusting state when a value changes); the effect only records them as said and notifies. */
+ *  hears differs from what the owner hears. The words are worked out while rendering, when the project or the
+ *  questions change (React's pattern for adjusting state when a value changes); the effect only records them as said
+ *  and notifies. The change is told by the question ids, never by the list itself: a caller may hand a new empty list
+ *  on every render while nothing has loaded, and comparing lists would then set state forever. */
 export function useNews(slug: string, items: readonly Waiting[], mayDrive: boolean, isRoleKnown: boolean): string {
-  const [news, setNews] = useState<{ items: readonly Waiting[] | null; text: string }>({ items: null, text: "" });
-  if (isRoleKnown && news.items !== items) {
+  const key = [slug, ...items.map((i) => i.id)].join(" ");
+  const [news, setNews] = useState<{ key: string | null; text: string }>({ key: null, text: "" });
+  if (isRoleKnown && news.key !== key) {
     const fresh = unsaid(slug, items);
-    setNews({ items, text: fresh.length ? fresh.map((i) => said(i, mayDrive)).join(" ") : news.text });
+    setNews({ key, text: fresh.length ? fresh.map((i) => said(i, mayDrive)).join(" ") : news.text });
   }
   useEffect(() => {
     if (!isRoleKnown) return;

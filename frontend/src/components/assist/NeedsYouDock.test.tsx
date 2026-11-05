@@ -158,6 +158,15 @@ describe("what is said, and to whom", () => {
     expect(root.contains(region)).toBe(false);
   });
 
+  it("keeps working while its list cannot be read (signed in, nothing loaded yet): no endless re-render", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { client } = mount({ [ASSIST]: fail(503, "unavailable", "The help box could not be read") });
+    await waitFor(() => expect(client.getQueryData(["me"])).toBeDefined());
+    await waitFor(() => expect(client.getQueryState(["assist", "demo"])?.status).toBe("error"));
+    expect(screen.getByRole("status", NEWS)).toHaveTextContent("");
+    expect(errors.mock.calls.flat().join(" ")).not.toMatch(/Too many re-renders/);
+  });
+
   it("does not say a question again when the person comes back to the project", async () => {
     mount();
     await waitFor(() => expect(screen.getByRole("status", NEWS)).toHaveTextContent("needs you: Which button"));
