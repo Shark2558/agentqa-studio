@@ -4,8 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { List, SignOut } from "@phosphor-icons/react";
 import { api } from "../lib/api";
 import { useMe } from "../App";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { NavLinks } from "./NavLinks";
 import { NavDrawer } from "./NavDrawer";
+import { NeedsYouDock } from "./assist/NeedsYouDock";
 import { ThemeMenu } from "./ThemeMenu";
 
 type Props = {
@@ -103,6 +105,11 @@ export function Shell({ children }: Props) {
       <main className="main" inert={open}>
         {children}
       </main>
+      {slug && (
+        <div inert={open}>
+          <ErrorBoundary resetKey={slug} message="The help box could not be shown. Reloading the page usually helps."><NeedsYouDock slug={slug} /></ErrorBoundary>
+        </div>
+      )}
     </div>
   );
 }

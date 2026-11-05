@@ -1,6 +1,7 @@
 import { memo, useId } from "react";
 import { isDecidableDefect, when } from "../../lib/gates";
 import { gateFiles, type Defect, type Evidence } from "../../lib/gatesApi";
+import { Picture } from "./Picture";
 
 const SEVERITY_TONE: Readonly<Record<string, string>> = { Critical: "bad", High: "bad", Medium: "info", Low: "neutral" };
 const STATUS: Readonly<Record<string, [tone: string, words: string]>> = {
@@ -18,9 +19,7 @@ function EvidenceList({ slug, did, items }: { slug: string; did: string; items: 
         return (
           <li key={e.n}>
             {e.image ? (
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                <img src={href} alt={`Evidence ${label}`} width={160} height={100} loading="lazy" />
-              </a>
+              <Picture src={href} href={href} alt={`Evidence ${label}`} width={160} height={100} />
             ) : (
               <a href={href} download>Download evidence {label}</a>
             )}

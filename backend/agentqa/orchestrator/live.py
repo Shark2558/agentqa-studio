@@ -105,6 +105,23 @@ def is_running(p: Project, session: str) -> bool:
         store.close()
 
 
+def cli_run_going(p: Project) -> bool:
+    """Whether a command-line run of this project is going (a run that is not a job: Pause must still reach it)."""
+    root = p.state / "live"
+    try:
+        folders = [d for d in root.iterdir() if not JOB_SESSION.match(d.name)]
+    except OSError:                                           # no recordings yet
+        return False
+    return any(_cli_folder_running(d) for d in folders)
+
+
+def _cli_folder_running(d: Path) -> bool:
+    try:
+        return d.is_dir() and not d.is_symlink() and _cli_running(d)
+    except OSError:                                           # pruned while it was read: that one is not running
+        return False
+
+
 def _cli_running(d: Path) -> bool:
     marker = _marker(d)
     if marker is not None:

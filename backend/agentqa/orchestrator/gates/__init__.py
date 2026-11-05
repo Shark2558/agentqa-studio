@@ -34,6 +34,13 @@ def known_ids(store: Store, table: str, ids: list[str], what: str) -> list[str]:
     return ids
 
 
+def run_going(project, store: Store) -> bool:
+    """Whether a run of this project is going: a job the app started, or a command-line run (a run writes visual rows,
+    baselines and heals of its own, and Pause must reach it)."""
+    from agentqa.orchestrator import jobs, live
+    return jobs.running(store) is not None or live.cli_run_going(project)
+
+
 def where_clause(filters: dict[str, Any]) -> tuple[str, list[Any]]:
     """`WHERE a=? AND b=?` and its values for the filters that are set (the names are literals from the caller)."""
     used = {column: value for column, value in filters.items() if value}

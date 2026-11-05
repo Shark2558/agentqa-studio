@@ -50,6 +50,26 @@ describe("the enlarged screenshot", () => {
     expect(open).toHaveFocus();
   });
 
+  it("closes on a click on the backdrop, not on the picture (M1.3 B22)", () => {
+    render(focusAt(SHOT_AT + 1, demoLive[SHOT_AT].agent));
+    fireEvent.click(screen.getByRole("button", { name: /^Enlarge the screen: / }));
+    fireEvent.click(screen.getByRole("dialog").querySelector("img") as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.mouseDown(screen.getByRole("dialog"));
+    fireEvent.click(screen.getByRole("dialog"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("stays open when a press on the picture is released on the backdrop (a drag is not a click on it)", () => {
+    render(focusAt(SHOT_AT + 1, demoLive[SHOT_AT].agent));
+    fireEvent.click(screen.getByRole("button", { name: /^Enlarge the screen: / }));
+    const picture = screen.getByRole("dialog").querySelector("img") as HTMLElement;
+    fireEvent.mouseDown(picture);
+    fireEvent.mouseUp(screen.getByRole("dialog"));
+    fireEvent.click(screen.getByRole("dialog"));              // the browser clicks the common ancestor after a drag
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("keeps focus on Close while new events arrive behind it", () => {
     const agent = demoLive[SHOT_AT].agent;
     const { rerender } = render(focusAt(SHOT_AT + 1, agent));

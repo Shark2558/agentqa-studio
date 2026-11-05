@@ -4,9 +4,11 @@ owner, so the owner's own sign-in is never read (M1.2-UI; `make ui-check`, needs
     python frontend/design-system/check_app.py [--shots]
 
 Starts `python -m agentqa ui` on a free port with generated AGENTQA_OWNER_* / AGENTQA_SECRET_KEY environment
-variables (a real variable beats backend/.env), signs in, creates the demo project through the API, then visits
-Sign in, Projects, the project page, Requirements, the four gate pages (Questions, Test plan, Defects, Change log; the
-demo project holds the gates fixture, M1.4), the wizard, Live View (no run yet), the Live picker and Live View on
+variables (a real variable beats backend/.env), an AGENTQA_HOME and AGENTQA_VAULT_KEY of its own in the temporary
+folder and no *_API_KEY variable (so the owner's real key store is never read), signs in, creates the demo project through the API, then visits
+Sign in, Projects, the project page, Requirements, the six gate pages (Questions, Test plan, Defects, Change log, Visual
+review, Heals; the demo project holds the gates fixture, M1.4, plus two changed screens, three fixes and a question
+waiting in the help box, whose dock and dialog are measured on the project page), the wizard, Live View (no run yet), the Live picker and Live View on
 the recorded fixture run (a second project holding it as a finished session, M1.3) at
 320 / 375 / 768 / 1024 / 1200 / 1440 px in light (and 375 / 1440 in dark) and asserts:
   (a) no horizontal overflow and no overlap in the top bar;   (b) every field and button sits inside its card / form / section;
@@ -20,6 +22,7 @@ With --shots, writes docs/design/m1-2ui-app-<page>-<theme>-<width>.png for 375 a
 """
 from __future__ import annotations
 
+import base64
 import os
 import secrets
 import shutil
@@ -48,11 +51,12 @@ PASSWORD = secrets.token_urlsafe(16)
 SECRET = secrets.token_urlsafe(48)          # the throwaway server's session key: check_gates.py mints a Viewer pass with it
 CSRF = {"X-Requested-With": "AgentQA"}
 STARTUP_S = 60
+AI_FIRST_CALL_MS = 180_000    # importing the AI gateway takes about 25 s on a busy machine, longer than a request's usual 30 s
 PAUSE_S = 0.4                 # stays well under the API's 240 requests per minute
 SETTLE_MS = 400               # longer than any transition in tokens.css
 TOLERANCE = 0.5
 FIELDS = "input:not([type=radio],[type=checkbox]), select, textarea, .btn"
-CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, form, section"
+CONTAINERS = ".card, .panel, .topbar, .topnav, .side, .drawer, form, section, .assist-panel, .needs-dock"
 TARGETS = ".nav a, .icon-btn, .appear-btn, .modes label > span, .swatches > label > span, .steps .step-link, .timeline-steps .step, .tabs [role=tab]"
 DRAWER_TARGETS = ".drawer a, .drawer button"
 MIN_TARGET = 44
@@ -104,12 +108,27 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
-def start_server(projects: Path) -> tuple[subprocess.Popen, str]:
+OWN_VARIABLES = {"AGENTQA_HOME", "AGENTQA_VAULT_KEY", "AGENTQA_OWNER_EMAIL", "AGENTQA_OWNER_PASSWORD_HASH", "AGENTQA_SECRET_KEY"}
+
+
+def server_env(home: Path, source: dict[str, str] | None = None) -> dict[str, str]:
+    """The throwaway server's environment: the machine's, without any *_API_KEY and without the owner's own AgentQA
+    variables, plus a home of its own and a vault key made for this server. So the AI page reads an empty key store in
+    the temporary folder, never the owner's real one in %APPDATA%\\AgentQA, and `--shots` cannot write a masked real key
+    into a tracked docs/design picture."""
     sys.path.insert(0, str(BACKEND))
     from agentqa.api.auth import hash_password
+    kept = {k: v for k, v in (os.environ if source is None else source).items()
+            if not k.upper().endswith("_API_KEY") and k.upper() not in OWN_VARIABLES}
+    return {**kept, "AGENTQA_OWNER_EMAIL": EMAIL, "AGENTQA_OWNER_PASSWORD_HASH": hash_password(PASSWORD), "AGENTQA_SECRET_KEY": SECRET,
+            "AGENTQA_HOME": str(home), "AGENTQA_VAULT_KEY": base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()}
+
+
+def start_server(projects: Path) -> tuple[subprocess.Popen, str]:
     port = free_port()
-    env = {**os.environ, "AGENTQA_OWNER_EMAIL": EMAIL, "AGENTQA_OWNER_PASSWORD_HASH": hash_password(PASSWORD),
-           "AGENTQA_SECRET_KEY": SECRET}
+    home = projects.parent / "agentqa-home"
+    home.mkdir(parents=True, exist_ok=True)
+    env = server_env(home)
     proc = subprocess.Popen([sys.executable, "-m", "agentqa", "ui", "--port", str(port), "--projects-dir", str(projects)],
                             cwd=str(BACKEND), env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base = f"http://127.0.0.1:{port}"
@@ -131,6 +150,9 @@ def sign_in(context, base: str) -> str:
     page.get_by_label("Password").fill(PASSWORD)
     page.get_by_role("button", name="Sign in").click()
     page.get_by_role("heading", name="Projects", exact=True).wait_for()
+    keys = context.request.get(f"{base}/api/v1/ai/keys", timeout=AI_FIRST_CALL_MS).json()["data"]    # the first call loads the AI gateway
+    if keys:                                      # never run (or write a picture) with the owner's real keys in reach
+        raise SystemExit(f"the throwaway server can see {len(keys)} AI key(s): it must start with an empty key store")
     r = context.request.post(f"{base}/api/v1/projects/demo", headers=CSRF)
     slug = r.json()["data"]["slug"]
     page.close()
@@ -163,10 +185,77 @@ def seed_gates(projects: Path, slug: str) -> None:
         load(project, store)
 
 
+REVIEW_RUN = "run-20261105-100000"
+
+
+def _jpeg(path: Path, size: tuple[int, int] = (1280, 800)) -> None:
+    """A screen-sized picture standing in for an agent's screenshot (a JPEG, as the help box's shooter writes)."""
+    from PIL import Image, ImageDraw
+    image = Image.new("RGB", size, (245, 247, 250))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, size[0], 72), fill=(30, 64, 175))
+    draw.rectangle((540, 330, 740, 390), outline=(30, 64, 175), width=3)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path, "JPEG", quality=70)
+
+
+def seed_review(projects: Path, slug: str, with_assist: bool = False) -> dict:
+    """Phase C on top of the gates fixture: two changed screens (their pictures copied from the fixture's baselines), a
+    locator fix, a workflow fix and a fix to make by hand; with `with_assist`, a question waiting in the help box with
+    its screenshot. Returns the keys and ids made."""
+    from contextlib import closing
+    from agentqa.config import Project
+    from agentqa.store import Store
+    project = Project(projects / slug)
+    made: dict = {"visual": [], "heals": []}
+    with closing(Store(project.db_path)) as store:
+        for v in store.all("SELECT key, baseline FROM visual WHERE baseline IS NOT NULL ORDER BY key"):
+            base = Path(v["baseline"])
+            if not base.is_file() or len(made["visual"]) == 2:
+                continue
+            run = project.root / "runs" / REVIEW_RUN / "visual"
+            run.mkdir(parents=True, exist_ok=True)
+            current, diff = run / f"{v['key']}-current.png", run / f"{v['key']}-diff.png"
+            shutil.copy(base, current)
+            shutil.copy(base, diff)
+            store.update("visual", "key", v["key"], {"status": "changed", "diff_ratio": 0.08, "current": str(current), "diff": str(diff),
+                                                     "run_id": REVIEW_RUN})
+            made["visual"].append(v["key"])
+        heal = {"run_id": REVIEW_RUN, "status": "proposed", "created_at": "2026-11-05T10:00:00"}
+        made["heals"].append(store.insert("heals", {**heal, "case_id": "TC-0001", "kind": "locator",
+                                                    "old": {"field": "mobile", "label": "Mobile", "path": "/apply"},
+                                                    "new": {"field": "mobile_no", "label": "Mobile number"},
+                                                    "reason": "On /apply, field 'mobile' is gone; 'mobile_no' matches 92%."}))
+        made["heals"].append(store.insert("heals", {**heal, "case_id": "TC-0002", "kind": "workflow",
+                                                    "old": {"workflow": "WF-01", "step": 2, "key": "click", "value": "text=Verify {app_id}"},
+                                                    "new": {"value": "text=Mark verified {app_id}", "offered": "Mark verified"},
+                                                    "reason": "Workflow WF-01, step 2: the control 'Verify' is gone."}))
+        store.insert("heals", {**heal, "case_id": "TC-0003", "kind": "manual", "old": {"message": "Timeout 30000ms exceeded"}, "new": None,
+                               "reason": "Not a missing-locator problem; review this test manually."})
+        if with_assist:
+            made["assist"] = add_assist(project, store, "navigate")
+    return made
+
+
+def add_assist(project, store, kind: str, **detail) -> int:
+    """A question waiting in the help box, with a screenshot on disk under the name the shooter would give it."""
+    from agentqa.store import now
+    aid = store.insert("assist", {"at": now(), "kind": kind, "role": "citizen", "agent": "explorer", "status": "pending",
+                                  "question": "Which button logs me in as a citizen?" if kind != "takeover" else "Log in as citizen for me",
+                                  "detail": {}, "answer": None, "answered_at": None})
+    _jpeg(project.state / "assist" / f"{aid}-1.jpg")
+    base = {"options": ["Citizen Login", "Department Login"] if kind == "navigate" else [], "hint": "", "secret": False,
+            "url": "http://127.0.0.1:8800/", "vw": 1280, "vh": 800, "shot": f"{aid}-1.jpg", "shot_v": 1,
+            "clickables": [{"text": "Citizen Login", "x": 640, "y": 360}, {"text": "Help", "x": 1200, "y": 36}]}
+    store.update("assist", "id", aid, {"detail": {**base, **detail}})
+    return aid
+
+
 def pages_for(slug: str, run_slug: str) -> list[tuple[str, str]]:
     return [("projects", "/app/"), ("project", f"/app/projects/{slug}"), ("requirements", f"/app/projects/{slug}/requirements"),
             ("questions", f"/app/projects/{slug}/questions"), ("plan", f"/app/projects/{slug}/plan"),
             ("defects", f"/app/projects/{slug}/defects"), ("changes", f"/app/projects/{slug}/changes"),
+            ("visual", f"/app/projects/{slug}/visual"), ("heals", f"/app/projects/{slug}/heals"),
             ("wizard", "/app/projects/new"), ("live", f"/app/projects/{slug}/live"), ("live-picker", "/app/live"),
             ("live-run", f"/app/projects/{run_slug}/live?session={LIVE_RUN}"), ("ai", f"/app/projects/{slug}/ai")]
 
@@ -201,6 +290,29 @@ def check_drawer(page, label: str) -> list[str]:
         problems.append(f"{label}: Escape did not close the drawer")
     if page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')") != "Menu":
         problems.append(f"{label}: focus did not return to the menu button")
+    return problems
+
+
+def check_help_box(page, label: str, width: int) -> list[str]:
+    """The waiting question's dock is on the page and in the viewport; its dialog opens on Open, fits the width with its
+    fields inside it, and Escape only minimises it (the question stays waiting)."""
+    dock = page.get_by_role("complementary", name="AgentQA needs you")
+    if not dock.is_visible():
+        return [f"{label} at {width}px: the help box's dock is not shown while a question waits"]
+    box = dock.bounding_box() or {"x": -1, "width": 0}
+    problems = [] if box["x"] >= -TOLERANCE and box["x"] + box["width"] <= width + TOLERANCE else [f"{label} at {width}px: the dock leaves the viewport"]
+    if page.title() != "(!) AgentQA needs you":
+        problems.append(f"{label} at {width}px: the tab's title is “{page.title()}”")
+    dock.get_by_role("button", name="Open").click()
+    page.wait_for_timeout(SETTLE_MS)
+    dialog = page.get_by_role("dialog")
+    if not dialog.is_visible():
+        return problems + [f"{label} at {width}px: Open did not open the question"]
+    problems += measure(page, f"{label} (help box)", width)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(SETTLE_MS)
+    if dialog.count() or not dock.is_visible():
+        problems.append(f"{label} at {width}px: Escape did not minimise the question back to the dock")
     return problems
 
 
@@ -246,6 +358,8 @@ def run_pages(browser, base: str, slugs: tuple[str, str], theme: str, widths: tu
                 problems.append(f"{label} at {width}px: no Live View middle column to measure")
             if name == "projects" and width <= PHONE_MAX:
                 problems += check_drawer(page, label)
+            if name == "project":
+                problems += check_help_box(page, label, width)
             if name == "projects" and width == 1440:
                 problems += check_desktop_extras(page, label)
             if shots and width in SHOT_WIDTHS:
@@ -274,6 +388,7 @@ def main(argv: list[str]) -> int:
                 with browser.new_context() as context:
                     slugs = (sign_in(context, base), seed_live_run(context, base, Path(tmp) / "projects"))
                 seed_gates(Path(tmp) / "projects", slugs[0])
+                seed_review(Path(tmp) / "projects", slugs[0], with_assist=True)
                 problems = run_pages(browser, base, slugs, "light", WIDTHS, shots) + run_pages(browser, base, slugs, "dark", DARK_WIDTHS, shots)
                 browser.close()
         finally:

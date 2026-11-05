@@ -9,7 +9,7 @@ uses it, and remembers it (a login it was shown is recorded and replayed next ti
 Kinds and their answers:
   otp, captcha, value   {"text": "482913"}
   navigate              {"option": 3} | {"x": 640, "y": 212} | {"text": "Citizen Login"} | {"takeover": true}
-  confirm               {"ok": true}
+  confirm               {"ok": true} | {"option": 0}
   takeover              {"done": true} when the person has finished driving the browser
   any                   {"skip": true} when the person cannot help
 
@@ -20,51 +20,30 @@ next time (login_flow turns the recording into login steps and saves typed crede
 page). The screenshot in the box is refreshed while the agent waits, so it always shows the screen as it is now.
 
 Pause: the Pause button writes a flag; every agent checks it at its next step and hands that browser over.
+
+Nothing typed stays readable (M1.4 decision 2, `assist_wipe`): a typed command keeps only its length once typed, and
+is only ever echoed as its length; a secret answer becomes "[given]" once read; a question's screenshot is deleted
+when it ends. Only the first answer counts, and a take-over that ends (or whose browser dies) is closed at once.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
+import sqlite3
 import sys
 import threading
 import time
 from pathlib import Path
 
 from agentqa import live
+from agentqa import assist_wipe as wipe
+from agentqa.assist_recorder import recorder_flush, recorder_start
+from agentqa.assist_screen import CLICKABLES_JS, Shooter, settle
+from agentqa.assist_wipe import GIVEN, forget_typed
 from agentqa.store import Store, now
 from agentqa.util import log, warn
 
-CLICKABLES_JS = r"""() => {
-  const vis = e => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e);
-    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && r.bottom > 0 && r.top < innerHeight; };
-  const out = [];
-  for (const e of document.querySelectorAll('a[href], button, [role=button], [role=tab], [role=menuitem], [role=link], input[type=submit], input[type=button], [onclick]')) {
-    if (!vis(e)) continue;
-    const t = (e.innerText || e.value || e.getAttribute('aria-label') || e.title || '').trim().replace(/\s+/g, ' ');
-    if (!t || t.length > 60) continue;
-    const r = e.getBoundingClientRect();
-    out.push({text: t, x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)});
-    if (out.length >= 40) break;
-  }
-  return out;
-}"""
-
-
-FIELDS_JS = r"""() => {
-  const vis = e => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e);
-    return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && r.bottom > 0 && r.top < innerHeight; };
-  const out = [];
-  for (const e of document.querySelectorAll('input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea')) {
-    if (!vis(e) || e.disabled) continue;
-    let l = (e.labels && e.labels.length ? e.labels[0].innerText : '') || e.getAttribute('aria-label') || e.placeholder || e.name || e.type;
-    const r = e.getBoundingClientRect();
-    out.push({label: (l || '').trim().replace(/\s+/g, ' ').slice(0, 40), type: e.type || e.tagName.toLowerCase(),
-              x: Math.round(r.x + Math.min(r.width / 2, 60)), y: Math.round(r.y + r.height / 2), filled: !!e.value});
-    if (out.length >= 20) break;
-  }
-  return out;
-}"""
+SECRET_AUTOCOMPLETE = ("one-time-code", "current-password", "new-password")
 
 
 def _settings(project) -> dict:
@@ -73,17 +52,13 @@ def _settings(project) -> dict:
             "terminal": a.get("terminal", True)}
 
 
-def ask(project, kind: str, question: str, *, role: str | None = None, agent: str = "explorer", page=None,
-        options: list[str] | None = None, hint: str = "", secret: bool = False, timeout: float | None = None,
-        db_path: Path | None = None, state_dir: Path | None = None) -> dict | None:
-    """Ask a person and wait. Returns the answer dict, or None when nobody answered in time or asking is off."""
-    cfg = _settings(project)
-    if not cfg["enabled"] or os.environ.get("AGENTQA_NO_ASSIST") == "1":
-        warn(f"[{agent}] needs a person ({question}) but asking is switched off (assist.enabled)")
-        return None
-    store = Store(db_path or project.db_path)
+def _open(project, db_path: Path | None, state_dir: Path | None) -> tuple[Store, Path]:
     folder = Path(state_dir or project.state) / "assist"
     folder.mkdir(parents=True, exist_ok=True)
+    return Store(db_path or project.db_path), folder
+
+
+def _detail(page, kind: str, options: list[str] | None, hint: str, secret: bool) -> dict:
     detail: dict = {"options": options or [], "hint": hint, "secret": secret}
     if page is not None:
         try:
@@ -94,37 +69,67 @@ def ask(project, kind: str, question: str, *, role: str | None = None, agent: st
                 detail["clickables"] = page.evaluate(CLICKABLES_JS)
         except Exception:  # noqa: BLE001
             pass
+    return detail
+
+
+def ask(project, kind: str, question: str, *, role: str | None = None, agent: str = "explorer", page=None,
+        options: list[str] | None = None, hint: str = "", secret: bool = False, timeout: float | None = None,
+        db_path: Path | None = None, state_dir: Path | None = None) -> dict | None:
+    """Ask a person and wait. Returns the answer dict, or None when nobody answered in time or asking is off."""
+    cfg = _settings(project)
+    if not cfg["enabled"] or os.environ.get("AGENTQA_NO_ASSIST") == "1":
+        warn(f"[{agent}] needs a person ({question}) but asking is switched off (assist.enabled)")
+        return None
+    store, folder = _open(project, db_path, state_dir)
+    detail = _detail(page, kind, options, hint, secret)
     aid = store.insert("assist", {"at": now(), "kind": kind, "role": role, "agent": agent, "question": question,
                                   "detail": detail, "status": "pending", "answer": None, "answered_at": None})
-    shooter = _Shooter(page, folder, aid, store, detail) if page is not None else None
+    shooter = Shooter(page, folder, aid, store, detail) if page is not None else None
     if shooter:
-        _settle(page)
+        settle(page)
         shooter.refresh(force=True)
     live.emit(agent, "assist", f"Waiting for you: {question}", assist_id=aid, ask_kind=kind, role=role, level="warn")
     log(f"\n  >>> AgentQA needs you: {question}\n      Answer in the dashboard (a box opens on every page)"
         + (", or type it here and press Enter." if _tty(cfg) else "."))
     if _tty(cfg):
         threading.Thread(target=_read_terminal, args=(store.path, aid, kind), daemon=True).start()
-    limit = time.time() + float(timeout or cfg["timeout_s"])
-    poll = Store(store.path)
+    timeout_s = float(timeout or cfg["timeout_s"])
+    try:
+        return _await_answer(Store(store.path), aid, agent, page, shooter, time.time() + timeout_s, timeout_s, secret)
+    finally:
+        if shooter:
+            shooter.close()
+
+
+def _await_answer(poll: Store, aid: int, agent: str, page, shooter, limit: float, timeout_s: float,
+                  secret: bool) -> dict | None:
     while time.time() < limit:
         row = poll.one("SELECT status, answer FROM assist WHERE id=?", [aid])
         if row and row["status"] != "pending":
-            ans = row["answer"] or {}
-            if ans.get("skip"):
-                live.emit(agent, "assist", "You chose to skip this step", assist_id=aid, level="warn")
-                return None
-            live.emit(agent, "assist", "Thanks, continuing", assist_id=aid, level="ok")
-            return ans
+            return _answered(poll, aid, agent, row, secret)
         if shooter:
             shooter.refresh()          # the screen may change while we wait (an OTP screen loading, a timer)
             page.wait_for_timeout(500)
         else:
             time.sleep(0.5)
-    poll.update("assist", "id", aid, {"status": "expired"})
-    live.emit(agent, "assist", f"Nobody answered within {int(timeout or cfg['timeout_s'])} s; moving on", assist_id=aid,
-              level="bad")
+    poll.exec("UPDATE assist SET status='expired' WHERE id=? AND status='pending'", [aid])
+    row = poll.one("SELECT status, answer FROM assist WHERE id=?", [aid])
+    if row and row["status"] == "answered":              # it came in the last moment: it still counts
+        return _answered(poll, aid, agent, row, secret)
+    live.emit(agent, "assist", f"Nobody answered within {int(timeout_s)} s; moving on", assist_id=aid, level="bad")
     return None
+
+
+def _answered(poll: Store, aid: int, agent: str, row: dict, secret: bool) -> dict | None:
+    ans = row["answer"] or {}
+    if ans.get("skip"):
+        live.emit(agent, "assist", "You chose to skip this step", assist_id=aid, level="warn")
+        return None
+    if secret and "text" in ans:
+        wipe.overwrite(poll, "assist", aid, {"answer": {**ans, "text": GIVEN}})
+        wipe.checkpoint(poll)
+    live.emit(agent, "assist", "Thanks, continuing", assist_id=aid, level="ok")
+    return ans
 
 
 def _tty(cfg: dict) -> bool:
@@ -149,30 +154,28 @@ def _read_terminal(db: Path, aid: int, kind: str) -> None:
 
 
 def answer(store: Store, aid: int, ans: dict, via: str = "dashboard") -> bool:
-    row = store.one("SELECT status FROM assist WHERE id=?", [aid])
-    if not row or row["status"] != "pending":
-        return False
-    store.update("assist", "id", aid, {"status": "answered", "answer": {**ans, "via": via}, "answered_at": now()})
-    return True
+    """Record a person's answer; False when the question no longer waits. Only the first answer counts, even when
+    two arrive at once (the check and the write are one step)."""
+    cur = wipe.atomic(store, "UPDATE assist SET status='answered', answer=?, answered_at=? WHERE id=? AND status='pending'",
+                      [json.dumps({**ans, "via": via}, ensure_ascii=False), now(), aid])
+    return cur.rowcount == 1
 
 
 def pending(store: Store) -> list[dict]:
-    rows = store.all("SELECT * FROM assist WHERE status='pending' ORDER BY id")
-    for r in rows:
-        if (r.get("detail") or {}).get("secret"):
-            r["question"] = r["question"]
-    return rows
+    return store.all("SELECT * FROM assist WHERE status='pending' ORDER BY id")
 
 
-def expire_stale(store: Store, older_than_s: float = 3600) -> None:
-    """Questions left behind by a run that crashed."""
+def expire_stale(store: Store, older_than_s: float = 3600, shots: Path | None = None) -> None:
+    """Questions left behind by a run that crashed, and anything typed that a run left readable (`assist_wipe.sweep`;
+    `shots` is the screenshot folder, whose pictures of ended questions are deleted)."""
     cutoff = time.time() - older_than_s
     for r in store.all("SELECT id, at FROM assist WHERE status='pending'"):
         try:
             if time.mktime(time.strptime(r["at"], "%Y-%m-%dT%H:%M:%S")) < cutoff:
-                store.update("assist", "id", r["id"], {"status": "expired"})
+                store.exec("UPDATE assist SET status='expired' WHERE id=? AND status='pending'", [r["id"]])
         except ValueError:
             continue
+    wipe.sweep(store, shots)
 
 
 def dumps(rows: list[dict]) -> str:
@@ -180,138 +183,30 @@ def dumps(rows: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------------------------
-# live screenshots
-
-def _settle(page) -> None:
-    """Let the page finish what it is doing before it is shown to a person."""
-    try:
-        page.wait_for_load_state("load", timeout=5000)
-        page.wait_for_load_state("networkidle", timeout=1500)
-    except Exception:  # noqa: BLE001
-        pass
-    try:
-        page.wait_for_timeout(300)
-    except Exception:  # noqa: BLE001
-        pass
-
-
-class _Shooter:
-    """Keeps the screenshot of a question current: a new file (and version) whenever the screen changes."""
-
-    def __init__(self, page, folder: Path, aid: int, store: Store, detail: dict, every_s: float = 1.5):
-        self.page, self.folder, self.aid, self.store, self.detail, self.every = page, folder, aid, store, detail, every_s
-        self.last_at, self.last_hash, self.v = 0.0, None, 0
-
-    def refresh(self, force: bool = False) -> bool:
-        if not force and time.time() - self.last_at < self.every:
-            return False
-        self.last_at = time.time()
-        try:
-            data = self.page.screenshot(type="jpeg", quality=70, timeout=5000)
-        except Exception:  # noqa: BLE001
-            return False
-        h = hashlib.sha1(data).hexdigest()
-        url = ""
-        try:
-            url = self.page.url
-        except Exception:  # noqa: BLE001
-            pass
-        if h == self.last_hash and url == self.detail.get("url") and not force:
-            return False
-        self.last_hash, self.v = h, self.v + 1
-        name = f"{self.aid}-{self.v}.jpg"
-        (self.folder / name).write_bytes(data)
-        old = self.detail.get("shot")
-        self.detail.update(shot=name, shot_v=self.v, url=url)
-        try:
-            vp = self.page.viewport_size or {"width": 1280, "height": 800}
-            self.detail["vw"], self.detail["vh"] = vp["width"], vp["height"]
-            if not self.detail.get("options"):
-                self.detail["clickables"] = self.page.evaluate(CLICKABLES_JS)
-            if self.detail.get("mode") == "takeover":
-                self.detail["fields"] = self.page.evaluate(FIELDS_JS)
-        except Exception:  # noqa: BLE001
-            pass
-        self.store.update("assist", "id", self.aid, {"detail": self.detail})
-        if old and old != name:
-            try:
-                (self.folder / old).unlink(missing_ok=True)
-            except OSError:
-                pass
-        return True
-
-
-# ---------------------------------------------------------------------------------------------
 # take over: the person drives the browser, AgentQA records what they do
 
-RECORDER_JS = r"""(() => {
-  if (window.__aqRecOn) return; window.__aqRecOn = true;
-  const send = ev => { try { if (window.__aqRec) window.__aqRec(ev); } catch (e) {} };
-  const clean = t => (t || '').trim().replace(/\s+/g, ' ');
-  const labelOf = e => {
-    let l = '';
-    if (e.labels && e.labels.length) l = e.labels[0].innerText;
-    if (!l && e.getAttribute && e.getAttribute('aria-label')) l = e.getAttribute('aria-label');
-    if (!l) { let p = e.previousElementSibling; while (p && !l) { if (/^(LABEL|SPAN|DIV|P|B|STRONG)$/.test(p.tagName)) l = p.innerText; p = p.previousElementSibling; } }
-    return clean(l).slice(0, 80);
-  };
-  const desc = e => {
-    if (!e || !e.tagName) return {};
-    const d = {tag: e.tagName.toLowerCase(), type: (e.getAttribute('type') || (e.tagName === 'SELECT' ? 'select' : e.tagName === 'TEXTAREA' ? 'textarea' : '')).toLowerCase(),
-               name: e.name || e.getAttribute('name') || '', elid: e.id || '', label: /^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) ? labelOf(e) : '',
-               placeholder: e.placeholder || '', aria: e.getAttribute('aria-label') || '', title: e.title || '',
-               text: /^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) ? clean(e.type === 'submit' || e.type === 'button' ? e.value : '') : clean(e.innerText).slice(0, 80),
-               href: e.getAttribute('href') || '', autocomplete: e.autocomplete || '', maxlength: e.maxLength > 0 ? e.maxLength : null,
-               role: e.getAttribute('role') || ''};
-    return d;
-  };
-  const target = e => (e && e.closest) ? (e.closest('a,button,[role=button],[role=tab],[role=menuitem],[role=link],input,select,textarea,summary,label,[onclick]') || e) : e;
-  const last = new WeakMap();
-  const flush = e => {
-    if (!e || !/^(INPUT|SELECT|TEXTAREA)$/.test(e.tagName) || ['submit', 'button', 'checkbox', 'radio', 'file', 'hidden'].includes(e.type)) return;
-    const v = e.tagName === 'SELECT' ? clean((e.options[e.selectedIndex] || {}).text || e.value) : e.value;
-    if (last.get(e) === v) return; last.set(e, v);
-    send({kind: e.tagName === 'SELECT' ? 'select' : 'input', el: desc(e), value: v, url: location.href, t: Date.now()});
-  };
-  document.addEventListener('click', ev => { const t = target(ev.target);
-    if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName) && !['submit', 'button', 'checkbox', 'radio'].includes(t.type)) return;
-    send({kind: 'click', el: Object.assign(desc(t), {x: ev.clientX, y: ev.clientY}), url: location.href, t: Date.now()}); }, true);
-  document.addEventListener('change', ev => flush(ev.target), true);
-  document.addEventListener('blur', ev => flush(ev.target), true);
-  document.addEventListener('keydown', ev => { if (ev.key === 'Enter') { flush(ev.target); send({kind: 'key', key: 'Enter', el: desc(ev.target), url: location.href, t: Date.now()}); } }, true);
-  document.addEventListener('submit', ev => { for (const e of ev.target.querySelectorAll('input,select,textarea')) flush(e); }, true);
-  window.addEventListener('pagehide', () => flush(document.activeElement), true);
-})();"""
-
-
-def recorder_start(page) -> list[dict]:
-    """Record what is done in this browser (clicks, typed values, Enter). Returns the live list of events."""
-    ctx = page.context
-    events = getattr(ctx, "_aq_rec_events", None)
-    if events is None:
-        events = []
-        ctx._aq_rec_events = events
-
-        def on_event(_source, ev):
-            ctx._aq_rec_events.append(ev)
-        ctx.expose_binding("__aqRec", on_event)
-        ctx.add_init_script(RECORDER_JS)
-    try:
-        page.evaluate(RECORDER_JS)
-    except Exception:  # noqa: BLE001
-        pass
-    return events
-
-
-def recorder_flush(page) -> None:
-    try:
-        page.evaluate("() => { const a = document.activeElement; if (a && a.blur) a.blur(); }")
-        page.wait_for_timeout(150)
-    except Exception:  # noqa: BLE001
-        pass
-
-
 KEYS = {"Enter", "Tab", "Backspace", "Escape", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Space"}
+
+FOCUS_JS = r"""() => { const a = document.activeElement;
+  if (!a || !(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return false;
+  return {box: true, password: String(a.type || '').toLowerCase() === 'password',
+          autocomplete: String(a.getAttribute('autocomplete') || '').toLowerCase()}; }"""
+
+
+def _type(page, cmd: dict) -> tuple[str, bool]:
+    """Type into the focused box. Returns what was done, never the text itself (a one-time code typed into a plain box
+    with "hide" not ticked must not be echoed either), and whether the box counts as secret."""
+    text = str(cmd.get("text") or "")
+    secret = bool(cmd.get("secret"))
+    focus = page.evaluate(FOCUS_JS)
+    if not isinstance(focus, dict) or not focus.get("box"):
+        return "Nothing to type into: click a box on the screenshot first", secret
+    secret = secret or bool(focus.get("password")) \
+        or any(a in str(focus.get("autocomplete") or "") for a in SECRET_AUTOCOMPLETE)
+    if cmd.get("replace"):
+        page.keyboard.press("Control+A")
+    page.keyboard.type(text, delay=15)
+    return f"Typed {len(text)} character(s)", secret
 
 
 def _run_cmd(page, cmd: dict, project=None) -> str:
@@ -319,56 +214,86 @@ def _run_cmd(page, cmd: dict, project=None) -> str:
     if kind == "click":
         x, y = float(cmd["x"]), float(cmd["y"])
         page.mouse.click(x, y)
-        _settle(page)
+        settle(page)
         return f"Clicked at ({int(x)}, {int(y)})"
     if kind == "type":
-        text = str(cmd.get("text") or "")
-        focused = page.evaluate("() => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || (a && a.isContentEditable); }")
-        if not focused:
-            return "Nothing to type into: click a box on the screenshot first"
-        if cmd.get("replace"):
-            page.keyboard.press("Control+A")
-        page.keyboard.type(text, delay=15)
-        return f"Typed {len(text)} character(s)" if cmd.get("secret") else f"Typed '{text[:40]}'"
+        return _type(page, cmd)[0]
     if kind == "press":
         key = str(cmd.get("key") or "")
         if key not in KEYS:
             return f"Key '{key}' is not allowed"
         page.keyboard.press(key)
-        _settle(page)
+        settle(page)
         return f"Pressed {key}"
     if kind == "back":
         page.go_back(wait_until="domcontentloaded")
-        _settle(page)
+        settle(page)
         return "Went back"
     if kind == "scroll":
         page.mouse.wheel(0, float(cmd.get("dy") or 400))
         page.wait_for_timeout(300)
         return "Scrolled"
     if kind == "goto":
-        path = str(cmd.get("path") or "")
-        if project is None or not path.startswith(("/", "@")) or not project.in_scope(path):
-            return f"'{path}' is outside the test scope"
-        page.goto(project.url(path), wait_until="domcontentloaded")
-        _settle(page)
-        events = getattr(page.context, "_aq_rec_events", None)
-        if events is not None:              # an address typed in the dashboard is a step too (clicks record themselves)
-            events.append({"kind": "goto", "path": path, "url": page.url, "t": time.time() * 1000})
-        return f"Opened {path}"
+        return _goto(page, str(cmd.get("path") or ""), project)
     return f"Unknown command {kind!r}"
+
+
+def _goto(page, path: str, project) -> str:
+    if project is None or not path.startswith(("/", "@")) or not project.in_scope(path):
+        return f"'{path}' is outside the test scope"
+    page.goto(project.url(path), wait_until="domcontentloaded")
+    settle(page)
+    events = getattr(page.context, "_aq_rec_events", None)
+    if events is not None:              # an address typed in the dashboard is a step too (clicks record themselves)
+        events.append({"kind": "goto", "path": path, "url": page.url, "t": time.time() * 1000})
+    return f"Opened {path}"
+
+
+def _run_queued(page, cmd: dict, project) -> tuple[str, str, dict | None]:
+    """One queued command: what it did, "done" or "failed", and for typing the command as it is kept (no text)."""
+    secret = None
+    try:
+        if cmd.get("kind") == "type":
+            res, secret = _type(page, cmd)
+        else:
+            res = _run_cmd(page, cmd, project)
+        ok = "done"
+    except Exception as exc:  # noqa: BLE001
+        res, ok = f"Could not do it: {exc.__class__.__name__}", "failed"
+    return res, ok, (wipe.kept(cmd, secret) if cmd.get("kind") == "type" else None)
+
+
+def _run_commands(poll: Store, page, aid: int, detail: dict, project, agent: str, role: str | None) -> bool:
+    """Run the person's queued commands in order, stopping as soon as they press Continue or Cancel; True when any ran
+    (the screenshot is then refreshed)."""
+    cmds = poll.all("SELECT * FROM assist_cmds WHERE assist_id=? AND status='new' ORDER BY id", [aid])
+    ran = typed = 0
+    for c in cmds:
+        if poll.scalar("SELECT status FROM assist WHERE id=?", [aid]) != "pending":
+            break
+        res, ok, kept = _run_queued(page, c["cmd"] if isinstance(c["cmd"], dict) else {}, project)
+        if kept is None:
+            poll.update("assist_cmds", "id", c["id"], {"status": ok, "result": res})
+        else:
+            wipe.overwrite(poll, "assist_cmds", c["id"], {"status": ok, "result": res, "cmd": kept})
+            typed += 1
+        detail["log"] = (detail.get("log") or [])[-11:] + [res]
+        live.emit(agent, "action", f"You: {res}", role=role)
+        ran += 1
+    if typed:
+        wipe.checkpoint(poll)
+    return bool(ran)
 
 
 def takeover(project, page, *, role: str | None = None, agent: str = "explorer", question: str = "", hint: str = "",
              timeout: float | None = None, db_path: Path | None = None, state_dir: Path | None = None) -> dict | None:
     """Hand this browser to a person until they press Continue. Returns {"done", "events", "url"}, or None when asking
-    is off, they cancel, or nobody comes in time."""
+    is off, they cancel, nobody comes in time, or the browser is gone."""
     cfg = _settings(project)
     if not cfg["enabled"] or os.environ.get("AGENTQA_NO_ASSIST") == "1":
         warn(f"[{agent}] would hand the browser to a person ({question}) but asking is switched off (assist.enabled)")
         return None
-    store = Store(db_path or project.db_path)
-    folder = Path(state_dir or project.state) / "assist"
-    folder.mkdir(parents=True, exist_ok=True)
+    store, folder = _open(project, db_path, state_dir)
     events = recorder_start(page)
     start_n = len(events)
     headed = os.environ.get("AGENTQA_HEADED") == "1"
@@ -376,57 +301,72 @@ def takeover(project, page, *, role: str | None = None, agent: str = "explorer",
     aid = store.insert("assist", {"at": now(), "kind": "takeover", "role": role, "agent": agent,
                                   "question": question or "Take over the browser", "detail": detail,
                                   "status": "pending", "answer": None, "answered_at": None})
-    shooter = _Shooter(page, folder, aid, store, detail, every_s=1.2)
-    _settle(page)
+    shooter = Shooter(page, folder, aid, store, detail, every_s=1.2)
+    settle(page)
     shooter.refresh(force=True)
     live.emit(agent, "assist", f"Waiting for you to take over: {question}", assist_id=aid, ask_kind="takeover", role=role,
               level="warn")
     log(f"\n  >>> AgentQA hands you the browser: {question}\n      Use the box in the dashboard"
         + (" or the browser window that opened" if headed else "") + ", then press Continue.")
-    limit = time.time() + float(timeout or cfg["timeout_s"])
     poll = Store(store.path)
-    ans = None
+    try:
+        ans, timed_out = _drive(poll, page, aid, detail, shooter, project, agent, role,
+                                time.time() + float(timeout or cfg["timeout_s"]))
+    finally:
+        _end_takeover(poll, aid, shooter)
+    return _handed_back(project, page, aid, agent, ans, timed_out, events[start_n:])
+
+
+def _drive(poll: Store, page, aid: int, detail: dict, shooter, project, agent: str, role: str | None,
+           limit: float) -> tuple[dict | None, bool]:
+    """Run the person's commands until they answer: (their answer, whether the time ran out). (None, False) when the
+    browser is gone."""
     while time.time() < limit:
         row = poll.one("SELECT status, answer FROM assist WHERE id=?", [aid])
         if row and row["status"] != "pending":
-            ans = row["answer"] or {}
-            break
-        cmds = poll.all("SELECT * FROM assist_cmds WHERE assist_id=? AND status='new' ORDER BY id", [aid])
-        for c in cmds:
-            try:
-                res = _run_cmd(page, c["cmd"] or {}, project)
-                ok = "done"
-            except Exception as exc:  # noqa: BLE001
-                res, ok = f"Could not do it: {exc.__class__.__name__}", "failed"
-            poll.update("assist_cmds", "id", c["id"], {"status": ok, "result": res})
-            detail["log"] = (detail.get("log") or [])[-11:] + [res]
-            live.emit(agent, "action", f"You: {res}", role=role)
-        if cmds:
-            shooter.refresh(force=True)
-        else:
-            shooter.refresh()
+            return row["answer"] or {}, False
+        shooter.refresh(force=_run_commands(poll, page, aid, detail, project, agent, role))
         try:
             page.wait_for_timeout(300)        # keeps the browser (and the recorder's messages) flowing
         except Exception:  # noqa: BLE001
-            break
-    else:
-        poll.update("assist", "id", aid, {"status": "expired"})
+            return None, False
+    return None, True
+
+
+def _end_takeover(poll: Store, aid: int, shooter) -> None:
+    """However the take-over ended, it no longer waits, nothing typed for it stays readable, and its screenshot goes."""
+    try:
+        poll.exec("UPDATE assist SET status='expired' WHERE id=? AND status='pending'", [aid])
+        forget_typed(poll, aid)
+    except sqlite3.Error as exc:
+        warn(f"the take-over could not be closed yet ({exc.__class__.__name__}); the next sweep closes it")
+    shooter.close()
+
+
+def _handed_back(project, page, aid: int, agent: str, ans: dict | None, timed_out: bool, events: list) -> dict | None:
+    if timed_out:
         live.emit(agent, "assist", "Nobody took over in time; moving on", assist_id=aid, level="bad")
         return None
     recorder_flush(page)
     if not ans or ans.get("skip"):
-        live.emit(agent, "assist", "You cancelled the take-over", assist_id=aid, level="warn")
+        live.emit(agent, "assist", "You cancelled the take-over" if ans else "The browser closed during the take-over",
+                  assist_id=aid, level="warn")
         return None
     clear_pause(project)
     live.emit(agent, "assist", "Thanks, AgentQA continues from here", assist_id=aid, level="ok")
-    return {"done": True, "events": list(events[start_n:]), "url": page.url, "assist_id": aid}
+    return {"done": True, "events": list(events), "url": page.url, "assist_id": aid}
 
 
-def add_command(store: Store, aid: int, cmd: dict) -> int:
-    row = store.one("SELECT status, kind FROM assist WHERE id=?", [aid])
-    if not row or row["status"] != "pending" or row["kind"] != "takeover":
-        return 0
-    return store.insert("assist_cmds", {"assist_id": aid, "at": now(), "cmd": cmd, "status": "new", "result": None})
+def add_command(store: Store, aid: int, cmd: dict, waiting_max: int | None = None) -> int:
+    """Queue a command for a take-over that still waits; 0 when it no longer does (or `waiting_max` commands already
+    wait). The check and the insert are one step, so two requests at once cannot pass it together."""
+    limit = (" AND (SELECT COUNT(*) FROM assist_cmds WHERE assist_id=? AND status='new') < ?"
+             if waiting_max is not None else "")
+    cur = wipe.atomic(store, "INSERT INTO assist_cmds (assist_id, at, cmd, status, result) SELECT ?, ?, ?, 'new', NULL "
+                             "WHERE EXISTS (SELECT 1 FROM assist WHERE id=? AND status='pending' AND kind='takeover')"
+                             + limit, [aid, now(), json.dumps(cmd, ensure_ascii=False), aid,
+                                       *([aid, waiting_max] if waiting_max is not None else [])])
+    return cur.lastrowid if cur.rowcount == 1 else 0
 
 
 # ---------------------------------------------------------------------------------------------

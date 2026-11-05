@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { createPortal } from "react-dom";
 import { XCircle } from "@phosphor-icons/react";
 import { api } from "../../lib/api";
+import { useBackdropClose } from "../../lib/useBackdropClose";
 import { displayState } from "../../lib/live/board";
 import { safeBox, safeShot, severity, type Box, type LiveEvent, type Phase } from "../../lib/live/event";
 import type { Lane } from "../../lib/live/lanes";
@@ -23,8 +24,8 @@ function boxStyle(box: Box) {
            height: `${(box.height / box.vh) * 100}%` };
 }
 
-/** The enlarged screenshot: a modal dialog over a page closed to the keyboard (`inert`); Escape or the button closes
- *  it and focus goes back to the screen that opened it. It mounts once per opening, so new events behind it never
+/** The enlarged screenshot: a modal dialog over a page closed to the keyboard (`inert`); Escape, the button or a
+ *  click on the backdrop closes it and focus goes back to the screen that opened it. It mounts once per opening, so new events behind it never
  *  move the focus (react review). */
 export function Lightbox({ src, shown, onClose, returnFocus }: { src: string; shown: Shown; onClose: () => void; returnFocus: () => void }) {
   const close = useRef<HTMLButtonElement>(null);
@@ -50,8 +51,11 @@ export function Lightbox({ src, shown, onClose, returnFocus }: { src: string; sh
       handlers.current.returnFocus();
     };
   }, []);
+  const backdrop = useBackdropClose(onClose);
   return createPortal(
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={`Screenshot: ${shown.caption}`}>
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- a click on the backdrop closes it (M1.3 B22); Escape is the keyboard's way
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label={`Screenshot: ${shown.caption}`}
+         onMouseDown={backdrop.onMouseDown} onClick={backdrop.onClick}>
       <div className="lightbox-inner">
         <div className="lightbox-bar">
           <span>{shown.caption}</span>

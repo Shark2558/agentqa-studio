@@ -20,8 +20,10 @@ from agentqa.api.schemas import LoginIn
 from agentqa.api.settings import Settings
 
 API_PREFIX = "/api/v1"
-# Screenshots and evidence files have their own rate bucket (a page may show many at once).
-SHOT_PATH = re.compile(rf"^{API_PREFIX}/projects/[^/]+/(?:live/[^/]+/shots/[^/]+|defects/[^/]+/evidence/\d+)$")
+# Screenshots, evidence and visual-review pictures have their own rate bucket (a page may show many at once), and so
+# does the help box's pending list, which every open page polls every 2 s (M1.4 Phase C).
+SHOT_PATH = re.compile(rf"^{API_PREFIX}/projects/[^/]+/(?:live/[^/]+/shots/[^/]+|defects/[^/]+/evidence/\d+"
+                       r"|visual/[^/]+/(?:baseline|current|diff)|assist(?:/\d+/shot)?)$")
 OPEN_WRITES = frozenset({f"{API_PREFIX}/auth/login", f"{API_PREFIX}/auth/logout"})   # any role may sign in or out
 APP_PREFIX = "/app"
 SIGN_IN_PAGE = f"{APP_PREFIX}/sign-in"
@@ -75,11 +77,12 @@ def create_app(settings: Settings | None = None, legacy: bool = False, frontend_
     def docs(user: _auth.User = Depends(_auth.current_user)):
         return get_swagger_ui_html(openapi_url=f"{API_PREFIX}/openapi.json", title="AgentQA Studio API")
 
-    from agentqa.api import (routes_ai, routes_defects, routes_gates, routes_live, routes_live_ws, routes_plan,
-                             routes_projects, routes_questions, routes_runs, routes_wizard)
+    from agentqa.api import (routes_ai, routes_assist, routes_defects, routes_gates, routes_live, routes_live_ws,
+                             routes_plan, routes_projects, routes_questions, routes_review, routes_runs, routes_wizard)
     for router in (routes_projects.router, routes_runs.router, routes_live.router, routes_live_ws.router,
                    routes_wizard.router, routes_wizard.tools, routes_ai.router, routes_ai.projects,
-                   routes_questions.router, routes_plan.router, routes_defects.router, routes_gates.router):
+                   routes_questions.router, routes_plan.router, routes_defects.router, routes_gates.router,
+                   routes_review.router, routes_assist.router):
         app.include_router(router, prefix=API_PREFIX)
 
     _serve_frontend(app, frontend_dist)
@@ -125,11 +128,14 @@ def _secured(response):
 
 def _legacy_gate(request: Request):
     """None when the request may reach the old dashboard; otherwise the refusal (a redirect to the sign-in page for
-    a page load, 401 for anything else, 403 for a state change by a read-only role or from another site)."""
-    if _auth.session_user(request) is None:
+    a page load, 401 for anything else, 403 for a state change by a read-only role or from another site). The person
+    signed in is handed on as `request.state.agentqa_user`, so the old help box logs who and keeps the Viewer rule."""
+    user = _auth.session_user(request)
+    if user is None:
         if request.method in ("GET", "HEAD"):
             return RedirectResponse(SIGN_IN_PAGE, status_code=303)
         return fail(401, "unauthenticated", "Sign in first")
+    request.state.agentqa_user = user
     read_only = _auth.read_only_refusal(request)
     if read_only is not None:
         return fail(read_only.status, read_only.code, read_only.message)

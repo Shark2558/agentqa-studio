@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { WHY_MAX, cleanWhy } from "../../lib/gates";
 
 type Props = {
-  title: string;
+  /** A question; text from the tested site inside it goes in `<bdi>`, so it keeps its own direction. */
+  title: ReactNode;
   confirmLabel: string;
   isRequired: boolean;
   isBusy?: boolean;
@@ -53,7 +54,7 @@ type ButtonProps = {
   label: string;
   /** The accessible name when the visible label needs its object, e.g. "Reject every a11y_basic case". */
   name?: string;
-  title: string;
+  title: ReactNode;
   confirmLabel: string;
   isRequired?: boolean;
   isDisabled?: boolean;

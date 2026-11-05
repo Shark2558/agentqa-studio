@@ -72,14 +72,16 @@ def test_a_viewer_may_read_every_live_endpoint(app):
 def test_every_write_route_refuses_a_viewer(app):
     viewer = client_as(app, "viewer")
     routes = write_routes(app)
-    assert len(routes) >= 24          # …, AI keys, policy, and the gates' 9 decisions (M1.4 A); Phase C takes it past 30
+    assert len(routes) >= 33          # …, the gates' 9 decisions (M1.4 A), and Phase C's 9: visual 2, heals, help box 2,
+    #                                   pause, resume, the two teach routes
     for method, path in routes:
         r = viewer.request(method, path, headers=CSRF, json={})
         assert r.status_code == 403 and r.json()["error"]["code"] == "read_only", (method, path, r.status_code)
 
 
 GATE_READS = ("questions", "plan", "plan/cases", "plan/testcases.xlsx", "defects", "defects/export.csv",
-              "defects/zoho.csv", "requirements", "requirements/rtm.xlsx", "changes", "gates")
+              "defects/zoho.csv", "requirements", "requirements/rtm.xlsx", "changes", "gates", "visual", "heals",
+              "assist")
 
 
 @pytest.mark.parametrize("path", GATE_READS)

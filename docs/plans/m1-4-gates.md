@@ -716,7 +716,117 @@ slice's plan must re-ask it with a mock, flat (never glass or soft shadows).
 - **In the sitting's server** (frontend rebuilt): a Viewer's Project page read "What is waiting · 13 open questions".
 - **Demo regression, unattended, on a fresh copy** (engine files changed): **19/19, 0 unexpected** (214 tests: 184 passed, 30 failed; the failures became the 19 seeded defects and nothing else).
 
+### Phase C (5 Nov 2026; No-AI, nothing spent; throwaway servers with a generated owner, never the owner's sign-in)
+- **Pinning tests first.** `test_assist_engine.py`'s 8 pinning tests were green on the unchanged `assist.py`; its 6
+  hardening tests were red, then green. `test_yamledit.py`: 5 hostile-value tests red, then green.
+  `test_api_{visual,heals,assist}.py` were red (52 failures and errors) before the routers existed.
+- **Backend:** 773 passed in the first full run; **809 passed** after the review fixes; pyflakes clean. The review
+  round's tests were all red first: 7 engine, 15 API, 8 old-dashboard (`test_dashboard_assist.py`), 2 YAML, 1 for the
+  503 on an unreadable database.
+- **Demo regression, unattended, on a fresh copy** (`pipeline --policy srs_wins --auto-approve`, then
+  `tools/check_demo.py`): **19/19, 0 unexpected**, once on the first build and again after the review fixes (214 tests:
+  184 passed, 30 failed, the failures becoming the 19 seeded defects and nothing else).
+- **`tools/e2e_assist.py`** (the real take-over on the hard-login demo: Malayalam first, the unlabelled icon, the mock
+  inbox; portals 8820/8830, inbox 8025, a generated owner, the signed-in API with the CSRF header): **27/27**, once on the
+  first build and again after the review fixes. The second run typed the one-time code with "hide" unticked; the final
+  scans found neither the code nor the clerk's password in any log, recording, the vault or the 658 kB database file.
+- **App, first build:** 436 of 440 Vitest passed in the full run; the 4 others were 5-second timeouts under load
+  (Live, Requirements, Defects pages) and passed alone (33/33). `tsc -b` and oxlint clean; contrast 244/244;
+  `run build` (Visual 5 kB, Heals 4.5 kB, each loaded with its route). `check_app.py` timed out once waiting for the
+  network to go quiet while three reviewers ran tests, then passed alone at six widths in light and dark with the two
+  new pages and the help box's dock and dialog. `check_gates.py` with its Phase C part (`check_gates_c.py`) green.
+- **App, after the review fixes:** **486 of 488 Vitest in 54 files** in the full run; the 2 others were 5-second
+  timeouts under load (Live, Defects) and passed alone (28/28). `tsc -b`, oxlint and pyflakes clean; contrast 244/244;
+  `run build`. **`check_app.py` green** (six widths, light and dark) and **`check_gates.py` green**: as the owner the
+  three gates, the downloads, the help box (dock within 3 s, the tab title, an answer), take-over (a scaled click, a
+  centre click within 2 px and an off-centre one within 1 px of the picture's own box, typing hidden by default, the
+  typed text gone from the database file once the script acting as the agent ran it), Pause and Resume, visual review
+  (one approved, one reported), heals (one approved, one rejected), the change log; the page behind the dialog inert,
+  focus back on the opener or the `h1`, a drag released on the backdrop keeping the dialog, the dock's clearance on a
+  phone; then a Viewer with no controls. `test_check_app_env.py`: the throwaway server sees no AI key, has its own home
+  and a fresh vault key.
+
 ## Review (fresh context)
+
+### Phase C (5 Nov 2026; reviewed as lock-marked)
+**Backend.** `security-reviewer` (take-over surface, assist secrets, file routes, the heal's YAML write), `python-reviewer`
+and `code-reviewer` (against this plan) read the change in fresh contexts and probed it with throwaway scripts (a dying
+browser, a reader holding the database, 60 commands at once, fuzzed YAML values). Nothing was CRITICAL. Every HIGH and
+MEDIUM was fixed; each fix's test was written first and failed first (7 engine, 15 API, 8 old-dashboard, 2 YAML tests).
+| # | Found by | Severity | Finding | Fixed |
+|---|---|---|---|---|
+| 1 | security | HIGH | the old dashboard's help box, visual review and heals skipped every Phase C rule: a Viewer saw the screenshot, a 2 MB `type`, a click at (99999999, -5) and 300 queued commands were accepted, decisions had no who or why | the old help-box routes call `gates.helpbox` with the signed-in person (the API's guard hands it on as `request.state.agentqa_user`) and the new schemas; a Viewer gets an empty list and 403 on the screenshot; the old visual and heal pages and their POSTs send the person to `/app/projects/{slug}/visual` / `heals` and decide nothing (`test_dashboard_assist.py`) |
+| 2 | security, python, code | HIGH / MEDIUM | a one-time code typed into a plain box with "hide" unticked was echoed (`Typed '…'`) into the command row, the help-box log and the recording, and stayed in the database file | typed text is never echoed: always "Typed N character(s)"; `e2e_assist.py` now types the code unticked and its scans still find it nowhere |
+| 3 | python | HIGH | when the browser died during a take-over the question stayed "pending" for an hour and its typed text survived | `takeover` ends in `try/finally`: the question is expired, every typed command wiped, its screenshot deleted |
+| 4 | code | HIGH | a `confirm` question (the visual check's "Check the expected result", with two choices) refused `{option}` | `confirm` takes option, ok or skip |
+| 5 | security, python | MEDIUM | a checkpoint held up by a reader stalled the agent for the 30 s busy timeout, and nothing tried again | `assist_wipe.checkpoint` waits at most 1 s; the once-a-minute sweep always ends with one |
+| 6 | security, python | MEDIUM | a secret answer racing the time-out stayed readable (the expiry overwrote "answered"); the sweep looked at "answered" rows only | the expiry is conditional and re-reads; unread secret answers are wiped after 60 s in any status |
+| 7 | security | MEDIUM | typed commands of a dead agent waited an hour | any typed command waiting over 60 s is wiped and marked "dropped" |
+| 8 | security, python, code | MEDIUM / LOW | the first answer did not always win, and the 20-command cap could be passed by requests at once (60 of 60 queued) | `assist_wipe.atomic` (`BEGIN IMMEDIATE`): the answer is a conditional `UPDATE`, the command an `INSERT … WHERE EXISTS … AND COUNT < 20` |
+| 9 | security | MEDIUM | Cancel or Continue did not stop a batch already fetched | the status is checked before each command |
+| 10 | security, python | MEDIUM | `approve-all` that failed part-way left approved baselines with no who or why | the change-log row is written in `finally`; a copy error answers 503 `file_error` |
+| 11 | security | MEDIUM | the YAML edit replaced the first match in the workflow, not the heal's own step and key; a rename onto an existing key lost a value | `replace_in_workflow(…, step=, key=)` tries each match and keeps only the intended one; a rename onto a key the form already has is refused |
+| 12 | python | MEDIUM | a locator fix whose rename could not reach `project.yaml` still said nothing | "Could not rename '…' in project.yaml: change it there by hand" |
+| 13 | python | MEDIUM | the sweep decoded every historical row once a minute (3.2 s at 25 000 rows) and a locked database turned `GET /assist` into a 500 | JSON filters in SQL; the sweep runs after the read and never fails the list |
+| 14 | python | MEDIUM | the list read the oldest 20 questions, through a read-write connection, and swallowed errors | the newest 20 (shown oldest first), `mode=ro`, errors logged |
+| 15 | python | MEDIUM | the production warning failed open | an unreadable flag counts as production |
+| 16 | python, security | MEDIUM / LOW | a question's last screenshot was kept for ever (a code may show in a plain box) | deleted when the question ends; the sweep deletes leftovers |
+| 17 | python, code | MEDIUM | `heals.decide` could apply a fix twice on a double-click | one decision at a time (a lock) in heals and visual review |
+| 18 | code | MEDIUM | tests missing for production true, the once-a-minute sweep, Pause through a command-line run, approve-all while a run goes | added |
+| 19 | security | LOW | `/x/../admin`, `//admin`, `/%61dmin` passed the goto scope check | decoded, and `.`/`..` steps, `//` and backslashes refused, before the scope check |
+| 20 | several | LOW | command-line runs did not block visual and heal decisions; one pruned recording folder hid every command-line run; `shot_v` capped at 10 000; the screenshot name's id not checked against the question; uncapped heal reason and case ids; a parity test that compared the moved code with itself; `KEYS` not tied to the schema's list; a test that returned early; dead constants; raw U+2028/U+FEFF in a regex source; `assist.py` 560 lines; three functions of `e2e_assist.py` over 50 lines | fixed (`gates.run_going`; per-folder errors; the parity test now compares with the v0.8 code kept word for word in the test; `assist.py` 405 lines, the wipe, the screenshots and the recorder in `assist_wipe.py`, `assist_screen.py`, `assist_recorder.py`) |
+
+**Not changed, and why:**
+- **`yamledit` writes CRLF on Windows and not atomically.** It did so before Phase C for every edit, and a failed check
+  writes nothing. A separate small change can make the write atomic.
+- **Keys such as `on`, `yes` or `null` cannot be renamed into a fill block** (YAML reads them as values); the edit is
+  refused and the note says to change it by hand.
+- **`approve_row` copies the current picture as the layout too when its name lacks `-current.png`.** That is the v0.8
+  behaviour, kept so the move stays a move; the runtime always writes `-current.png`.
+- **`report_row` turns an earlier report of the same screen back to draft,** as v0.8 did.
+- **A visual key outside `^[\w@.\-]{1,200}$`** (the designer builds keys from raw paths) is listed but cannot be decided
+  (422, or "skipped" in approve-all). No demo screen has one.
+- **Values recorded during a take-over reach other places by design:** `login_flow` names the steps it learned in the
+  live feed, and the Explorer keeps navigation steps in the vault (encrypted). A box AgentQA does not recognise as secret
+  is treated as test data there. Recorded for M2.x hardening.
+- **A Viewer sees who paused** (`paused.by`, an email); the Change log page shows the same to a Viewer.
+- **`visual.item` checks three pictures per row** (50 rows by default, at most 200). Not measured on Drive; revisit if
+  the Visual review page is slow there.
+
+**App.** `typescript-reviewer`, `react-reviewer` (with a WCAG 2.2 AA pass) and `security-reviewer` (untrusted text,
+typed secrets, the take-over guard rails) read the app in fresh contexts. Nothing was CRITICAL. Every HIGH and MEDIUM
+was fixed, and the LOW items too; each fix's test failed first, except where the last column says otherwise. What jsdom
+cannot see (`inert`, real focus return, a drag released on the backdrop, the dock's clearance on a phone) is checked in
+the browser by `check_gates_c.py`.
+| # | Found by | Severity | Finding | Fixed |
+|---|---|---|---|---|
+| 1 | typescript | HIGH | on Android Chrome `new Notification()` throws inside an effect, and the dock sat outside any error boundary: the whole app would blank | caught, and the dock has its own `ErrorBoundary` in the Shell |
+| 2 | react, typescript | HIGH / MEDIUM | focus was not returned when the dialog was minimised or answered (the page was still inert) (2.4.3) | the `Modal` removes `inert`, then returns focus to the button that opened it (the dock's or the Live View banner's), else the page's `h1` |
+| 3 | react, typescript | HIGH / LOW | the open question's id was kept across projects: another project with the same id popped its dialog open | kept per project and cleared when the dock unmounts |
+| 4 | react | HIGH | "Approve fix 3" did not contain the visible "Approve the fix" (2.5.3) | "Approve the fix 3" |
+| 5 | react | HIGH | three pollers on the Live View (dock, banner, page) tripled the requests | the dock polls; the others read the same query |
+| 6 | react | MEDIUM | a drag from the type box released on the backdrop closed the dialog and lost the typed text and the production tick (also the Lightbox) | `useBackdropClose`: closes only when the press and the release are both on the backdrop |
+| 7 | react | MEDIUM | the dock could cover the last controls on a phone (2.4.11) | the page's bottom room follows the dock's measured height (`--dock-h`) |
+| 8 | react | MEDIUM | sent commands and Pause gave no status; Pause lost focus while pending (4.1.3) | a polite status line ("Sent: Enter"); `aria-disabled` while pending |
+| 9 | react | MEDIUM | a box chip's "filled" mark was not in its name; the screenshot had no keyboard route and was silent to a screen reader | "(filled)" in the name; the screenshot is described by the chips and says to use them |
+| 10 | react | MEDIUM | the announcement sat inside the inert page, was repeated on every return and named only the first new question | outside the inert page, remembered per project, every new question |
+| 11 | react, typescript | MEDIUM / LOW | `useCallback` depended on the whole mutation, so the memoised cards re-rendered on every poll | depends on `mutate` |
+| 12 | security | MEDIUM | a password clicked on the screenshot (not chosen from the chips) was shown in clear on screen | the take-over box hides what is typed by default ("Show what I type" opts out); the chosen box resets on a screenshot click, Tab, Enter, Back and an address |
+| 13 | security | MEDIUM | the browser checks' throwaway server inherited the owner's environment (his AI key folder, any `*_API_KEY`) | its own `AGENTQA_HOME`, a fresh vault key, no `*_API_KEY`; both checks refuse to run if the server can see a key (`test_check_app_env.py`) |
+| 14 | typescript | MEDIUM | a failed poll read as "nothing is waiting" closed an open take-over | the server answers 503 when it cannot read (backend test red first); the page keeps the dialog on an error (its test passed at once: the query already kept its data, kept as a guard) |
+| 15 | typescript, security | MEDIUM / LOW | a double-click sent two real clicks; commands could reorder; the production tick was only an HTML attribute | double-clicks ignored, the screenshot disabled while a command is on its way, commands one at a time (`scope`), and the send checks the tick |
+| 16 | typescript, security | MEDIUM / LOW | spaces in a password or code were collapsed and trimmed | control characters are removed, nothing else |
+| 17 | typescript | MEDIUM | a click was scaled against the button's border box, not the picture (2–4 px off at the edges) | the picture's own box, clamped inside the screen; the browser check's tolerance tightened to 1–2 px |
+| 18 | several | LOW | `//host` and `/../` in the address box; text cleared before a refusal; `shot_v` capped at 10 000; one 404 stopped polling; approve-all hid "skipped"; Yes/No beside a confirm's own choices; no "Scroll up"; two Pause buttons on the Live View; a test that never restored `scrollIntoView`; typed text kept in the mutation cache; password boxes offered to password managers; bidi controls and inline paths not isolated; focus lost when the notify button went; `role=alert` on a new dialog; empty chip labels; the phone's safe area; "missing" said for any picture error | fixed |
+
+**Not changed, and why:**
+- **Viewing an older run in the Live View while paused** shows no Resume there (the dock's Pause hides on the Live
+  View, and the page's shows for the newest run only). Resume is on every other project page and on the newest run.
+- **oxlint's React rules** (`rules-of-hooks`, `exhaustive-deps`): the config lists only `jsx-a11y`, which may switch the
+  default plugins off (react review, unverified). A config change for the whole app, not Phase C: proposed as its own
+  small change.
+- **A 1 px border error is about 1.6 px of the agent's screen,** below what a real pointer resolves; only the Vitest
+  test pins it exactly.
 
 ### Sitting 1 fixes (5 Nov 2026)
 `python-reviewer`, `react-reviewer` (with a WCAG 2.2 pass) and `code-reviewer` read the fixes for S1–S5 in fresh contexts.
@@ -912,3 +1022,59 @@ looked at the fixes on a fresh throwaway server built from `main`, with the gate
 
 **Open (small, for Phase C or D):** a defect's evidence picture whose file is missing (404) shows a broken-image icon. It should say
 that the file is missing. This was seen with the gates fixture, which keeps 6 pictures; a real run has them all.
+(Done in Phase C: `components/gates/Picture.tsx`.)
+
+### Phase C (5 Nov 2026, branch `claude/compassionate-goldwasser-e62a07`, on `main` `118080d`)
+
+**Built as planned.**
+- **Engine, decision 2** (`assist.py`, with `assist_wipe.py`): a typed take-over command keeps only its length once it
+  has run or can no longer run; a password or one-time-code box counts as secret; a secret answer becomes "[given]"
+  once the agent has read it; overwrites use `secure_delete` and a write-ahead-log checkpoint, so the text is gone from
+  the file too; `expire_stale` also sweeps what a crashed run left. What the agent does with a value is unchanged.
+- **Visual review** (`orchestrator/gates/visual.py`): `approve_row` and `report_row` are the old dashboard's code,
+  moved; the current picture is copied only when the `files` guard serves it and the key is a plain name; a reason is
+  required to accept a change; `approve-all` writes one row.
+- **Heals** (`orchestrator/gates/heals.py`): proposed locator and workflow fixes only; `healer.approve_heal(…, by=, why=)`.
+- **Help box** (`orchestrator/gates/helpbox.py`): the pending list from one bare read-only query with the plan's caps
+  (answers never sent), the once-a-minute sweep, exactly one answer that fits its question, take-over commands bounded
+  by the schemas (`api/schemas_review.py`) and checked again by the service (inside the screen, in scope, 20 waiting),
+  the screenshot by id, Pause and Resume, the teach routes' role check.
+- **Routers** `api/routes_review.py` and `api/routes_assist.py`; `SHOT_PATH` covers visual pictures, help-box
+  screenshots and the polled list. Nine new writes; the Viewer-rule floor is 33.
+- **`yamledit`**: a value or field name from the tested site is written double-quoted, and an edit is kept only when the
+  file, read back, differs from before in exactly the intended place.
+- **`tools/e2e_assist.py`** ported to the signed-in API with the CSRF header and the teach routes; its last checks scan
+  the logs, recordings, the vault and the database file.
+- **App:** `lib/assist.ts` (pure: caps, `pollMs`, `scalePoint`, answer and command bodies), `lib/useAssist.ts`,
+  `lib/reviewApi.ts`; `components/assist/` (`NeedsYouDock` in the Shell on every project page, `AssistDialog` and
+  `TakeOver` in a `Modal` with the page behind made inert, `ScreenShot`, `PauseButton`, `NeedsYouBanner`);
+  `pages/gates/{Visual,Heals}.tsx` with `VisualCard`, `HealCard`, `Picture`; navigation "Visual review" and "Heals"
+  with spoken badges, and "What needs you" links to both; the Live View banner and Pause button; B22 (a backdrop click
+  closes the Lightbox); C13 (the focus column scrolls into view on choice under 1 024 px); `styles/assist.css`.
+- **Checks:** `check_app.py` measures the Visual and Heals pages and the dock and dialog; `check_gates_c.py` is the
+  Phase C part of `check_gates.py`.
+
+**Where the code disagreed with the plan, and what was done.**
+1. **A Viewer** gets only who is waiting (`{id, kind, role, agent, at}`) and the screenshot answers 403: the plan's
+   "no screenshot" is kept by the server too, not only the page.
+2. **`GET /assist` uses the screenshot bucket** (1 200 a minute), not the general 240: every open tab polls it.
+3. **"Took over … as <role>"** is logged at the first command of a take-over (a Pause take-over has no answer to log);
+   the answer "Let me take over" logs "asked to take over …". No typed value is ever logged.
+4. **Answers must fit the question kind** (`helpbox.ANSWERS`); `confirm` also takes a choice (the visual check asks it
+   with two). Typed text is never echoed, not even when "hide" is unticked (the plan kept the echo for plain typing;
+   review finding 2).
+5. **Visual and heal decisions wait while a run goes** (a job or a command-line run), and Pause reaches a command-line
+   run through its live marker (`orchestrator/live.cli_run_going`).
+6. **Lists** default to 50 rows with `total` (the plan said LIMIT 200 for heals), like the other gate lists.
+   `approve-all` answers `{approved, skipped}`. A heal's reason, when given, replaces the Healer's in the log row.
+7. **The old dashboard, Phase D's work, moved partly here** on the security review: its help box goes through the new
+   service, and its visual-review and heal pages send the person to the app and decide nothing. The parity test compares
+   the moved code with the v0.8 functions kept word for word in the test.
+8. **`assist.py` became four modules** (moved code): the wipe, the screenshots and the recorder have their own files.
+9. **`e2e_assist.py` presses Pause after the run has started** (the server refuses a pause with nothing running) and
+   types the one-time code with "hide" unticked.
+10. **`GET /assist` answers 503 when the database cannot be read** (TypeScript review), so a page never mistakes a busy
+    database for "nothing is waiting" and closes a take-over.
+
+**Still not verified:** acceptance sitting 2 with the owner (take-over, Pause, visual review, heals on the demo's own
+copies).

@@ -73,11 +73,13 @@ def gates(tmp_path, monkeypatch):
     counts = load(p, s)
     s.close()
     spawned: list[tuple[list[str], str]] = []
+    headed_runs: list[bool] = []
 
     def fake_spawn(project, store, args, label, headed=False, shots=None):
         if jobs.running(store):
             raise jobs.Busy("A stage is already running for this project.")
         spawned.append((args, label))
+        headed_runs.append(headed)
         return store.insert("jobs", {"stage": label, "status": "running", "started_at": "2026-11-04T10:00:00",
                                      "log_path": "", "pid": 999_999_999})
 
@@ -91,11 +93,12 @@ def gates(tmp_path, monkeypatch):
             st.insert("jobs", {"stage": "pipeline", "status": "running", "started_at": "2026-11-04T10:00:00",
                                "log_path": "", "pid": 999_999_999})
 
-    for module in ("agentqa.api.routes_runs", "agentqa.api.routes_questions"):
+    for module in ("agentqa.api.routes_runs", "agentqa.api.routes_questions", "agentqa.api.routes_assist"):
         monkeypatch.setattr(f"{module}.spawn", fake_spawn)        # fails loudly if the name moves: no real process
     monkeypatch.setattr("agentqa.orchestrator.jobs.pid_alive", lambda pid: True)
     return SimpleNamespace(client=client, app=app, project=p, counts=counts, base="/api/v1/projects/demo",
-                           db=lambda: closing(Store(p.db_path)), as_role=as_role, busy=busy, spawned=spawned)
+                           db=lambda: closing(Store(p.db_path)), as_role=as_role, busy=busy, spawned=spawned,
+                           headed=headed_runs)
 
 
 def free_port() -> int:

@@ -5,13 +5,14 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { stubFetch } from "../test-fetch";
 import { FakeSocket } from "../test-fixtures/fakeSocket";
 import { demoBoard, demoEvents } from "../test-fixtures/live";
+import { pending, waiting } from "../test-fixtures/assist";
 import { Live } from "./Live";
 
 const RUN = { id: "cli-fixture-pipeline", label: "Command line: pipeline", running: false, when: "03 Nov 13:36", has_events: true };
 const FINISHED = [{ type: "live", events: demoEvents, cursor: "c1" }, { type: "end", cursor: "c1", reason: "finished" }];
 
-function mount(role = "owner", sessions: unknown[] = [RUN], path = "/projects/demo/live") {
-  stubFetch({ "GET /auth/me": { email: "o@example.com", role }, "GET /projects/demo/live/sessions": sessions, "GET /projects/demo/live/board": demoBoard });
+function mount(role = "owner", sessions: unknown[] = [RUN], path = "/projects/demo/live", extra: Record<string, unknown> = {}) {
+  stubFetch({ "GET /auth/me": { email: "o@example.com", role }, "GET /projects/demo/live/sessions": sessions, "GET /projects/demo/live/board": demoBoard, ...extra });
   vi.stubGlobal("WebSocket", FakeSocket);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -30,11 +31,15 @@ async function socket(n = 1): Promise<FakeSocket> {
   return FakeSocket.all[n - 1];
 }
 
+const ORIGINAL_SCROLL = Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView");
+
 beforeEach(() => sessionStorage.clear());
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   FakeSocket.all = [];
+  if (ORIGINAL_SCROLL) Object.defineProperty(Element.prototype, "scrollIntoView", ORIGINAL_SCROLL);
+  else Reflect.deleteProperty(Element.prototype, "scrollIntoView");
 });
 
 describe("Live View: before a run", () => {
@@ -85,6 +90,30 @@ describe("Live View: a finished run", () => {
     expect(screen.getByText(/^30 \/ 447/)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/Did not finish|Not reached|The run is over/);
     expect(within(screen.getByRole("region", { name: "Agents" })).getAllByRole("button", { name: /Running/ }).length).toBeGreaterThan(0);
+  });
+
+  it("says AgentQA needs you while an agent waits (Phase C)", async () => {
+    mount("owner", [RUN], "/projects/demo/live", { "GET /projects/demo/assist": pending([waiting()]) });
+    (await socket()).deliver(FINISHED);
+    const banner = await screen.findByRole("region", { name: "AgentQA needs you" });
+    expect(banner).toHaveTextContent("The explorer (as citizen) is waiting for you");
+    expect(within(banner).getByRole("button", { name: "Open the question" })).toBeInTheDocument();
+  });
+
+  it("under 1 024 px, choosing an agent brings what it is doing into sight (M1.3 C13)", async () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("max-width"), media: q, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const scroll = vi.fn();
+    Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, writable: true, value: scroll });
+    mount();
+    (await socket()).deliver(FINISHED);
+    const board = await screen.findByRole("region", { name: "Agents" });
+    fireEvent.click(within(board).getAllByRole("button")[2]);
+    await waitFor(() => expect(scroll).toHaveBeenCalled());
+    expect((scroll.mock.contexts[0] as HTMLElement).querySelector("#h-focus")).not.toBeNull();
+  });
+
+  it("leaves nothing of that scroll stub behind for the tests after it", () => {
+    expect(Object.hasOwn(Element.prototype, "scrollIntoView")).toBe(ORIGINAL_SCROLL !== undefined);
   });
 
   it("an agent in the address that is not on the board shows the whole run instead", async () => {

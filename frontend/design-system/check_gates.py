@@ -14,8 +14,10 @@ proposed, the ready imported cases ready, the plan not approved. As the owner, i
      rejected defects, the Zoho CSV starts with a byte-order mark;
   6. Change log: every action above is recorded with the owner's email and role, each with its reason, and the page
      shows them;
-then as a Viewer (a pass minted with the throwaway server's secret): the gate pages show no controls, the downloads
-are there, and a write answers 403 read_only. Exit 1 on any problem.
+then Phase C (check_gates_c.py: the help box, take-over with the typed text wiped, Pause and Resume, visual review,
+heals, and their change-log rows), then as a Viewer (a pass minted with the throwaway server's secret): the gate pages,
+Visual review and Heals included, show no controls, the downloads are there, and a write answers 403 read_only. Exit 1
+on any problem.
 """
 from __future__ import annotations
 
@@ -32,6 +34,7 @@ from playwright.sync_api import Error as PlaywrightError, expect, sync_playwrigh
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_app as app  # noqa: E402  (the throwaway server and owner)
+import check_gates_c as phase_c  # noqa: E402  (help box, take-over, pause, visual review, heals)
 
 WHO = f"{app.EMAIL} (owner)"
 WAIT_MS = 15_000
@@ -184,12 +187,13 @@ def viewer(browser, base: str, slug: str) -> list[str]:
     context.add_cookies([{"name": COOKIE, "value": token, "url": base}])
     page, problems = context.new_page(), []
     for name, link in (("questions", None), ("plan", "Download the test cases (Excel)"), ("defects", "Defects for Jira (CSV)"),
-                       ("requirements", "Download the traceability matrix (Excel)")):
+                       ("requirements", "Download the traceability matrix (Excel)"), ("visual", None), ("heals", None)):
         page.goto(f"{base}/app/projects/{slug}/{name}")
         page.wait_for_load_state("networkidle")
         controls = page.locator("main input[type=radio], main input[type=checkbox]:not(.check input), main select, main textarea").count()
         # the filter chips "Approved", "Rejected", "Confirmed" are views, not decisions
-        decisions = page.get_by_role("button", name=re.compile(r"^(Save answer|Apply my answers|Approve(?!d)|Reject(?!ed)|Confirm(?!ed)|Generate and run|Back to)")).count()
+        decisions = page.get_by_role("button", name=re.compile(
+            r"^(Save answer|Apply my answers|Approve(?!d)|Reject(?!ed)|Confirm(?!ed)|Generate and run|Back to|Report as|Pause and|Paused:|Take over|Open$)")).count()
         if controls or decisions:
             problems.append(f"Viewer on {name}: {controls} fields and {decisions} decision buttons")
         if link and not page.get_by_role("link", name=link).is_visible():
@@ -214,6 +218,7 @@ def run(browser, base: str, projects: Path) -> list[str]:
         except (Problem, PlaywrightError, AssertionError) as e:
             problems.append(f"{step.__name__}: {' | '.join(str(e).splitlines()[:4])}")       # the locator is on line 2-4
     problems += change_log(page, base, slug)
+    problems += phase_c.run(page, base, projects, slug)
     context.close()
     return problems + viewer(browser, base, slug)
 
@@ -238,7 +243,8 @@ def main() -> int:
     if problems:
         print(f"\n{len(problems)} problem(s)")
         return 1
-    print("\nthe three gates, the downloads and the change log work in the built app as the owner, and a Viewer gets no controls")
+    print("\nthe three gates, the downloads, the help box, take-over, pause, visual review, heals and the change log work in the "
+          "built app as the owner, and a Viewer gets no controls")
     return 0
 
 

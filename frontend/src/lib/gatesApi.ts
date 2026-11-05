@@ -3,10 +3,10 @@
 import { request, type Requirement, type Run } from "./api";
 
 const BASE = "/api/v1";
-const project = (slug: string) => `/projects/${encodeURIComponent(slug)}`;
-const post = (body: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(body) });
+export const project = (slug: string) => `/projects/${encodeURIComponent(slug)}`;
+export const post = (body: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(body) });
 /** `?a=1&b=x` from the defined values only. */
-function query(params: Record<string, string | number | undefined | null>): string {
+export function query(params: Record<string, string | number | undefined | null>): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
   const s = q.toString();

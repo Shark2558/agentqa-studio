@@ -1,5 +1,11 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMe } from "../App";
+import { canWrite } from "../lib/can";
+import { useAssist } from "../lib/useAssist";
+import { NeedsYouBanner } from "../components/assist/NeedsYouBanner";
+import { PauseButton } from "../components/assist/PauseButton";
 import type { BoardDef } from "../lib/live/board";
 import type { ConnStatus } from "../lib/live/connect";
 import type { StreamState } from "../lib/live/stream";
@@ -33,6 +39,26 @@ function RunNotices({ stream, status, skipped, onReconnect }: NoticeProps) {
   );
 }
 
+const NARROW = "(max-width: 1023px)";
+
+/** Under 1 024 px the focus column sits below the board: choosing an agent brings it into sight (M1.3 C13). */
+function showFocus() {
+  if (typeof window.matchMedia !== "function" || !window.matchMedia(NARROW).matches) return;
+  const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("h-focus")?.closest("section")?.scrollIntoView?.({ block: "start", behavior: still ? "auto" : "smooth" });
+}
+
+/** A new question in the recording (the board's open assists grew) asks for the help box's list at once, instead of
+ *  waiting for its next poll. */
+function useAskWhenAgentsWait(slug: string, waiting: number) {
+  const queryClient = useQueryClient();
+  const before = useRef(waiting);
+  useEffect(() => {
+    if (waiting > before.current) queryClient.invalidateQueries({ queryKey: ["assist", slug] });
+    before.current = waiting;
+  }, [waiting, slug, queryClient]);
+}
+
 /** `newest`: the run shown is the project's newest, so its gates may say what is still open now (an older run's have moved on). */
 type Props = { slug: string; session: string; def: BoardDef; running: boolean; newest: boolean; onReconnect: () => void };
 
@@ -54,7 +80,13 @@ export function LiveRun({ slug, session, def, running, newest, onReconnect }: Pr
     next.set(key, value);
     return next;
   }, { replace: true }), [setParams]);
-  const select = useCallback((a: string) => set("agent", a), [set]);
+  const select = useCallback((a: string) => {
+    set("agent", a);
+    showFocus();
+  }, [set]);
+  const mayDrive = canWrite(useMe().data?.role);
+  const paused = useAssist(slug).data?.paused;
+  useAskWhenAgentsWait(slug, model.board.assists.size);
   const labels = (a: string) => model.board.cards.get(a)?.label ?? (Object.hasOwn(def.labels, a) ? def.labels[a] : a);
   const jumpTo = (a: string) => {
     const i = stream.events.findIndex((e) => e.agent === a && e.kind === "stage_start");
@@ -63,7 +95,11 @@ export function LiveRun({ slug, session, def, running, newest, onReconnect }: Pr
   };
   return (
     <>
-      <ErrorBoundary><RunHeader model={model} status={view.status} ended={stream.ended} transport={view.transport} /></ErrorBoundary>
+      <div className="run-head">
+        <ErrorBoundary><RunHeader model={model} status={view.status} ended={stream.ended} transport={view.transport} /></ErrorBoundary>
+        {mayDrive && newest && <PauseButton slug={slug} paused={paused} running={running} />}
+      </div>
+      <NeedsYouBanner slug={slug} />
       <RunNotices stream={stream} status={view.status} skipped={model.skipped} onReconnect={onReconnect} />
       <ErrorBoundary resetKey={pos}><PipelineCard model={model} def={def} runOver={shownOver} slug={slug} now={now} onJump={jumpTo} /></ErrorBoundary>
       <ErrorBoundary><PlayerBar player={view.player} pos={pos} total={stream.events.length} ended={stream.ended} dispatch={view.dispatch} /></ErrorBoundary>

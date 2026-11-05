@@ -118,8 +118,9 @@ def heal(project: Project, store: Store, run_id: str | None = None) -> dict:
 
 
 def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Project | None = None, *,
-                 by: str = "dashboard") -> str:
-    """Apply an approved heal to the stored cases (and to project.yaml for workflows). Returns a note."""
+                 by: str = "dashboard", why: str = "") -> str:
+    """Apply an approved heal to the stored cases (and to project.yaml for workflows). Returns a note. The change log's
+    reason is the person's `why` when they gave one, otherwise the Healer's own reason."""
     from agentqa import yamledit
     h = store.one("SELECT * FROM heals WHERE id=?", [heal_id])
     if not h:
@@ -129,7 +130,7 @@ def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Proj
     store.insert("change_log", {"at": _now(), "agent": "healer", "object": "case", "object_id": h["case_id"] or "-",
                                 "change": f"{'approved' if approve else 'rejected'} {h['kind']} fix: {json.dumps(h['old'])[:150]} "
                                           f"-> {json.dumps(h['new'])[:150]}",
-                                "justification": h["reason"] or "", "by": by})
+                                "justification": why or h["reason"] or "", "by": by})
     if approve and h["kind"] == "workflow":
         wf, step, key = h["old"]["workflow"], int(h["old"]["step"]), h["old"]["key"]
         old_v, new_v = h["old"]["value"], h["new"]["value"]
@@ -140,7 +141,7 @@ def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Proj
                 params["steps"][step - 1][key] = new_v
                 store.update("cases", "id", c["id"], {"params": params})
         if project is not None:
-            ok = yamledit.replace_in_workflow(project.config_path, wf, old_v, new_v)
+            ok = yamledit.replace_in_workflow(project.config_path, wf, old_v, new_v, step=step, key=key)
             return ("project.yaml updated" if ok else
                     f"Could not find '{old_v}' in workflow {wf} in project.yaml: change it by hand")
         return "stored cases updated"
@@ -160,7 +161,7 @@ def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Proj
                 changed = True
         if changed:
             store.update("cases", "id", c["id"], {"params": params})
-    note = ""
+    renamed = failed = False
     for c in store.all("SELECT * FROM cases WHERE type='workflow'"):
         params = c["params"] or {}
         hit = False
@@ -170,6 +171,9 @@ def approve_heal(store: Store, heal_id: int, approve: bool = True, project: Proj
                 hit = True
         if hit:
             store.update("cases", "id", c["id"], {"params": params})
-            if project is not None and yamledit.rename_fill_key(project.config_path, params.get("workflow_id"), old_name, new_name):
-                note = "project.yaml updated"
-    return note
+            if project is not None:
+                done = yamledit.rename_fill_key(project.config_path, params.get("workflow_id"), old_name, new_name)
+                renamed, failed = renamed or done, failed or not done
+    if failed:
+        return f"Could not rename '{old_name[:80]}' in project.yaml: change it there by hand"
+    return "project.yaml updated" if renamed else ""

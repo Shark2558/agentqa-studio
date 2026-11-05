@@ -106,9 +106,15 @@ describe("navigation badges", () => {
 
   it("show nothing when nothing waits, and a dot when only the approval itself is left", () => {
     const quiet = navBadges(counts({ questions_open: 0, defects_draft: 0 }));
-    expect(quiet).toEqual({ questions: null, plan: null, defects: null });
+    expect(quiet).toEqual({ questions: null, plan: null, defects: null, visual: null, heals: null });
     expect(navBadges(counts({ plan: { ...COUNTS.plan, approved: false, proposed: 0 } })).plan).toEqual({ text: "•", name: "waiting for your approval" });
-    expect(navBadges(undefined)).toEqual({ questions: null, plan: null, defects: null });
+    expect(navBadges(undefined)).toEqual({ questions: null, plan: null, defects: null, visual: null, heals: null });
+  });
+
+  it("count changed screens and proposed fixes (Phase C)", () => {
+    const b = navBadges(counts({ visual_changed: 2, heals_proposed: 1 }));
+    expect(b.visual).toEqual({ text: "2", name: "2 changed" });
+    expect(b.heals).toEqual({ text: "1", name: "1 to review" });
   });
 });
 
@@ -124,14 +130,12 @@ describe("what needs you", () => {
     ]);
   });
 
-  it("names visual changes and heals without a link until their pages arrive, and is empty when nothing waits", () => {
+  it("links visual changes and heals to their pages (Phase C), and is empty when nothing waits", () => {
     const later = counts({ questions_open: 0, defects_draft: 0, visual_changed: 2, heals_proposed: 1 });
     expect(needsYou(later, "demo", true).map((i) => [i.text, i.to])).toEqual([
-      ["2 changed screens to review (in the old dashboard for now)", null], ["1 proposed fix to review (in the old dashboard for now)", null],
+      ["2 changed screens to review", "/projects/demo/visual"], ["1 proposed fix to review", "/projects/demo/heals"],
     ]);
-    expect(needsYou(later, "demo", false).map((i) => i.text)).toEqual([
-      "2 changed screens waiting for review (in the old dashboard for now)", "1 proposed fix waiting for review (in the old dashboard for now)",
-    ]);
+    expect(needsYou(later, "demo", false).map((i) => i.text)).toEqual(["2 changed screens waiting for review", "1 proposed fix waiting for review"]);
     expect(needsYou(counts({ questions_open: 0, defects_draft: 0 }), "demo", true)).toEqual([]);
   });
 

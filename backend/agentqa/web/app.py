@@ -8,6 +8,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 
 import yaml
@@ -19,10 +20,11 @@ from fastapi.templating import Jinja2Templates
 
 from agentqa import __version__, readiness
 from agentqa.config import Project, init_project
-from agentqa.store import Store, now
+from agentqa.store import Store
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent.parent
+MAX_ROW_ID = 2 ** 31 - 1          # a row id SQLite can compare (a larger one is "not found", never a crash)
 
 app = FastAPI(title="AgentQA Studio")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
@@ -693,21 +695,16 @@ def defects_zoho_csv(slug: str):
                         media_type="text/csv")
 
 
-@app.get("/p/{slug}/heals", response_class=HTMLResponse)
-def heals(request: Request, slug: str):
-    ctx = _ctx(request, slug, "heals")
-    rows = ctx["store"].all("SELECT * FROM heals ORDER BY (status!='proposed'), id DESC")
-    return tpl.TemplateResponse(request, "heals.html", {**ctx, "rows": rows})
+def _moved(slug: str, page: str) -> RedirectResponse:
+    """A page the new app replaced (M1.4 Phase C): the person goes there, and nothing is decided here, so every
+    decision has who, why and the new app's checks (the templates go in Phase D)."""
+    return RedirectResponse(f"/app/projects/{quote(slug, safe='')}/{page}", status_code=303)
 
 
+@app.get("/p/{slug}/heals")
 @app.post("/p/{slug}/heals/{hid}")
-def heal_action(slug: str, hid: int, action: str = Form(...)):
-    from agentqa.agents.healer import approve_heal
-    p, s = _open(slug)
-    if not s.one("SELECT id FROM heals WHERE id=?", [hid]):
-        raise HTTPException(404, "No such heal proposal")
-    approve_heal(s, hid, approve=action == "approve", project=p)
-    return RedirectResponse(f"/p/{slug}/heals", status_code=303)
+def heals(slug: str, hid: int | None = None):
+    return _moved(slug, "heals")
 
 
 @app.get("/p/{slug}/files/{rel:path}")
@@ -752,77 +749,11 @@ def apis(request: Request, slug: str):
     return tpl.TemplateResponse(request, "apis.html", {**ctx, "rows": list(rows.values()), "tests": tests, "roles": roles})
 
 
-def _visual_files(p: Project, v: dict) -> dict:
-    def rel(x):
-        try:
-            return Path(x).resolve().relative_to(p.root).as_posix() if x else None
-        except ValueError:
-            return None
-    return {**v, "base_rel": rel(v.get("baseline")), "cur_rel": rel(v.get("current")), "diff_rel": rel(v.get("diff"))}
-
-
-@app.get("/p/{slug}/visual", response_class=HTMLResponse)
-def visual(request: Request, slug: str, show: str = "changed"):
-    ctx = _ctx(request, slug, "visual")
-    s, p = ctx["store"], ctx["project"]
-    rows = [_visual_files(p, v) for v in s.all("SELECT * FROM visual ORDER BY (status!='changed'), path, role")]
-    counts = {}
-    for v in rows:
-        counts[v["status"]] = counts.get(v["status"], 0) + 1
-    shown = [v for v in rows if show == "all" or v["status"] == show]
-    return tpl.TemplateResponse(request, "visual.html", {**ctx, "rows": shown, "vcounts": counts, "show": show,
-                                                        "total": len(rows)})
-
-
-def _approve_visual(p: Project, s: Store, v: dict) -> None:
-    if not v.get("current"):
-        return
-    cur = Path(v["current"])
-    base = p.root / "visual" / "baselines"
-    base.mkdir(parents=True, exist_ok=True)
-    layout = cur.with_name(cur.name.replace("-current.png", "-layout.png"))
-    shutil.copy(cur, base / f"{v['key']}.png")
-    if layout.exists():
-        shutil.copy(layout, base / f"{v['key']}-layout.png")
-    s.update("visual", "key", v["key"], {"status": "approved", "baseline": str(base / f"{v['key']}.png"), "updated_at": now()})
-
-
+@app.get("/p/{slug}/visual")
 @app.post("/p/{slug}/visual-approve-all")
-def visual_approve_all(slug: str):
-    p, s = _open(slug)
-    for v in s.all("SELECT * FROM visual WHERE status='changed'"):
-        _approve_visual(p, s, v)
-    return RedirectResponse(f"/p/{slug}/visual?show=approved", status_code=303)
-
-
 @app.post("/p/{slug}/visual/{key}")
-def visual_action(slug: str, key: str, action: str = Form(...)):
-    p, s = _open(slug)
-    v = s.one("SELECT * FROM visual WHERE key=?", [key])
-    if not v:
-        raise HTTPException(404)
-    if action == "approve":
-        _approve_visual(p, s, v)
-    elif action == "defect":
-        sig = f"visual:{key}"
-        old = s.one("SELECT * FROM defects WHERE signature=?", [sig])
-        evidence = [{"kind": "difference", "role": v["role"], "path": v["diff"] or v["current"]},
-                    {"kind": "screenshot", "role": v["role"], "path": v["current"]}]
-        row = {"run_id": v["run_id"], "case_ids": [v["case_id"]] if v["case_id"] else [], "signature": sig,
-               "title": f"Unexpected visual change on {v['path']} ({v['role']})", "severity": "Medium", "priority": "P2",
-               "role": v["role"], "url": p.url(v["path"]),
-               "steps": f"Log in as {v['role']}.\nOpen {p.url(v['path'])}.\nCompare with the approved snapshot.",
-               "expected": "The screen looks like its approved snapshot.",
-               "actual": f"{(v['diff_ratio'] or 0):.2%} of the layout differs from the approved snapshot.",
-               "evidence": evidence, "rule_ids": [], "req_ids": []}
-        if old:
-            s.update("defects", "id", old["id"], {**row, "status": "draft"})
-        else:
-            seq = (s.scalar("SELECT MAX(seq) FROM defects") or 0) + 1
-            s.insert("defects", {"id": f"DEF-{seq:03d}", "seq": seq, **row, "status": "draft", "created_at": now(),
-                                 "notes": "Reported from Visual review.", "external_key": None})
-        s.update("visual", "key", key, {"status": "reported", "updated_at": now()})
-    return RedirectResponse(f"/p/{slug}/visual", status_code=303)
+def visual(slug: str, key: str | None = None):
+    return _moved(slug, "visual")                      # the code moved to orchestrator/gates/visual.py
 
 
 @app.get("/p/{slug}/imports", response_class=HTMLResponse)
@@ -1311,54 +1242,85 @@ async def ai_project(request: Request, slug: str):
     return RedirectResponse(f"/p/{slug}/ai#project", status_code=303)
 
 
+# ---- the old help box (M1.4 Phase C): still on the pages not yet moved, it goes through the new app's service, so
+# it keeps the same rules (caps, who, the Viewer rule, one answer); Phase D removes it with those pages.
+
+def _user(request: Request):
+    return getattr(request.state, "agentqa_user", None)          # set by the API's guard in front of this app
+
+
+def _who(request: Request) -> str:
+    from agentqa.orchestrator.gates import changelog
+    user = _user(request)
+    return changelog.who(user) if user else "dashboard"
+
+
+def _may_drive(request: Request) -> bool:
+    from agentqa.api.auth import WRITE_ROLES
+    user = _user(request)
+    return user is None or user.role in WRITE_ROLES          # None: this app on its own (its own tests, a tool)
+
+
+@contextmanager
+def _gate_store(slug: str, aid: int):
+    """The project and store for one help-box request, closed afterwards; refusals answer as the API does."""
+    from agentqa.orchestrator.gates import GateError
+    if not 0 < aid <= MAX_ROW_ID:
+        raise HTTPException(404, "No such question")
+    try:
+        with _proj.project_store(slug) as pair:
+            yield pair
+    except NotFound as exc:
+        raise HTTPException(404, str(exc)) from exc
+    except GateError as exc:
+        raise HTTPException(exc.status, exc.message) from exc
+
+
+async def _body(request: Request, parse):
+    try:
+        return parse(await request.json())
+    except ValueError as exc:                              # bad JSON, or not what the new app's schema allows
+        raise HTTPException(422, "That is not something the help box can send") from exc
+
+
 @app.get("/p/{slug}/assist/pending")
-def assist_pending(slug: str):
-    from agentqa import assist
-    _, s = _open(slug)
-    out = []
-    for r in assist.pending(s):
-        d = r.get("detail") or {}
-        out.append({"id": r["id"], "kind": r["kind"], "question": r["question"], "role": r["role"], "agent": r["agent"],
-                    "at": r["at"], "hint": d.get("hint") or "", "options": d.get("options") or [],
-                    "clickables": d.get("clickables") or [], "secret": bool(d.get("secret")), "url": d.get("url"),
-                    "vw": d.get("vw"), "vh": d.get("vh"), "headed": bool(d.get("headed")), "log": d.get("log") or [],
-                    "fields": d.get("fields") or [],
-                    "shot": f"/p/{slug}/assist/{r['id']}/shot?v={d.get('shot_v') or 0}" if d.get("shot") else None,
-                    "shot_v": d.get("shot_v") or 0})
-    return out
+def assist_pending(request: Request, slug: str):
+    """The new app's list (capped, never an answer) in the old box's shape; a Viewer gets nothing (the old box has
+    no watching mode: the new app shows a Viewer who is waiting)."""
+    from agentqa.orchestrator.gates import helpbox
+    if not _may_drive(request):
+        return []
+    with _gate_store(slug, 1) as (p, _):
+        items = helpbox.pending(p, True)["items"]
+    base = f"/api/v1/projects/{quote(slug, safe='')}/assist"
+    return [{**q, "shot": f"{base}/{q['id']}/shot?v={q['shot_v']}" if q["has_shot"] else None} for q in items]
 
 
 @app.post("/p/{slug}/assist/{aid}/cmd")
 async def assist_cmd(request: Request, slug: str, aid: int):
     """Take-over: one action on the agent's browser (click on the screenshot, type, press a key, go back)."""
-    from agentqa import assist
-    _, s = _open(slug)
-    body = await request.json()
-    kind = str(body.get("kind") or "")
-    if kind not in ("click", "type", "press", "back", "scroll", "goto"):
-        raise HTTPException(400, "Unknown action")
-    cmd = {"kind": kind, **{k: body[k] for k in ("x", "y", "text", "secret", "key", "dy", "replace", "path") if k in body}}
-    cid = assist.add_command(s, aid, cmd)
-    if not cid:
-        raise HTTPException(409, "This browser is no longer handed over")
-    return {"ok": True, "id": cid}
+    from pydantic import TypeAdapter
+
+    from agentqa.api.schemas_review import CommandIn
+    from agentqa.orchestrator.gates import helpbox
+    cmd = await _body(request, lambda raw: TypeAdapter(CommandIn).validate_python(raw).model_dump())
+    with _gate_store(slug, aid) as (p, s):
+        return {"ok": True, **helpbox.command(p, s, aid, cmd, _who(request))}
 
 
 @app.post("/p/{slug}/pause")
-def pause_agents(slug: str):
-    from agentqa import assist
-    p, _ = _open(slug)
-    assist.request_pause(p)
+def pause_agents(request: Request, slug: str):
+    from agentqa.orchestrator.gates import helpbox
+    with _gate_store(slug, 1) as (p, s):
+        helpbox.pause(p, s, _who(request))
     return {"ok": True, "paused": True}
 
 
 @app.post("/p/{slug}/resume")
-def resume_agents(slug: str):
-    from agentqa import assist
-    p, s = _open(slug)
-    assist.clear_pause(p)
-    for r in s.all("SELECT id FROM assist WHERE status='pending' AND kind='takeover'"):
-        assist.answer(s, r["id"], {"done": True})
+def resume_agents(request: Request, slug: str):
+    from agentqa.orchestrator.gates import helpbox
+    with _gate_store(slug, 1) as (p, s):
+        helpbox.resume(p, s, _who(request))
     return {"ok": True, "paused": False}
 
 
@@ -1370,22 +1332,20 @@ def paused_state(slug: str):
 
 
 @app.get("/p/{slug}/assist/{aid}/shot")
-def assist_shot(slug: str, aid: int):
-    p, s = _open(slug)
-    r = s.one("SELECT detail FROM assist WHERE id=?", [aid])
-    name = ((r or {}).get("detail") or {}).get("shot")
-    f = p.state / "assist" / Path(str(name or "-")).name
-    if not f.is_file():
-        raise HTTPException(404)
-    return FileResponse(f, headers={"Cache-Control": "no-store"})
+def assist_shot(request: Request, slug: str, aid: int):
+    from agentqa.orchestrator.gates import helpbox
+    if not _may_drive(request):
+        raise HTTPException(403, "Only the owner or a tester sees the agent's screen")
+    with _gate_store(slug, aid) as (p, _):
+        found = helpbox.shot(p, aid)
+    return FileResponse(found.path, media_type=found.media_type, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/p/{slug}/assist/{aid}")
 async def assist_answer(request: Request, slug: str, aid: int):
-    from agentqa import assist
-    _, s = _open(slug)
-    body = await request.json()
-    ans = {k: body[k] for k in ("text", "option", "x", "y", "ok", "skip", "done", "takeover") if k in body}
-    if not assist.answer(s, aid, ans):
-        raise HTTPException(409, "This question was already answered or has expired")
+    from agentqa.api.schemas_review import AssistAnswerIn
+    from agentqa.orchestrator.gates import helpbox
+    ans = await _body(request, lambda raw: AssistAnswerIn.model_validate(raw).answer())
+    with _gate_store(slug, aid) as (_, s):
+        helpbox.answer(s, aid, ans, _who(request))
     return {"ok": True}

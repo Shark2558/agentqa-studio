@@ -109,6 +109,14 @@ describe("Defects page", () => {
       "href", "/api/v1/projects/demo/defects/DEF-001/evidence/1");
   });
 
+  it("says an evidence picture's file is missing instead of showing a broken image", async () => {
+    mount();
+    const card = (await screen.findAllByRole("article"))[0];
+    fireEvent.error(within(card).getAllByRole("img")[0]);
+    expect(within(card).getByText("The picture file is missing or could not be loaded")).toBeInTheDocument();
+    expect(within(card).queryByRole("link", { name: /Evidence 1/ })).toBeNull();
+  });
+
   it("downloads confirmed defects only unless drafts are included", async () => {
     mount();
     const jira = await screen.findByRole("link", { name: "Defects for Jira (CSV)" });

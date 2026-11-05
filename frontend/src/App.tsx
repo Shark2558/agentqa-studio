@@ -18,6 +18,8 @@ const Questions = lazy(() => import("./pages/gates/Questions").then((m) => ({ de
 const TestPlan = lazy(() => import("./pages/gates/TestPlan").then((m) => ({ default: m.TestPlan })));
 const Defects = lazy(() => import("./pages/gates/Defects").then((m) => ({ default: m.Defects })));
 const ChangeLog = lazy(() => import("./pages/gates/ChangeLog").then((m) => ({ default: m.ChangeLog })));
+const Visual = lazy(() => import("./pages/gates/Visual").then((m) => ({ default: m.Visual })));
+const Heals = lazy(() => import("./pages/gates/Heals").then((m) => ({ default: m.Heals })));
 const LOADING = <p className="muted page-pad" role="status">Loading…</p>;
 
 /** Every page inside the Shell: a page that cannot load (its file went away after an update, or it throws) shows a
@@ -67,6 +69,8 @@ export function App() {
                   <Route path="projects/:slug/plan" element={<TestPlan />} />
                   <Route path="projects/:slug/defects" element={<Defects />} />
                   <Route path="projects/:slug/changes" element={<ChangeLog />} />
+                  <Route path="projects/:slug/visual" element={<Visual />} />
+                  <Route path="projects/:slug/heals" element={<Heals />} />
                   <Route path="projects/:slug/live" element={<Live />} />
                   <Route path="projects/:slug/ai" element={<AiSettings />} />
                   <Route path="live" element={<LivePicker />} />

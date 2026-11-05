@@ -22,12 +22,17 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **A+B and the fixes merged into `main`** (fast-forward to `301fb3d`, on the owner's word, 5 Nov 2026); **next: Phase C** | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes `301fb3d` |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **A+B and the fixes merged into `main`** (fast-forward to `301fb3d`, on the owner's word, 5 Nov 2026); **Phase C done** (visual review, heals, the "AgentQA needs you" box, take-over, pause; reviewed as lock-marked by all five reviewers in fresh contexts, security twice (backend and app), every HIGH and MEDIUM fixed test-first; branch `claude/compassionate-goldwasser-e62a07`, **not merged**); **next: acceptance sitting 2** with the owner (ask first; plan → Acceptance → Sitting 2), then Phase D | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes `301fb3d` · Phase C on its branch |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
 
-Test counts at hand-off: backend **477 passed**, pyflakes clean; frontend **275 Vitest** in 34 files, `tsc -b` and
+**M1.4 Phase C (5 Nov 2026):** backend **809 passed**, pyflakes clean; frontend **488 Vitest** in 54 files (two page
+tests time out under load and pass alone), `tsc -b` and oxlint clean; contrast 244/244; `check_app.py` and
+`check_gates.py` (with `check_gates_c.py`) green; `tools/e2e_assist.py` 27/27 on the signed-in API; demo regression
+19/19 with 0 extra. Details: the plan's Verification, Review and Record → Phase C.
+
+Test counts at the M1.3 hand-off: backend **477 passed**, pyflakes clean; frontend **275 Vitest** in 34 files, `tsc -b` and
 `oxlint` (with jsx-a11y) clean; contrast 232/232 (`make lint`); `make ui-check` green at six widths in both themes for
 nine pages (with a `live-run` page and a middle-column width check); `make live-check` green (live over WebSocket,
 reload, replay, SSE fallback); demo regression 19/19 with 0 extra on 4 Nov 2026 in **No-AI** (started from the app)

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { NavLink } from "react-router";
-import { Bug, ClipboardText, ClockCounterClockwise, FolderOpen, ListChecks, Pulse, Question, Robot, SquaresFour } from "@phosphor-icons/react";
+import { Bandaids, Bug, ClipboardText, ClockCounterClockwise, FolderOpen, ImagesSquare, ListChecks, Pulse, Question, Robot, SquaresFour } from "@phosphor-icons/react";
 import { navBadges, type Badge } from "../lib/gates";
 import { useGateCounts } from "../lib/useGateCounts";
 
@@ -41,6 +41,8 @@ export function NavLinks({ slug, onNavigate }: Props) {
           <Item to={`${project}/questions`} label="Questions" badge={badges.questions} icon={<Question aria-hidden="true" />} onNavigate={onNavigate} />
           <Item to={`${project}/plan`} label="Test plan" badge={badges.plan} icon={<ClipboardText aria-hidden="true" />} onNavigate={onNavigate} />
           <Item to={`${project}/defects`} label="Defects" badge={badges.defects} icon={<Bug aria-hidden="true" />} onNavigate={onNavigate} />
+          <Item to={`${project}/visual`} label="Visual review" badge={badges.visual} icon={<ImagesSquare aria-hidden="true" />} onNavigate={onNavigate} />
+          <Item to={`${project}/heals`} label="Heals" badge={badges.heals} icon={<Bandaids aria-hidden="true" />} onNavigate={onNavigate} />
           <Item to={`${project}/changes`} label="Change log" icon={<ClockCounterClockwise aria-hidden="true" />} onNavigate={onNavigate} />
           <Item to={`${project}/ai`} label="AI" icon={<Robot aria-hidden="true" />} onNavigate={onNavigate} />
         </>

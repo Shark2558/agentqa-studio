@@ -103,6 +103,13 @@ const ERROR_WORDS: Readonly<Record<string, string>> = {
   csrf: "Start this from AgentQA's own pages.",
   not_found: "It no longer exists: reload the page.",
   network: "The server could not be reached: check that it is still running.",
+  answered: "Someone already answered this question, or it is out of time.",
+  not_handed_over: "This browser is no longer handed over to you.",
+  too_many: "Wait a moment: the browser is still catching up with what you sent.",
+  not_running: "Nothing is running, so there is nothing to pause.",
+  no_image: "This screen has no current picture to keep as its baseline.",
+  not_changed: "This screen is no longer waiting for a decision.",
+  not_decidable: "This fix is no longer waiting for a decision, or must be made by hand.",
 };
 
 /** A refusal in plain words: the gate's own codes are worded here; a validation message is the server's. */
@@ -114,7 +121,8 @@ export function errorWords(error: unknown): string {
 }
 
 // Refusals that mean "what you see is out of date": the page reloads what it shows so the next try starts fresh.
-const STALE = new Set(["busy", "not_open", "not_answered", "exported", "not_found", "plan_changed"]);
+const STALE = new Set(["busy", "not_open", "not_answered", "exported", "not_found", "plan_changed", "answered", "not_handed_over",
+  "not_changed", "not_decidable"]);
 export const isStale = (error: unknown): boolean => error instanceof ApiError && STALE.has(error.code);
 
 const POLL_MS = { running: 5_000, idle: 30_000, error: 60_000 } as const;
@@ -129,25 +137,26 @@ export function gatePollMs(c: GateCounts | undefined, error: unknown): number | 
 }
 
 export interface Badge { text: string; name: string }
-export interface NavBadges { questions: Badge | null; plan: Badge | null; defects: Badge | null }
+export interface NavBadges { questions: Badge | null; plan: Badge | null; defects: Badge | null; visual: Badge | null; heals: Badge | null }
 
 const count = (n: number, name: string): Badge | null => (n > 0 ? { text: String(n), name: `${n} ${name}` } : null);
 
-/** What each gate's link shows: open questions, cases still to review while the plan waits, drafts to confirm. */
+/** What each gate's link shows: open questions, cases still to review while the plan waits, drafts to confirm,
+ *  changed screens and proposed fixes. */
 export function navBadges(c: GateCounts | undefined): NavBadges {
-  if (!c) return { questions: null, plan: null, defects: null };
+  if (!c) return { questions: null, plan: null, defects: null, visual: null, heals: null };
   const waiting = c.plan.exists && !c.plan.approved;
   const toReview = c.plan.proposed + c.imported_ready;
   const plan = !waiting ? null : toReview > 0 ? { text: String(toReview), name: `${toReview} to review` } : { text: "•", name: "waiting for your approval" };
-  return { questions: count(c.questions_open, "open"), plan, defects: count(c.defects_draft, "to confirm") };
+  return { questions: count(c.questions_open, "open"), plan, defects: count(c.defects_draft, "to confirm"),
+           visual: count(c.visual_changed, "changed"), heals: count(c.heals_proposed, "to review") };
 }
 
 export interface NeedItem { id: string; text: string; to: string | null }
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/** The Project page's "What needs you": every item that waits for a person, with the page that answers it. Visual
- *  review and heals get their pages in Phase C; until then they are named without a link. Someone who cannot decide
- *  (a Viewer) reads the same items as what is waiting, not as tasks for them (sitting 1, S5). */
+/** The Project page's "What needs you": every item that waits for a person, with the page that answers it. Someone
+ *  who cannot decide (a Viewer) reads the same items as what is waiting, not as tasks for them (sitting 1, S5). */
 export function needsYou(c: GateCounts, slug: string, mayDecide: boolean): NeedItem[] {
   const base = `/projects/${encodeURIComponent(slug)}`;
   const review = mayDecide ? "to review" : "waiting for review";
@@ -169,8 +178,8 @@ export function needsYou(c: GateCounts, slug: string, mayDecide: boolean): NeedI
       id: "defects", to: `${base}/defects`,
       text: `${plural(c.defects_draft, "defect", "defects")} ${mayDecide ? "to confirm or reject" : "waiting for a decision"}`,
     },
-    c.visual_changed > 0 && { id: "visual", text: `${plural(c.visual_changed, "changed screen", "changed screens")} ${review} (in the old dashboard for now)`, to: null },
-    c.heals_proposed > 0 && { id: "heals", text: `${plural(c.heals_proposed, "proposed fix", "proposed fixes")} ${review} (in the old dashboard for now)`, to: null },
+    c.visual_changed > 0 && { id: "visual", text: `${plural(c.visual_changed, "changed screen", "changed screens")} ${review}`, to: `${base}/visual` },
+    c.heals_proposed > 0 && { id: "heals", text: `${plural(c.heals_proposed, "proposed fix", "proposed fixes")} ${review}`, to: `${base}/heals` },
   ];
   return items.filter((i): i is NeedItem => i !== false);
 }
