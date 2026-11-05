@@ -34,7 +34,8 @@ def stand_in():
 class _Capture(BaseHTTPRequestHandler):
     """Records every Messages request (body and headers) and answers according to `mode`:
     ok · reject_newer (400 naming output_config) · reject_model_text (400 "not supported for this model") ·
-    garbage (200 text/html) · truncated (stop_reason max_tokens) · refusal."""
+    no_credit (Anthropic's 400 when the credit runs out) · garbage (200 text/html) · truncated (stop_reason
+    max_tokens) · refusal."""
     bodies: list[dict] = []
     headers_seen: list[dict] = []
     mode = "ok"
@@ -62,6 +63,8 @@ class _Capture(BaseHTTPRequestHandler):
             return self._error("output_config: Extra inputs are not permitted")
         if _Capture.mode == "reject_model_text" and newer:
             return self._error("fallbacks is not supported for this model")
+        if _Capture.mode == "no_credit":
+            return self._error(mock_ai.ANTHROPIC_NO_CREDIT)
         if _Capture.mode == "garbage":
             return self._send(200, raw=b"<html>proxy says hi</html>", ctype="text/html")
         stop = {"truncated": "max_tokens", "refusal": "refusal"}.get(_Capture.mode, "end_turn")
@@ -168,6 +171,16 @@ def test_a_model_that_rejects_the_newer_fields_gets_a_plain_retry(capture, mode)
     first, second = _Capture.bodies
     assert "output_config" in first and "fallbacks" in first
     assert "output_config" not in second and "fallbacks" not in second
+
+
+def test_an_empty_credit_is_billing_after_one_request_with_no_plain_retry(capture):
+    _Capture.mode = "no_credit"
+
+    with pytest.raises(P.ProviderError) as broke:
+        capture_adapter(capture).chat(MODEL, *ASK, 30, None)
+
+    assert (broke.value.kind, broke.value.status) == ("billing", 400)
+    assert len(_Capture.bodies) == 1
 
 
 def test_a_refusal_is_an_error_not_an_answer(capture):

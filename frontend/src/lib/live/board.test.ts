@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { demoBoard } from "../../test-fixtures/live";
 import { cardModel, counterText, displayState, emptyBoard, foldBoard, type BoardModel } from "./board";
-import { toEvent, type LiveEvent } from "./event";
+import { eventKey, toEvent, type LiveEvent } from "./event";
 
 let seq = 0;
 function ev(t: number, agent: string, kind: string, extra: Record<string, unknown> = {}): LiveEvent {
@@ -133,6 +133,70 @@ describe("board: helpers, models and costs belong to the stage running at the ti
   it("ignores a cost that is not a finite number", () => {
     const b = run([ev(1, "srs", "stage_start"), ev(2, "ai", "cost", { cost_usd: "free", model: "m" })]);
     expect(card(b, "srs").cost).toBe(0);
+  });
+});
+
+const cost = (t: number, model: string, usd = 0) => ev(t, "ai", "cost", { agent_key: "req_writer", model, cost_usd: usd });
+const switched = (t: number) => ev(t, "ai", "switched", { agent_key: "req_writer", from_provider: "anthropic", to_provider: "gemini", failure: "billing" });
+
+describe("board: every model a card used, and the provider switches (C4)", () => {
+  it("lists each model once, in the order first used, where the last one used is only one of them", () => {
+    const b = run([ev(1, "writer", "stage_start"), cost(2, "claude-opus-5-5", 0.12), cost(3, "claude-opus-5-5", 0.11), switched(4),
+                   cost(5, "gemini-flash-lite-latest", 0.001), cost(6, "claude-opus-5-5")]);
+    expect(card(b, "writer").models).toEqual(["claude-opus-5-5", "gemini-flash-lite-latest"]);
+    expect(card(b, "writer").actualModel).toBe("claude-opus-5-5");
+    expect(cardModel(card(b, "writer"))).toBe("claude-opus-5-5, gemini-flash-lite-latest");
+  });
+
+  it("names two models and says how many more", () => {
+    const used = (names: string[]) => card(run([ev(1, "srs", "stage_start"), ...names.map((m, i) => cost(2 + i, m))]), "srs");
+    expect(cardModel(used(["a"]))).toBe("a");
+    expect(cardModel(used(["a", "b", "c"]))).toBe("a, b and 1 more");
+    expect(cardModel(used(["a", "b", "c", "d"]))).toBe("a, b and 2 more");
+  });
+
+  it("keeps the first 20 model names, however many the stream invents", () => {
+    const b = run([ev(1, "srs", "stage_start"), ...Array.from({ length: 25 }, (_, i) => cost(2 + i, `m${i}`))]);
+    expect(card(b, "srs").models).toHaveLength(20);
+    expect(card(b, "srs").models.at(-1)).toBe("m19");
+    expect(cardModel(card(b, "srs"))).toBe("m0, m1 and 18 more");
+  });
+
+  it("a cost line without a model leaves the models as they were", () => {
+    const b = run([ev(1, "srs", "stage_start"), cost(2, "claude-sonnet-5-5"), ev(3, "ai", "cost", { cost_usd: 0.01 })]);
+    expect(card(b, "srs").models).toEqual(["claude-sonnet-5-5"]);
+    expect(card(b, "srs").actualModel).toBe("claude-sonnet-5-5");
+  });
+
+  it("cuts a very long model name to fit the card", () => {
+    const b = run([ev(1, "srs", "stage_start"), cost(2, "x".repeat(200))]);
+    expect(cardModel(card(b, "srs"))).toBe(`${"x".repeat(59)}…`);
+  });
+
+  it("credits a switch line to the stage running at its time, and to no card before any stage", () => {
+    const early = switched(1);
+    const during = switched(3);
+    const b = run([early, ev(2, "writer", "stage_start"), during, ev(4, "writer", "stage_end"), ev(5, "designer", "stage_start")]);
+    expect([...card(b, "writer").switchLines]).toEqual([eventKey(during)]);
+    expect(card(b, "srs").switchLines.size).toBe(0);
+    expect(card(b, "designer").switchLines.size).toBe(0);
+    expect(b.ai.calls).toBe(0);                                  // a switch is not a billed call
+  });
+
+  it("keeps the first 50 switch lines on a card (the rest still show in What is happening)", () => {
+    const lines = Array.from({ length: 60 }, (_, i) => switched(2 + i));
+    const kept = card(run([ev(1, "writer", "stage_start"), ...lines]), "writer").switchLines;
+    expect(kept.size).toBe(50);
+    expect(kept.has(eventKey(lines[0])) && kept.has(eventKey(lines[49])) && !kept.has(eventKey(lines[50]))).toBe(true);
+  });
+
+  it("never changes the card it was given", () => {
+    const before = run([ev(1, "writer", "stage_start"), cost(2, "a"), switched(3)]);
+    const models = [...card(before, "writer").models];
+    const lines = [...card(before, "writer").switchLines];
+    foldBoard(before, [cost(4, "b"), switched(5)], demoBoard);
+    expect(card(before, "writer").models).toEqual(models);
+    expect([...card(before, "writer").switchLines]).toEqual(lines);
   });
 });
 

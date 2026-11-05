@@ -1,4 +1,5 @@
-"""Provider adapters: one JSON chat call, a model list and an error classifier per API family.
+"""Provider adapters: one JSON chat call and a model list per API family; `classify` (agentqa/ai/classify.py) reads
+their errors.
 
 Families: OpenAI chat completions (OpenAI, DeepSeek, Groq, Mistral, OpenRouter, LM Studio and any OpenAI-compatible
 service), Azure OpenAI, Anthropic Messages, Google Gemini generateContent, and Ollama. Adding a provider
@@ -22,6 +23,7 @@ from agentqa.ai.catalog import LOOPBACK_HOSTS
 T = TypeVar("T")
 
 from agentqa.ai.catalog import CATALOG, gemini_pick, prefer_pick  # noqa: F401  (CATALOG re-exported for older imports)
+from agentqa.ai.classify import classify                            # what an HTTP error means (P.classify, as before)
 
 # failure kinds and what the router does with them
 RETRY_SAME = {"timeout", "connection", "unavailable", "bad_output"}    # retry this key a little, then cool it down
@@ -38,33 +40,6 @@ class ProviderError(Exception):
     def __init__(self, kind: str, message: str, status: int | None = None, retry_after: float | None = None):
         super().__init__(message)
         self.kind, self.status, self.retry_after = kind, status, retry_after
-
-
-def classify(status: int | None, text: str) -> str:
-    t = (text or "").lower()
-    if status == 429:
-        if re.search(r"insufficient_quota|billing|credit balance|payment|plan and billing", t):
-            return "billing"
-        if re.search(r"quota|per day|daily|resource_exhausted.*quota|exceeded your current", t):
-            return "quota"
-        return "rate_limit"
-    if status in (401,):
-        return "invalid_key"
-    if status == 403:
-        return "billing" if re.search(r"billing|credit|payment", t) else "invalid_key"
-    if status == 402:
-        return "billing"
-    if status in (400, 404, 422) and re.search(r"model", t) and re.search(
-            r"not found|does not exist|not supported|decommissioned|invalid model|unknown model|no such model|not available"
-            r"|deprecated|is not a valid model", t):
-        return "model"
-    if status == 404:
-        return "model" if "model" in t else "bad_request"
-    if status in (400, 413, 422):
-        return "bad_request"
-    if status in (408, 500, 502, 503, 504, 520, 522, 524, 529):
-        return "unavailable"
-    return "unavailable" if (status or 0) >= 500 else "bad_request"
 
 
 def _retry_after(r) -> float | None:
@@ -125,7 +100,8 @@ class Adapter:
             raise ProviderError("connection", f"{exc.__class__.__name__}: {exc}") from exc
         if r.status_code >= 400:
             body = r.text[:600]
-            raise ProviderError(classify(r.status_code, body), f"HTTP {r.status_code}: {body}", r.status_code, _retry_after(r))
+            raise ProviderError(classify(r.status_code, body, self.k["provider"]), f"HTTP {r.status_code}: {body}",
+                                r.status_code, _retry_after(r))
         return r
 
     def pick(self, names: list[str]) -> str | None:
@@ -236,8 +212,8 @@ class AnthropicAdapter(Adapter):
         except anthropic.APIStatusError as exc:
             body = (exc.response.text if exc.response is not None else str(exc))[:600]
             retry_after = _retry_after(exc.response) if exc.response is not None else None
-            raise ProviderError(classify(exc.status_code, body), f"HTTP {exc.status_code}: {body}", exc.status_code,
-                                retry_after) from exc
+            raise ProviderError(classify(exc.status_code, body, self.k["provider"]), f"HTTP {exc.status_code}: {body}",
+                                exc.status_code, retry_after) from exc
         except anthropic.APIError as exc:                         # anything else the SDK could not make sense of
             raise ProviderError("unavailable", f"{exc.__class__.__name__}: {str(exc)[:300]}") from exc
 
@@ -246,7 +222,8 @@ class AnthropicAdapter(Adapter):
             return [m.id for m in self._call(lambda: list(c.models.list(limit=self.MODELS_PAGE))) if m.id]
 
     def _rejects_newer_fields(self, exc: ProviderError) -> bool:
-        return exc.status == 400 and any(f in str(exc) for f in self.NEWER_FIELDS)
+        # read as a refused request or a model limit ("... not supported for this model"); never a billing answer
+        return exc.kind in ("bad_request", "model") and exc.status == 400 and any(f in str(exc) for f in self.NEWER_FIELDS)
 
     def _request(self, c: anthropic.Anthropic, params: dict):
         """The beta call with the newer fields; plain form once if this model rejects them."""

@@ -73,6 +73,29 @@ def test_provider_fallback_model_fallback_and_billing(gw):
     assert mock_ai.CALLS["sk-ant-good-0000000000000003"] == 3             # the dead model is not asked again
 
 
+@pytest.mark.parametrize("provider,key,path,model", [
+    ("anthropic", "sk-ant-nocredit-0000000000001", "/anthropic/v1", "claude-opus-5-5"),   # 4 Nov 2026: asked 27 times
+    ("openai", "sk-oa-hardlimit-000000000001", "/openai/v1", "gpt-4o-mini"),              # through the shared _send
+])
+def test_a_key_that_cannot_pay_is_billing_after_one_call_and_never_asked_again(gw, provider, key, path, model):
+    dead = add(gw, provider, "No credit", key, path, model, 1)
+    add(gw, "gemini", "Gemini", "AIzaGood00000000000000000000002", "/gemini/v1beta", "gemini-flash-lite-latest", 1)
+    for _ in range(4):
+        assert gw.complete_json("s", "u")["served_by"] == "000002"
+    assert gw.store.state(dead)["state"] == "billing"
+    assert mock_ai.CALLS[key] == 1
+    assert [e["outcome"] for e in reversed(gw.store.events())] == ["billing", "switched", "ok", "ok", "ok", "ok"]
+
+
+def test_test_connection_says_billing_and_an_edit_gives_the_key_a_fresh_chance(gw):
+    ant = add(gw, "anthropic", "Claude", "sk-ant-nocredit-0000000000001", "/anthropic/v1", "claude-opus-5-5", 1)
+    res = gw.test(ant)
+    assert not res["ok"] and res["kind"] == "billing" and gw.store.state(ant)["state"] == "billing"
+    assert not gw.available()
+    gw.store.upsert_key({"id": ant, "key": "sk-ant-good-0000000000000003"})       # credit added, key edited
+    assert gw.complete_json("s", "u")["served_by"] == "000003"
+
+
 def test_quota_timeouts_and_all_failed(gw):
     gw.store.set_policy({"order": ["gemini"], "attempts_per_key": 1, "timeout_s": 1})
     add(gw, "gemini", "Gemini quota", "AIzaQuota000000000000000000001", "/gemini/v1beta", "gemini-2.5-flash", 1)

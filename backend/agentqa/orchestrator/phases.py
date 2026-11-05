@@ -18,7 +18,7 @@ _BY_PHASE = {
     "action": ("action", "navigate", "request", "step", "write", "approve", "sync"),
     # what happened
     "result": ("observe", "verdict", "test_end", "status", "defect", "finding", "issue", "skip", "contract", "login",
-               "data", "heal", "question"),
+               "data", "heal", "question", "switched"),
     # a person is needed
     "waiting": ("assist", "gate"),
     # a stage or a pass starts, ends or reports progress

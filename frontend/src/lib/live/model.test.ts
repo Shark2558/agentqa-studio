@@ -62,6 +62,27 @@ describe("replay matches the live view", () => {
     expect(snapshot(again.checkpoints[2])).toEqual(snapshot(first.checkpoints[2]));
   });
 
+  it("a card's models and switch lines are the same at a checkpoint boundary, live, replayed or out of order (C4)", () => {
+    const at = (i: number, agent: string, kind: string, extra: Record<string, unknown> = {}) =>
+      toEvent({ t: 1_700_000_000 + i, seq: i + 1, w: i % 2 ? "gw0" : "main", agent, kind, title: `${agent} ${kind} ${i}`, phase: "result", ...extra }) as LiveEvent;
+    const run = Array.from({ length: 2 * CHECKPOINT_EVERY + 10 }, (_, i) => {
+      if (i === 0) return at(i, "writer", "stage_start", { phase: "lifecycle" });
+      if (i >= CHECKPOINT_EVERY - 1 && i <= CHECKPOINT_EVERY + 1) return at(i, "ai", "switched", { failure: "billing" });
+      if (i % 97 === 0) return at(i, "ai", "cost", { phase: "meta", model: `m${i % 3}`, cost_usd: 0.001 });
+      return at(i, "writer", "requirement");
+    });
+    const timeline = buildTimeline(run, demoBoard);
+    for (const pos of [CHECKPOINT_EVERY - 1, CHECKPOINT_EVERY, CHECKPOINT_EVERY + 1, CHECKPOINT_EVERY + 2, run.length]) {
+      expect(snapshot(modelAt(timeline, run, pos, demoBoard))).toEqual(snapshot(fold(emptyModel(demoBoard), run.slice(0, pos), demoBoard)));
+    }
+    const writer = modelAt(timeline, run, run.length, demoBoard).board.cards.get("writer");
+    expect(writer?.switchLines.size).toBe(3);
+    expect(writer?.models).toEqual(["m1", "m2", "m0"]);
+    let stream = emptyStream;
+    for (let i = run.length; i > 0; i -= 41) stream = mergeEvents(stream, run.slice(Math.max(0, i - 41), i));   // newest first
+    expect(snapshot(fold(emptyModel(demoBoard), stream.events, demoBoard))).toEqual(snapshot(fold(emptyModel(demoBoard), run, demoBoard)));
+  });
+
   it("never changes the model it was given", () => {
     const start = fold(emptyModel(demoBoard), events.slice(0, 200), demoBoard);
     const before = JSON.stringify(snapshot(start));

@@ -12,8 +12,9 @@ Every failure and every switch is written to the audit log with the key text scr
 
 The router knows nothing about projects: `scopes` says which keys may answer and in which order (hybrid mode
 passes ("local", "cloud") or the reverse), `tier` picks the model for keys set to `auto`, `cloud_image` says whether
-an image may leave the computer at all (off unless the project consented), and `on_usage` gets the token counts of
-every billed answer, usable or not, so the caller can record cost where it belongs (the project store).
+an image may leave the computer at all (off unless the project consented), `on_usage` gets the token counts of
+every billed answer, usable or not, so the caller can record cost where it belongs (the project store), and
+`on_switch` hears when a call moves to another provider (the Live View's line), in fixed words only.
 """
 from __future__ import annotations
 
@@ -33,6 +34,7 @@ ALL_SCOPES = ("local", "cloud")
 LOCAL_TIMEOUT_S = 600.0            # a 4B model on a 4 GB GPU writes ~8 tokens/s: a Writer chunk can take minutes (measured 3 Nov 2026)
 CHARS_PER_TOKEN = 4                # for the estimate when a provider reports no usage
 UsageCallback = Callable[[dict], None]
+SwitchCallback = Callable[[dict], None]
 
 
 def redact(text: str) -> str:
@@ -61,6 +63,7 @@ class Request:
     tier: str | None = None
     on_usage: UsageCallback | None = None
     cloud_image: bool = False      # may the image go to a cloud key? (the project's screenshot consent)
+    on_switch: SwitchCallback | None = None
 
 
 def _dead(st: dict) -> list[str]:
@@ -134,11 +137,12 @@ class Gateway:
     def complete_json(self, system: str, user: str, *, task: str = "", max_tokens: int = 700,
                       image: bytes | None = None, need_vision: bool = False, scopes: tuple[str, ...] = ("cloud",),
                       tier: str | None = None, on_usage: UsageCallback | None = None,
-                      cloud_image: bool = False) -> dict | None:
+                      cloud_image: bool = False, on_switch: SwitchCallback | None = None) -> dict | None:
         """One JSON answer from the first key that works, or None. An optional image goes only to keys that can see,
         and to a cloud key only with `cloud_image`; with `need_vision` a key that cannot take the image is not tried."""
         pol = self.store.policy()
-        req = Request(system, user, task, max_tokens, image, tier, on_usage, cloud_image)
+        req = Request(system=system, user=user, task=task, max_tokens=max_tokens, image=image, tier=tier,
+                      on_usage=on_usage, cloud_image=cloud_image, on_switch=on_switch)
         if need_vision and not cloud_image:
             scopes = tuple(s for s in scopes if s != "cloud")      # the image must not leave the computer
         keys = self.ordered(need_vision=need_vision or image is not None, scopes=scopes)
@@ -150,10 +154,13 @@ class Gateway:
             return None
         reasons: list[str] = []
         prev: dict | None = None
+        why = ""
         for k in keys:
             if prev is not None:
                 self.store.event(prev, "switched", f"{reasons[-1]}; trying {k['label']} ({k['provider']})", task=task,
                                  switched_to=k.get("label") or k["id"])
+                if k["provider"] != prev["provider"]:
+                    self._report_switch(req, prev, k, why)
             prev = k
             out, why = self._try_key(k, pol, req)
             if out is not None:
@@ -260,6 +267,18 @@ class Gateway:
                           "max_tokens": req.max_tokens})
         except Exception as exc:  # noqa: BLE001 - a broken cost record must never lose the answer
             warn(f"[ai] the usage record failed ({exc.__class__.__name__}: {exc}); the answer is kept")
+
+    @staticmethod
+    def _report_switch(req: Request, failed: dict, nxt: dict, kind: str) -> None:
+        """Tell the caller the call moves to another provider, and why: provider ids and the failure kind in the
+        gateway's own words, never the key, its label, the error text or the prompt."""
+        if req.on_switch is None:
+            return
+        try:
+            req.on_switch({"from_provider": failed["provider"], "to_provider": nxt["provider"], "kind": kind,
+                           "reason": P.KINDS.get(kind, kind), "task": req.task})
+        except Exception as exc:  # noqa: BLE001 - a broken live line must never lose the answer
+            warn(f"[ai] the switch report failed ({exc.__class__.__name__}); the call goes on")
 
     def _consequences(self, k: dict, pol: dict, kind: str, err: P.ProviderError | None, pinned: bool) -> None:
         if kind in P.DEAD:

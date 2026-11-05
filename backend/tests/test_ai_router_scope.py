@@ -115,6 +115,39 @@ def test_on_usage_reports_tokens_for_all_four_families(gw):
     assert seen[3]["model"] == "qwen3:4b" and seen[1]["label"] == "Claude"
 
 
+def test_on_switch_reports_each_move_to_another_provider_with_its_reason_and_nothing_secret(gw):
+    # C4 (M1.3 Phase C): the Live View learns of a switch; a move between two keys of one provider is not reported
+    add(gw, "openai", "OpenAI Primary", "sk-one-ratelimit-000000000001", "/openai/v1", "gpt-4o-mini", 1)
+    add(gw, "openai", "OpenAI Backup", "sk-two-invalid-0000000000002", "/openai/v1", "gpt-4o-mini", 2)
+    add(gw, "anthropic", "Claude personal", "sk-ant-nocredit-0000000000003", "/anthropic/v1", "claude-opus-5-5", 1)
+    add(gw, "gemini", "Gemini", "AIzaGood00000000000000000000004", "/gemini/v1beta", "gemini-flash-lite-latest", 1)
+    seen: list[dict] = []
+    assert gw.complete_json("SYS-MARK", "USER-MARK", task="req_writer", on_switch=seen.append)["served_by"] == "000004"
+    assert seen == [
+        {"from_provider": "openai", "to_provider": "anthropic", "kind": "invalid_key", "reason": "Key rejected",
+         "task": "req_writer"},
+        {"from_provider": "anthropic", "to_provider": "gemini", "kind": "billing", "reason": "Billing or credit exhausted",
+         "task": "req_writer"},
+    ]
+    assert [e["outcome"] for e in gw.store.events()].count("switched") == 3     # the audit log keeps all three
+    seen.clear()
+    assert gw.complete_json("s", "u", on_switch=seen.append)["served_by"] == "000004"
+    assert seen == []                                    # every key before Gemini is dead or cooling: nothing to switch
+
+
+def test_a_broken_switch_callback_never_loses_the_answer(gw):
+    add(gw, "anthropic", "Claude", "sk-ant-nocredit-0000000000003", "/anthropic/v1", "claude-opus-5-5", 1)
+    add(gw, "gemini", "Gemini", "AIzaGood00000000000000000000004", "/gemini/v1beta", "gemini-flash-lite-latest", 1)
+
+    called: list[dict] = []
+
+    def boom(info):
+        called.append(info)
+        raise RuntimeError("the live line is broken")
+    assert gw.complete_json("s", "u", on_switch=boom)["served_by"] == "000004"
+    assert len(called) == 1
+
+
 def test_a_broken_usage_callback_never_loses_the_answer(gw):
     add(gw, "openai", "OpenAI", "sk-cloud-good-0000000000000001", "/openai/v1", "gpt-4o-mini")
 
