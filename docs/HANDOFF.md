@@ -1,4 +1,4 @@
-# Handoff — AgentQA Studio v1 (updated 4 Nov 2026, after M1.3)
+# Handoff — AgentQA Studio v1 (updated 5 Nov 2026, after M1.4 Phase C was combined into `main`)
 
 Read this first in a new session, together with `CLAUDE.md`. It says where the build stands, how to run things on
 this machine, what the owner has decided, and what the next milestone must deliver. The PRD is `../01-PRD-AgentQA-Studio-v1.md`
@@ -22,7 +22,7 @@ milestone plan before code is written and likes being shown the result in the br
 | **M1.2 AI modes & selector 🔒** — Phase A (backend gateway modes, tiers, usage, budget; `llm.py` removed) | done, merged into `main` | `cea3977` → merge `0c68c9f` |
 | **M1.2 Phase B** (wizard AI step, AI page: providers, local detection, agents, spend; real-Ollama fixes; four acceptance runs) | **done**, reviewed, acceptance watched | `757402e` (+ the docs commit after it) |
 | **M1.3 Live View v2** — A: board, phases, run-shell events, one feed over WebSocket + SSE, Viewer rule · B: the React Live View with replay · C: owner acceptance (three fixes) | **done**, reviewed, acceptance watched 4 Nov 2026; **merged into `main`** (fast-forward, on the owner's word, 4 Nov 2026) | `b6711d6` · `b02ec86` · `44ede97` · `8ff58c0` |
-| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **A+B and the fixes merged into `main`** (fast-forward to `301fb3d`, on the owner's word, 5 Nov 2026); **Phase C done** (visual review, heals, the "AgentQA needs you" box, take-over, pause; reviewed as lock-marked by all five reviewers in fresh contexts, security twice (backend and app), every HIGH and MEDIUM fixed test-first; branch `claude/compassionate-goldwasser-e62a07`, **not merged**); **next: acceptance sitting 2** with the owner (ask first; plan → Acceptance → Sitting 2), then Phase D | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes `301fb3d` · Phase C on its branch |
+| **M1.4 Gates in the new UI** (plan `docs/plans/m1-4-gates.md`) | plan approved 4 Nov 2026 (all seven decisions as recommended); **Phase A done** (the gates' backend); **Phase B done** (the three gates in the app, reviewed; branch `claude/pensive-zhukovsky-481d45`, on Phase A, not merged); **acceptance sitting 1 done** with the owner (4 Nov 2026: all seven steps, 19/19 and 0 extra) and its five findings fixed (5 Nov 2026); **A+B and the fixes merged into `main`** (fast-forward to `301fb3d`, on the owner's word, 5 Nov 2026); **Phase C done** (visual review, heals, the "AgentQA needs you" box, take-over, pause; reviewed as lock-marked by all five reviewers in fresh contexts, security twice (backend and app), every HIGH and MEDIUM fixed test-first); **Phase C, the M1.3 C4/C5 follow-up and the React lint rules combined into `main`** on the owner's word (5 Nov 2026, v12; record in `docs/plans/oxlint-react-rules.md` → Combined into main); **next: acceptance sitting 2** with the owner (ask first; plan → Acceptance → Sitting 2), then Phase D | plan `35acae8` + approval · Phase A `8c9d651` · Phase B `b4a53e6` · `f1ad631` · sitting-1 fixes `301fb3d` · Phase C `888fbc9` · combine `1cfeaed` → `3de4c8f` |
 
 Every milestone has a plan with a verification and a review record in `docs/plans/`. Read `m1-3-live-view-v2.md` for the
 latest patterns (three phases, fresh-context review tables, acceptance findings fixed test-first, "open" rows kept).
@@ -31,6 +31,11 @@ latest patterns (three phases, fresh-context review tables, acceptance findings 
 tests time out under load and pass alone), `tsc -b` and oxlint clean; contrast 244/244; `check_app.py` and
 `check_gates.py` (with `check_gates_c.py`) green; `tools/e2e_assist.py` 27/27 on the signed-in API; demo regression
 19/19 with 0 extra. Details: the plan's Verification, Review and Record → Phase C.
+
+**Combined `main` (5 Nov 2026, Phase C + C4/C5 + React lint rules):** backend **877 passed** (the known load-sensitive
+`test_resuming_from_a_cursor_sends_only_the_end` failed once in the full run, 3 × 24/24 alone), pyflakes clean; frontend
+**512 Vitest** in 55 files, `tsc -b` clean, oxlint **with the `react` plugin** 0 warnings; contrast 244/244; demo
+regression 19/19 with 0 extra. Record: `docs/plans/oxlint-react-rules.md` → Combined into main.
 
 Test counts at the M1.3 hand-off: backend **477 passed**, pyflakes clean; frontend **275 Vitest** in 34 files, `tsc -b` and
 `oxlint` (with jsx-a11y) clean; contrast 232/232 (`make lint`); `make ui-check` green at six widths in both themes for
@@ -110,8 +115,8 @@ is whatever the owner makes it (seen: 800, 1149, 1918 px), so check pages at the
 
 ## M1.3 follow-up — empty credit and AI switches (plan `docs/plans/m1-3-ai-switch-and-credit.md`, 🔒)
 
-Branch `claude/nervous-sutherland-913fae`, cut from the M1.3 branch (so merging it brings M1.3 too); not pushed, not
-merged. A 400 in which Anthropic, OpenAI or Gemini says (in its own error fields) that the account cannot pay is now
+Branch `claude/nervous-sutherland-913fae` (`482c887`), cut from the M1.3 branch; **merged into `main`** with M1.4 Phase C
+on 5 Nov 2026 (merge `0a46b40`). A 400 in which Anthropic, OpenAI or Gemini says (in its own error fields) that the account cannot pay is now
 `billing`: the key is asked once, shows "Billing problem" on the AI page, and is skipped until edited or re-tested.
 When a call moves to another AI company the Live View says so in the stream of the agent whose stage was running
 ("Requirement Writer: switched from Anthropic Claude to Google Gemini (Billing or credit exhausted)"), and each card
@@ -162,12 +167,19 @@ gates' API (questions, test plan, defects, requirements dispositions), who/why i
 request, formula-safe exports, the `replan` command; **B** the three gates in the React app, then **acceptance sitting
 1** (the PRD acceptance); **C** visual review, heals, the needs-you box, take-over and pause (reviewed as 🔒);
 **D** retire the replaced old pages, the M1.3 carry-overs, **acceptance sitting 2**. Both sittings run in No-AI mode.
-The follow-up branch `claude/nervous-sutherland-913fae` (`482c887`, M1.3 C4/C5) touches `AgentBoard.tsx` and
-`board.ts`: Phase D waits for it to merge before the `AgentBoard` items.
+The follow-up branch `claude/nervous-sutherland-913fae` (`482c887`, M1.3 C4/C5), which touches `AgentBoard.tsx` and
+`board.ts`, is merged (5 Nov 2026), so Phase D's `AgentBoard` items are free to start.
 M1.3 is in `main` (the owner said merge on 4 Nov 2026); start M1.4 from `main`. A follow-up session was started the
 same day for the gateway's "credit balance is too low" handling and provider switches in the Live View (C4, C5).
 
 ## Follow-ups parked (not blockers)
+
+**Raised by the owner (5 Nov 2026): requirements can only be uploaded in the new-project wizard.** Step 2
+(`pages/wizard/StepRequirements.tsx`) takes documents (SRS, PRD, manuals, screenshots), typed requirements with the
+Requirement Chat, and an Excel/CSV of existing cases; once the project exists, no page lets him add or replace a
+document or add a requirement (PRD FR-ONB-4: "added, edited or dispositioned … at any time"; only dispositions are
+built). The upload API already exists (`api.uploadUrl(slug, folder)`); a slice on the Requirements page needs a plan
+and his approval.
 
 Playwright `e2e/wizard.spec.ts` and a `NewProject` container test (M1.1 review) · CI Docker build cache (M0.2) ·
 old dashboard's `testdata_account` keeps its own copy of the account rules (M1.4 retires the page) · `web/app.py`

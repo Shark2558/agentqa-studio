@@ -59,6 +59,44 @@ All run through `bash frontend/local-node.sh` on this machine (5 Nov 2026):
 | `test` (full Vitest) | **385 passed in 46 files** (383 before + the 2 new tests) |
 | Fresh-context review (`react-reviewer`) | approve: no CRITICAL, HIGH or MEDIUM. Its LOW on the Shell test is taken (assert "never under the drawer" instead of an exact call list, so a StrictMode test setup cannot break it). |
 
+## Combined into main (5 Nov 2026, on the owner's word)
+
+The owner asked for one up-to-date version to test with a real project and on GitHub, and chose to combine the three
+finished branches first:
+- this lint commit was rebased onto M1.4 Phase C (`888fbc9`, a fast-forward from `main`), giving `1cfeaed`;
+- the M1.3 C4/C5 follow-up (`482c887`) was merged on top (`0a46b40`).
+
+What the combine needed:
+1. **`Shell.test.tsx` (conflict).** Phase C had replaced the file with a single help-box test, which dropped the six
+   navigation and phone-drawer tests, apparently by accident. The resolution keeps all of them, the new Back test and
+   Phase C's test. Phase C's file-wide mock (the help box always throws) is now a `vi.hoisted` flag, so only its own
+   test breaks the box.
+2. **`HANDOFF.md` (conflict).** Both sides' parked items are kept; three that are now done are dropped (credit is
+   billing, the switch line, `list_requirements` without a limit).
+3. **The React rules on the combined code (`fdfb92d`):**
+   - `assist/dockHooks.ts` `useNews` set state inside its effect (Phase C). The words are now worked out while
+     rendering; the effect only records them as said and notifies.
+   - `live/AgentFocus.tsx` lost a memo to a later `displayState(card, …)` call (C4/C5). The pure call now runs before
+     the memo.
+4. **Review finding, HIGH (`3de4c8f`).** The fresh-context review of the combine found that the first `useNews` fix
+   compared the list itself, and `NeedsYouDock` hands a new empty list on every render while nothing has loaded. With
+   the role known, it then set state forever: "Too many re-renders", shown as "The help box could not be shown" on
+   every first load and project switch. The full suite had passed. Fixed test-first: the change is now told by the
+   project and the question ids. A new dock test failed before the fix ("Too many re-renders") and passes now, and
+   `dockHooks.test.ts` pins the empty list and the same question number in another project.
+
+Checks on the combined branch:
+
+| Check | Result |
+|---|---|
+| `run lint` | 0 warnings |
+| `run typecheck` | clean |
+| Vitest | **512 passed in 55 files** (after the HIGH fix; 509 in 54 before its three new tests) |
+| `pytest` | **877 passed, 1 failed** in the full run (`test_api_live_ws.py::test_resuming_from_a_cursor_sends_only_the_end`, the known load-sensitive test); that file alone, 3 × **24/24** |
+| `pyflakes` | clean |
+| contrast | 244/244 |
+| demo regression (No-AI, fresh copy, `--auto-approve`) | **19/19 seeded bugs found, 0 unexpected** |
+
 ## Follow-ups (not done here: outside the task)
 
 - **The other dropped defaults.** `typescript`, `unicorn` and `oxc` are off for the same reason. A scratch run with
@@ -71,7 +109,7 @@ All run through `bash frontend/local-node.sh` on this machine (5 Nov 2026):
 - **oxlint is not in CI.** `.github/workflows/agentqa-selftest.yml` runs typecheck, tests and the build for the
   frontend, but not lint, so "oxlint clean" holds only when someone runs it. Adding `npm run lint` (with
   `--deny-warnings`, since the bar is zero warnings) there would keep it true.
-- **Branches not yet merged pick these rules up on merge.** M1.4 Phase C (`claude/compassionate-goldwasser-e62a07`,
+- ~~**Branches not yet merged pick these rules up on merge.**~~ Done in the combine above (`fdfb92d`, `3de4c8f`). M1.4 Phase C (`claude/compassionate-goldwasser-e62a07`,
   888fbc9), linted read-only from a scratch export with this config, shows exactly one warning beyond the two fixed
   here: `src/components/assist/dockHooks.ts:54`, `react(set-state-in-effect)` in `useNews` (`setNews` in an effect that
   also writes the module-level `announced` map and fires notifications). Phase C owns that file and should settle it
