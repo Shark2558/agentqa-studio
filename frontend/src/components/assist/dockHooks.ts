@@ -40,21 +40,30 @@ function notify(w: Waiting): void {
   }
 }
 
+/** The questions in `items` not yet said for this project. */
+function unsaid(slug: string, items: readonly Waiting[]): readonly Waiting[] {
+  const seen = announced.get(slug);
+  return seen ? items.filter((i) => !seen.has(i.id)) : items;
+}
+
 /** Every new question is said once (in the dock's live region, which sits outside the page a dialog closes), and
  *  notified; a list that is only asked again says nothing. Nothing is said before the role is known: what a Viewer
- *  hears differs from what the owner hears. */
+ *  hears differs from what the owner hears. The words are worked out while rendering, when the list changes (React's
+ *  pattern for adjusting state when a value changes); the effect only records them as said and notifies. */
 export function useNews(slug: string, items: readonly Waiting[], mayDrive: boolean, isRoleKnown: boolean): string {
-  const [news, setNews] = useState("");
+  const [news, setNews] = useState<{ items: readonly Waiting[] | null; text: string }>({ items: null, text: "" });
+  if (isRoleKnown && news.items !== items) {
+    const fresh = unsaid(slug, items);
+    setNews({ items, text: fresh.length ? fresh.map((i) => said(i, mayDrive)).join(" ") : news.text });
+  }
   useEffect(() => {
     if (!isRoleKnown) return;
-    const seen = announced.get(slug) ?? new Set<number>();
-    const fresh = items.filter((i) => !seen.has(i.id));
+    const fresh = unsaid(slug, items);
     if (!fresh.length) return;
-    announced.set(slug, new Set([...seen, ...fresh.map((i) => i.id)]));
-    setNews(fresh.map((i) => said(i, mayDrive)).join(" "));
+    announced.set(slug, new Set([...(announced.get(slug) ?? []), ...fresh.map((i) => i.id)]));
     fresh.forEach(notify);
-  }, [slug, items, mayDrive, isRoleKnown]);
-  return news;
+  }, [slug, items, isRoleKnown]);
+  return news.text;
 }
 
 /** The dock's height as a CSS variable on the page (`--dock-h`), kept up to date as the dock grows or shrinks, and

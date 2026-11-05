@@ -162,12 +162,13 @@ export function AgentFocus({ slug, session, model, events, pos, agent, runOver }
   }, []);
   const card = agent ? model.board.cards.get(agent) : undefined;
   const lanes = [...model.lanes.lanes.values()].filter((l) => !agent || l.agent === agent).sort((a, b) => b.lastT - a.lastT);
+  // Before the memo below: a value handed to a function after a memo reads it may count as changed, and the memo is lost.
+  const state = card ? displayState(card, model.board, runOver) : null;
   const credited = card?.switchLines;                      // the AI switches made while this agent's stage ran
   const rows = useMemo(() => events.slice(0, pos).filter((e) => e.phase !== "meta" && (!agent || e.agent === agent || isCredited(e, credited))),
                        [events, pos, agent, credited]);
   const visible = useMemo(() => rows.slice(-limit), [rows, limit]);
   const { box, onScroll } = useFollowNewest(visible);
-  const state = card ? displayState(card, model.board, runOver) : null;
   const earlier = Math.min(rows.length, MAX_SHOWN) - visible.length;
   return (
     <section className="card focus" aria-labelledby="h-focus">
