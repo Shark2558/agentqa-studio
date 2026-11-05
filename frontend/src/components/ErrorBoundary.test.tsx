@@ -29,4 +29,15 @@ describe("ErrorBoundary", () => {
     rerender(<ErrorBoundary resetKey={2}><Panel broken={false} /></ErrorBoundary>);
     expect(screen.getByText("panel is fine")).toBeInTheDocument();
   });
+
+  it("a part still broken under the new key shows the message again and stays down until the key moves on", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { rerender } = render(<ErrorBoundary resetKey={1}><Panel broken /></ErrorBoundary>);
+    rerender(<ErrorBoundary resetKey={2}><Panel broken /></ErrorBoundary>);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    rerender(<ErrorBoundary resetKey={2}><Panel broken={false} /></ErrorBoundary>);
+    expect(screen.getByRole("alert")).toBeInTheDocument();            // same key: no retry
+    rerender(<ErrorBoundary resetKey={3}><Panel broken={false} /></ErrorBoundary>);
+    expect(screen.getByText("panel is fine")).toBeInTheDocument();
+  });
 });

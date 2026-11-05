@@ -17,18 +17,24 @@ type Props = {
 const SIDEBAR_QUERY = "(min-width: 760px)";
 
 /** The phone drawer's open state: closes on navigation and when the window grows a sidebar; focus goes back to
- *  the menu button after it closes. */
+ *  the menu button after it closes. Navigation (Back, a redirect) closes it while rendering, React's pattern for
+ *  adjusting state when a value changes, so the new page never shows under the old drawer; an effect would close it
+ *  one frame late. */
 function useDrawer() {
   const [open, setOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
   const { pathname } = useLocation();
+  const [shownPath, setShownPath] = useState(pathname);
 
+  if (shownPath !== pathname) {
+    setShownPath(pathname);
+    setOpen(false);
+  }
   useEffect(() => {
     if (wasOpen.current && !open) menuButton.current?.focus();
     wasOpen.current = open;
   }, [open]);
-  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open || typeof window.matchMedia !== "function") return;
     const query = window.matchMedia(SIDEBAR_QUERY);
