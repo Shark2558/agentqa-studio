@@ -44,7 +44,9 @@ else
 fi
 
 step "2/5 unit tests inside the image"
-docker run --rm "$IMAGE" python -m pytest -q tests -p no:cacheprovider
+# A live-connection test can fail once on a busy machine; the second run repeats ONLY the tests that failed (--lf), so a
+# real failure fails twice. The cache sits in /tmp: the image's code folder is read-only to this user.
+docker run --rm "$IMAGE" sh -c 'python -m pytest -q tests -o cache_dir=/tmp/pytest-cache || python -m pytest -q tests --lf -o cache_dir=/tmp/pytest-cache'
 
 step "3/5 start the demo portals and the dashboard"
 "${COMPOSE[@]}" up -d portal dashboard

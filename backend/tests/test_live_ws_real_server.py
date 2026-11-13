@@ -53,13 +53,19 @@ def server(tmp_path, monkeypatch):
     thread.join(timeout=10)
 
 
-def slots_free(app, seconds: float = 10.0) -> bool:
+def slots_open(app, count: int, seconds: float = 10.0) -> bool:
+    """True once exactly `count` streams hold a slot. The first line of a stream can reach the client a moment before
+    the server counts the slot (a busy machine shows it, GitHub's did), so a test must wait for the count, not read it."""
     deadline = time.time() + seconds
     while time.time() < deadline:
-        if app.state.stream_slots.open_count() == 0:
+        if app.state.stream_slots.open_count() == count:
             return True
         time.sleep(0.05)
     return False
+
+
+def slots_free(app, seconds: float = 10.0) -> bool:
+    return slots_open(app, 0, seconds)
 
 
 @pytest.fixture
@@ -85,7 +91,7 @@ def test_an_sse_stream_closed_early_frees_its_slot(server, running):
         with http.stream("GET", "/api/v1/projects/demo/live/cli-fixture-pipeline/stream") as r:
             assert r.status_code == 200
             next(r.iter_lines())
-            assert app.state.stream_slots.open_count() == 1
+            assert slots_open(app, 1), "the open stream never held a slot"
     assert slots_free(app)
 
 
