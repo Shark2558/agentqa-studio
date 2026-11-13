@@ -193,8 +193,17 @@ run) — both in `ai/classify.py` · cost per model on a card · the run picker 
 start · site-map children
 in their parent's column · B19 (a socket half-open after sleep still says "live": not seen, the PC did not sleep) and
 B20–B22 in the M1.3 plan · a stray `backend/.venv` on Drive for the
-owner to delete · **no GitHub remote yet** (commits are local only) · the CLAUDE.md "Environment" section is the
-place for new machine gotchas.
+owner to delete · the CLAUDE.md "Environment" section is the place for new machine gotchas.
+
+**GitHub (14 Nov 2026):** `origin` is `https://github.com/Shark2558/agentqa-studio.git`; `main` (38 commits, `2829436`) was pushed
+that day. Only `main` is there (every `claude/*` branch is inside it); push nothing else without asking. The repository was
+private and is public since 14 Nov (the owner's choice, to let the assistant read the Actions results; ask before changing it
+back). **The first test run (AgentQA self-test #1) failed in 5 seconds with GitHub's message "The job was not started because
+recent account payments have failed or your spending limit needs to be increased"**: no job started, so it says nothing about
+the code. Read a run with the public API (`/repos/Shark2558/agentqa-studio/actions/runs`, then `/jobs`, then
+`/check-runs/<id>/annotations`); logs themselves need a sign-in. `gh` is not installed. The workflow runs on every push and pull
+request (unit on Ubuntu and Windows × Python 3.12 and 3.13, security, frontend, docker, demo), the release workflow only on `v*`
+tags.
 
 ## The loop to follow (ECC, non-negotiable)
 
