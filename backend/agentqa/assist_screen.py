@@ -77,7 +77,7 @@ class Shooter:
             data = self.page.screenshot(type="jpeg", quality=70, timeout=5000)
         except Exception:  # noqa: BLE001
             return False
-        h = hashlib.sha1(data).hexdigest()
+        h = hashlib.sha1(data, usedforsecurity=False).hexdigest()    # only "did the picture change", not a secret
         url = ""
         try:
             url = self.page.url

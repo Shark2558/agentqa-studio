@@ -42,7 +42,7 @@ MODAL = re.compile(r"\b(shall|must|should|will|can|may|is able to|are able to)\b
 
 
 def _src_hash(text: str) -> str:
-    return hashlib.sha1((text or "").encode()).hexdigest()[:12]
+    return hashlib.sha1((text or "").encode(), usedforsecurity=False).hexdigest()[:12]
 
 
 def _numbers(*parts) -> set[str]:
