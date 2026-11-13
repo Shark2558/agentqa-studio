@@ -28,6 +28,9 @@ jobs:
         run: python -m pyflakes agentqa demo tools tests
       - name: Unit tests (no browser, no portal)
         run: python -m pytest -q tests --junitxml=unit-junit.xml
+      - name: Name the failed tests (notes on the run page, readable without signing in)
+        if: failure()
+        run: python tools/ci_annotate.py unit-junit.xml
 
   security:
     runs-on: ubuntu-latest
@@ -40,7 +43,12 @@ jobs:
         # B608: SQL built only from internal table/column names and "?" placeholders (reviewed)
         # B310: urlopen of the mock-inbox URL from project.yaml; B104: the "0.0.0.0" setting name, not a bind
         run: bandit -q -r agentqa -ll -s B608,B310,B104
+      - name: Name the security findings (notes on the run page, readable without signing in)
+        if: failure()
+        run: |
+          bandit -q -r agentqa -ll -s B608,B310,B104 -f custom --msg-template "::error file=backend/{relpath},line={line}::{test_id} ({severity}): {msg}" || true
       - name: Known vulnerabilities in dependencies
+        if: always()          # a scanner finding above must not hide this audit
         run: pip-audit -r requirements.txt
 
   frontend:
