@@ -24,9 +24,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "${{ matrix.python }}", cache: pip, cache-dependency-path: backend/requirements.txt}
       - run: python -m pip install -r requirements.txt pyflakes
+      - name: Install Chromium (six unit tests in test_v08 and test_visual_qa drive a real browser)
+        run: python -m playwright install --with-deps chromium
       - name: Lint (unused names, undefined names)
         run: python -m pyflakes agentqa demo tools tests
-      - name: Unit tests (no browser, no portal)
+      - name: Unit tests (a browser, no demo portal)
         run: python -m pytest -q tests --junitxml=unit-junit.xml
       - name: Name the failed tests (notes on the run page, readable without signing in)
         if: failure()

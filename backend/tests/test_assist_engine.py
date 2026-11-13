@@ -10,7 +10,7 @@ import time
 
 import pytest
 
-from agentqa import assist, live
+from agentqa import assist, assist_wipe, live
 from agentqa.store import Store
 from assist_fakes import FakePage, file_bytes, in_thread, wait_until
 
@@ -35,6 +35,18 @@ def _pending(s: Store, kind: str):
 def _take_over(p, page, **kw):
     return in_thread(lambda: assist.takeover(p, page, role="citizen", agent="explorer", question="Log in for me",
                                              timeout=kw.get("timeout", 20)))
+
+
+def _gone_from_file(path, text: str, seconds: float = 5.0) -> bool:
+    """True once `text` is in neither the database file nor its log. The agent overwrites the row first and the
+    checkpoint that empties the log follows (a second at most, see assist_wipe), so a test that reads the file at the
+    moment the row looks wiped can catch the gap: a slow disk, like a hosted Windows runner's, does."""
+    end = time.time() + seconds
+    while time.time() < end:
+        if text.encode() not in file_bytes(path):
+            return True
+        time.sleep(0.05)
+    return text.encode() not in file_bytes(path)
 
 
 def _done(s: Store, cid: int) -> dict:
@@ -134,7 +146,13 @@ def test_a_take_over_runs_the_queued_commands_until_the_person_hands_back(demo, 
 
 # ---- decision 2: nothing typed stays readable ---------------------------------------------------------------
 
-def test_typed_text_is_gone_from_the_row_and_the_database_file_once_it_ran(demo, recording):
+def test_typed_text_is_gone_from_the_row_and_the_database_file_once_it_ran(demo, recording, monkeypatch):
+    real_checkpoint = assist_wipe.checkpoint
+
+    def slow_disk(store):                  # the row is wiped first, the log emptied after: a slow disk widens the gap
+        time.sleep(0.3)
+        return real_checkpoint(store)
+    monkeypatch.setattr(assist_wipe, "checkpoint", slow_disk)
     p, s = demo
     page = FakePage()
     thread, out = _take_over(p, page)
@@ -146,7 +164,7 @@ def test_typed_text_is_gone_from_the_row_and_the_database_file_once_it_ran(demo,
     assert rows[secret] == {"kind": "type", "chars": len(MARKER), "secret": True, "replace": True}
     assert rows[plain] == {"kind": "type", "chars": 10, "secret": False, "replace": False}
     assert page.keyboard.typed == [MARKER, "9876543210"]          # the agent typed the real text
-    assert MARKER.encode() not in file_bytes(p.db_path)
+    assert _gone_from_file(p.db_path, MARKER), "still readable in the database file or its log 5 s after it was typed"
     assert MARKER not in recording()
     assert assist.answer(s, aid, {"done": True})
     thread.join(10)
