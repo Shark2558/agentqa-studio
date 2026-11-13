@@ -17,19 +17,22 @@ deploy/*.md
 backend/projects/*
 !backend/projects/README.txt
 backend/installer
-# State an ad-hoc run can leave inside the engine folder (saved sessions, screenshots, stores): never bake it in
+# State an ad-hoc run can leave inside the engine folder (saved sessions, screenshots, stores): never bake it in.
+# The folder and recording names are anchored to backend/: unanchored (**/live, **/shots, **/*.jsonl) they also hid the
+# React app's source (frontend/src/lib/live, frontend/src/components/live) and the test fixtures' recordings and
+# pictures, so the image's npm build and its unit tests failed (tests/test_dockerignore.py guards this).
 **/.agentqa
-**/auth
-**/runs
-**/reports
-**/visual
-**/live
-**/evidence
-**/shots
+backend/auth
+backend/runs
+backend/reports
+backend/visual
+backend/live
+backend/evidence
+backend/shots
+backend/*.jsonl
 **/*.db
 **/*.db-*
 **/*.session.json
-**/*.jsonl
 backend/.gitignore
 **/.env
 **/.env.*

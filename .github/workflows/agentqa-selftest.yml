@@ -76,7 +76,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Image smoke test (build, unit tests inside, dashboard up, demo pipeline 19/19)
-        run: bash deploy/smoke.sh
+        shell: bash          # with pipefail, so a failing smoke test still fails the step through tee
+        run: bash deploy/smoke.sh 2>&1 | tee smoke.log
+      - name: Name where the smoke test stopped (a note on the run page, readable without signing in)
+        if: failure()
+        run: python3 backend/tools/ci_annotate.py --tail smoke.log
       - name: Keep the demo reports when the smoke test fails
         if: failure()
         uses: actions/upload-artifact@v4

@@ -1,7 +1,8 @@
 """Turns a pytest JUnit file into GitHub '::error' notes. A failed job's log needs a sign-in, but the notes a job prints
 this way show on the run page and in the public API, so the failed tests are named where anyone can read them.
 
-    python tools/ci_annotate.py unit-junit.xml
+    python tools/ci_annotate.py unit-junit.xml          one note per failed test
+    python tools/ci_annotate.py --tail smoke.log        the end of a log, as one note
 """
 from __future__ import annotations
 
@@ -50,7 +51,22 @@ def notes_for_file(path: Path) -> list[str]:
         return [f"::error title=pytest::the JUnit file could not be read: {_escape(str(exc))}"]
 
 
+def tail_note(log_text: str, lines: int = 60, width: int = 240) -> str:
+    """The last `lines` non-empty lines of a log as ONE note (a build's error is at the end; GitHub shows few notes)."""
+    kept = [line[:width] for line in log_text.splitlines() if line.strip()][-lines:]
+    return f"::error title=last lines of the log::{_escape(chr(10).join(kept))}"
+
+
+def tail_for_file(path: Path) -> str:
+    if not path.exists():
+        return f"::error title=log::no log file at {_escape(str(path))}: the step stopped before it wrote one"
+    return tail_note(path.read_text(encoding="utf-8", errors="replace"))
+
+
 def main(argv: list[str]) -> int:
+    if len(argv) > 2 and argv[1] == "--tail":
+        print(tail_for_file(Path(argv[2])))
+        return 0
     for line in notes_for_file(Path(argv[1] if len(argv) > 1 else "unit-junit.xml")):
         print(line)
     return 0

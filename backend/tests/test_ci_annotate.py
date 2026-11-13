@@ -48,6 +48,20 @@ def test_no_failure_in_the_file_says_the_run_stopped_early():
     assert len(notes) == 1 and "stopped before the tests finished" in notes[0]
 
 
+def test_the_end_of_a_log_becomes_one_note():
+    log = "\n".join(f"line {i}" for i in range(100)) + "\n\n"
+    assert tool.tail_note(log, lines=3) == "::error title=last lines of the log::line 97%0Aline 98%0Aline 99"
+
+
+def test_a_log_note_cuts_long_lines_and_escapes_percent_signs():
+    note = tool.tail_note("x" * 1000 + "\n50% done", width=20)
+    assert note == "::error title=last lines of the log::" + "x" * 20 + "%0A50%25 done"
+
+
+def test_a_missing_log_is_reported_not_raised(tmp_path):
+    assert "no log file" in tool.tail_for_file(tmp_path / "nope.log")
+
+
 def test_a_missing_or_broken_file_is_reported_not_raised(tmp_path):
     assert "no JUnit file" in tool.notes_for_file(tmp_path / "nope.xml")[0]
     broken = tmp_path / "broken.xml"
